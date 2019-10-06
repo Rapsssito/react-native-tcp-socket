@@ -1,11 +1,10 @@
 package com.asterinet.react.tcpsocket;
 
 
-import com.facebook.common.logging.FLog;
-
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.SparseArray;
 import android.util.Base64;
+import android.os.AsyncTask;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -13,7 +12,6 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.GuardedAsyncTask;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
@@ -54,50 +52,74 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
      */
     @ReactMethod
     public void connect(final Integer cId, final @Nullable String host, final Integer port, final ReadableMap options) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+        new AsyncTask<Void, Void, Void>() {
             @Override
-            protected void doInBackgroundGuarded(Void... params) {
+            protected Void doInBackground(Void... params) {
                 // Check for cID
                 if (cId == null) {
-                    FLog.e(TAG, "createSocket called with nil id parameter.");
-                    return;
+                    onError(cId, TAG + "createSocket called with nil id parameter.");
+                    return null;
                 }
                 TcpSocketClient client = socketClients.get(cId);
                 if (client != null) {
-                    FLog.e(TAG, "createSocket called twice with the same id.");
-                    return;
+                    onError(cId, TAG + "createSocket called twice with the same id.");
+                    return null;
                 }
                 int localPort = options.hasKey("localPort") ? 0 : options.getInt("localPort");
                 try {
                     client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, options.getString("localAddress"), localPort);
                     socketClients.put(cId, client);
+                    onConnect(cId, host, port);
                 } catch (IOException e) {
-                    FLog.e(TAG, "error creating socket.");
-                    return;
+                    onError(cId, TAG + "error creating socket.");
                 }
+                return null;
             }
         }.execute();
     }
 
     @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+        new AsyncTask<Void, Void, Void>() {
             @Override
-            protected void doInBackgroundGuarded(Void... params) {
+            protected Void doInBackground(Void... params) {
                 TcpSocketClient socket = socketClients.get(cId);
                 try {
                     socket.write(Base64.decode(base64String, Base64.NO_WRAP));
                 } catch (IOException e) {
                     if (callback != null) {
                         callback.invoke(e);
-                        return;
+                        return null;
                     }
                 }
                 if (callback != null) {
                     callback.invoke();
                 }
+                return null;
             }
         }.execute();
+    }
+
+    @ReactMethod
+    public void end(final Integer cId) {
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try{
+                    TcpSocketClient socketClient = socketClients.get(cId);
+                    socketClient.close();
+                    onClose(cId, null);
+                } catch (IOException e){
+                    onClose(cId, e.getMessage());
+                }
+                return null;
+            }
+        }.execute();
+    }
+
+    @ReactMethod
+    public void destroy(final Integer cId) {
+        end(cId);
     }
 
     // TcpReceiverTask.OnDataReceivedListener

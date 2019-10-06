@@ -1,6 +1,6 @@
 package com.asterinet.react.tcpsocket;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.os.AsyncTask;
 import android.util.Pair;
 

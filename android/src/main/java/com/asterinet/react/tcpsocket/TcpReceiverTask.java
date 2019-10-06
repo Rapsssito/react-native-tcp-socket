@@ -29,7 +29,7 @@ public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiver
         int socketId = clientSocket.getId();
         Socket socket = clientSocket.getSocket();
         byte[] buffer = new byte[8192];
-        int bufferCount = -1;
+        int bufferCount;
         try {
             InputStream in = socket.getInputStream();
             while (!isCancelled()) {
