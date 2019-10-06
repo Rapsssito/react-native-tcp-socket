@@ -15,7 +15,7 @@ var {
   NativeModules
 } = require('react-native');
 var Sockets = NativeModules.TcpSockets;
-var base64 = require('base64-js');
+// var base64 = require('base64-js');
 var Base64Str = require('./base64-str');
 var noop = function () {};
 var instances = 0;
