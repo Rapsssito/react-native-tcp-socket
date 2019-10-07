@@ -13,7 +13,14 @@
     "baseUrl": "https://github.com/Rapsssito/react-native-tcp-socket"
   },
   "keywords": [
-    "react-native"
+    "react-native",
+    "iOS",
+    "Android",
+    "tcp-socket",
+    "tcp-server",
+    "tcp-client",
+    "tcp",
+    "react-native-library"
   ],
   "author": {
     "name": "Rapsssito",
