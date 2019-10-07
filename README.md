@@ -109,7 +109,6 @@ var server = net.createServer(function(socket) {
 }).listen(12345);
 ```
 ## API
-* **[`OPTIONS`](#options)**
 * **Methods:**
   * [`createConnection(options[, callback])`](#createconnection)
   * [`write(data)`](#write)
