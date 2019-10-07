@@ -1,8 +1,8 @@
 {
   "name": "react-native-tcp-socket",
   "title": "React Native Tcp Socket",
-  "version": "0.9.0",
-  "description": "TODO",
+  "version": "0.9.1",
+  "description": "React Native TCP socket API for Android & iOS",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
