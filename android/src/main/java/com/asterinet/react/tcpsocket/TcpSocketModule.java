@@ -1,10 +1,8 @@
 package com.asterinet.react.tcpsocket;
 
 
-import androidx.annotation.Nullable;
 import android.util.SparseArray;
 import android.util.Base64;
-import android.os.AsyncTask;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -12,6 +10,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.GuardedAsyncTask;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
@@ -24,7 +23,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     private SparseArray<TcpSocketClient> socketClients = new SparseArray<>();
     private boolean shuttingDown = false;
 
-    public static final String TAG = "TcpSocket";
+    public static final String TAG = "TcpSockets";
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -51,68 +50,78 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
      * @param options
      */
     @ReactMethod
-    public void connect(final Integer cId, final @Nullable String host, final Integer port, final ReadableMap options) {
-        new AsyncTask<Void, Void, Void>() {
+    public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
             @Override
-            protected Void doInBackground(Void... params) {
+            protected void doInBackgroundGuarded(Void... params) {
                 // Check for cID
                 if (cId == null) {
                     onError(cId, TAG + "createSocket called with nil id parameter.");
-                    return null;
+                    return;
                 }
                 TcpSocketClient client = socketClients.get(cId);
                 if (client != null) {
                     onError(cId, TAG + "createSocket called twice with the same id.");
-                    return null;
+                    return;
                 }
-                int localPort = options.hasKey("localPort") ? 0 : options.getInt("localPort");
+                String localAddress = options.getString("localAddress");
+                String iface = options.getString("interface");
+                int localPort = options.getInt("localPort");
                 try {
-                    client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, options.getString("localAddress"), localPort);
+                    client = new TcpSocketClient(getReactApplicationContext(), TcpSocketModule.this, cId, host, port, localAddress, localPort, iface);
                     socketClients.put(cId, client);
                     onConnect(cId, host, port);
                 } catch (IOException e) {
-                    onError(cId, TAG + "error creating socket.");
+                    onError(cId, e.getMessage());
+                } catch (InterruptedException e){
+                    onError(cId, e.getMessage());
                 }
-                return null;
+                return;
             }
         }.execute();
     }
 
     @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
-        new AsyncTask<Void, Void, Void>() {
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
             @Override
-            protected Void doInBackground(Void... params) {
-                TcpSocketClient socket = socketClients.get(cId);
+            protected void doInBackgroundGuarded(Void... params) {
+                TcpSocketClient socketClient = socketClients.get(cId);
+                if (socketClient == null){
+                    return;
+                }
                 try {
-                    socket.write(Base64.decode(base64String, Base64.NO_WRAP));
+                    socketClient.write(Base64.decode(base64String, Base64.NO_WRAP));
                 } catch (IOException e) {
                     if (callback != null) {
                         callback.invoke(e);
-                        return null;
+                        return;
                     }
                 }
                 if (callback != null) {
                     callback.invoke();
                 }
-                return null;
+                return;
             }
         }.execute();
     }
 
     @ReactMethod
     public void end(final Integer cId) {
-        new AsyncTask<Void, Void, Void>() {
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
             @Override
-            protected Void doInBackground(Void... params) {
-                try{
+            protected void doInBackgroundGuarded(Void... params) {
+                try {
                     TcpSocketClient socketClient = socketClients.get(cId);
+                    if (socketClient == null){
+                        return;
+                    }
                     socketClient.close();
                     onClose(cId, null);
-                } catch (IOException e){
+                } catch (IOException e) {
                     onClose(cId, e.getMessage());
                 }
-                return null;
+                return;
             }
         }.execute();
     }
