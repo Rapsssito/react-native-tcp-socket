@@ -42,9 +42,7 @@ public final class TcpSocketClient {
         InetAddress remoteInetAddress = InetAddress.getByName(address);
         // Create the socket
         socket = new Socket();
-        if (selectedNetwork != null) {
-            selectedNetwork.bindSocket(socket);
-        }
+        selectedNetwork.bindSocket(socket);
         socket.setReuseAddress(true);
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
@@ -112,8 +110,12 @@ public final class TcpSocketClient {
                         awaitingNetwork.countDown(); // Stop waiting
                     }
                 });
+                awaitingNetwork.await();
+                break;
+            default:
+                selectedNetwork = cm.getActiveNetwork();
                 break;
         }
-        awaitingNetwork.await();
+
     }
 }

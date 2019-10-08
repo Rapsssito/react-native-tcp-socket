@@ -66,8 +66,9 @@ class App extends React.Component {
     let client = net.createConnection({
       port: serverPort,
       host: serverHost,
-      localAddress: "192.168.1.33",
-      interface: "wifi"
+      // localAddress: "192.168.1.35",
+      // localPort: 20000,
+      // interface: "wifi"
     }, () => {
       this.updateChatter('opened client on ' + JSON.stringify(client.address()));
       client.write('Hello, server! Love, Client.');

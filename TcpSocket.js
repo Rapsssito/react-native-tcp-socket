@@ -76,7 +76,7 @@ TcpSocket.prototype.connect = function (options, callback): TcpSocket {
   options.host = options.host || 'localhost';
   options.port = Number(options.port) || 0;
   options.localPort = Number(options.localPort) || 0;
-  options.localAddress = options.localAddress || null;
+  options.localAddress = options.localAddress || "0.0.0.0";
   options.interface = options.interface || "";
 
   // Perform some chekings
@@ -92,7 +92,7 @@ TcpSocket.prototype.connect = function (options, callback): TcpSocket {
     throw new RangeError('"localPort" option should be >= 0 and < 65536: ' + options.localPort);
   }
 
-  if (options.localAddress && !ipRegex({ exact: true }).test(options.localAddress)) {
+  if (!ipRegex({ exact: true }).test(options.localAddress)) {
     throw new TypeError('"localAddress" option must be a valid IP: ' + options.localAddress);
   }
 
