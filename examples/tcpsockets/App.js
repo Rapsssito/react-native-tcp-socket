@@ -75,10 +75,10 @@ class App extends React.Component {
     });
 
     client.on('data', (data) => {
-      console.log(data.toString());
+      console.log("Received", data.toString());
       this.updateChatter('Client Received: ' + data);
 
-      this.client.destroy(); // kill client after server's response
+      // this.client.destroy(); // kill client after server's response
       // this.server.close();
     });
 
