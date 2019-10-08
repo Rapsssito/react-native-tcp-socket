@@ -3,7 +3,7 @@ package com.asterinet.react.tcpsocket;
 import android.os.AsyncTask;
 import android.util.Pair;
 
-import java.io.InputStream;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.net.Socket;
@@ -14,15 +14,6 @@ import java.net.Socket;
  * should handle synchronicity.
  */
 public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiverTask.OnDataReceivedListener>, Void, Void> {
-    static byte[] trim(byte[] bytes) {
-        int i = bytes.length - 1;
-        while (i >= 0 && bytes[i] == 0) {
-            --i;
-        }
-
-        return Arrays.copyOf(bytes, i + 1);
-    }
-
     private static final String TAG = "TcpReceiverTask";
 
     /**
@@ -41,12 +32,11 @@ public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiver
         byte[] buffer = new byte[8192];
         int bufferCount;
         try {
-            InputStream in = socket.getInputStream();
+            BufferedInputStream in = new BufferedInputStream(socket.getInputStream());
             while (!isCancelled()) {
                 bufferCount = in.read(buffer);
                 if (bufferCount > 0) {
-                    receiverListener.onData(socketId, trim(buffer));
-                    Arrays.fill(buffer, (byte)0);
+                    receiverListener.onData(socketId, Arrays.copyOfRange(buffer, 0, bufferCount));
                 }
             }
         } catch (IOException ioe) {
