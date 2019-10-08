@@ -33,10 +33,17 @@ Linking the package manually is not required anymore with [Autolinking](https://
   buildscript {
     ext {
       ...
-      minSdkVersion = 21 
+      minSdkVersion = 23 
       ...
     }
   ```
+
+  Modify your **android/app/src/main/AndroidManifest.xml** and add the following:
+  ```
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  ```
+  
   
 #### Using React Native < 0.60
 
