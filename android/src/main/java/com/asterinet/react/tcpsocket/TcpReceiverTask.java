@@ -5,6 +5,7 @@ import android.util.Pair;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.net.Socket;
 
@@ -52,6 +53,8 @@ public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiver
      * Listener interface for receive events.
      */
     public interface OnDataReceivedListener {
+        void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress);
+
         void onConnect(Integer id, String host, int port);
 
         void onData(Integer id, byte[] data);

@@ -15,13 +15,16 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public final class TcpSocketClient {
+public class TcpSocketClient {
     private TcpReceiverTask receiverTask;
-    private Integer id;
     private Socket socket;
-    private Network selectedNetwork;
 
-    public static final String TAG = "TcpSocketClient";
+    protected Integer id;
+    protected Network selectedNetwork;
+
+    public TcpSocketClient() {
+
+    }
 
     /**
      * TcpSocketClient constructor
@@ -49,6 +52,14 @@ public final class TcpSocketClient {
         receiverTask = new TcpReceiverTask();
         receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
     }
+
+    public TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final Socket socket) {
+        this.id = id;
+        this.socket = socket;
+        receiverTask = new TcpReceiverTask();
+        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
+    }
+
 
     public int getId() {
         return id;

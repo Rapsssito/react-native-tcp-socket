@@ -1,10 +1,18 @@
 # react-native-tcp-socket
 React Native TCP socket API for Android & iOS. It allows you to create TCP clients and servers sockets, simulating node's [net](https://nodejs.org/api/net.html) API.
 
-# WARNING: THIS LIBRARY IS UNDER DEVELOPMENT
-**Working features**
-* Android client socket
-* iOS client & server sockets (**not tested**)
+### WARNING: this library has not been tested on iOS
+
+## Table of Contents
+
+- [Getting started](#getting-started)
+- [Usage](#usage)
+- [API](#icon-component)
+  - [Client](#client)
+  - [Server](#server)
+- [Maintainers](#maintainers)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
 
 ## Getting started
 Install the library using either Yarn:
@@ -110,20 +118,38 @@ client.destroy();
 ```
 ### Server
 ```javascript
-// NOT IMPLEMENTED IN ANDROID
-var server = net.createServer(function(socket) {
-  socket.write('excellent!');
-}).listen(12345);
+var server = TcpSocket.createServer(function(socket) {
+  socket.on('data', (data) => {
+    socket.write('Echo server', data);
+  });
+
+  socket.on('error', (error) => {
+    console.log('An error ocurred with client socket ', error);
+  });
+
+  socket.on('close', (error) => {
+    console.log('Closed connection with ', socket.address());
+  });
+}).listen(12345, '0.0.0.0');
+
+server.on('error', (error) => {
+  console.log('An error ocurred with the server', error);
+});
+
+server.on('close', () => {
+  console.log('Server closed connection');
+});
 ```
 ## API
+### Client
 * **Methods:**
   * [`createConnection(options[, callback])`](#createconnection)
   * [`write(data)`](#write)
   * [`destroy()`](#destroy)
 
-### `createConnection()`
+#### `createConnection()`
 Creates a TCP connection using the given `options`.
-#### `options`
+##### `options`
 **Required**. Available options for creating a socket. It is an `object` with the following properties:
 
 | Property              | Type                                    | Description                                                                                        |
@@ -133,7 +159,13 @@ Creates a TCP connection using the given `options`.
 | `[localAddress]` | `String` | A valid local IP address to bind the socket. If not specified, the OS will decide. |
 | `[localPort]` | `Number` | A valid local port to bind the socket. If not specified, the OS will decide. |
 | `[interface]`| `String` | The interface to bind the socket. If not specified, it will use the current active connection. The current options are: `"wifi"`|
- 
+
+### Server
+* **Methods:**
+  * [`createServer(callback)`](#createserver)
+  * [`listen(port[, host])`](#listen)
+  * [`close()`](#close)
+
 ## Maintainers
 Looking for maintainers!
 
@@ -142,6 +174,11 @@ Looking for maintainers!
 ## Contributing
 
 PR's welcome!
+
+## Acknowledgments
+
+* iOS part originally forked from @aprock [react-native-tcp](https://github.com/aprock/react-native-tcp)
+* [react-native-udp](https://github.com/tradle/react-native-udp)
 
 ## License
 
