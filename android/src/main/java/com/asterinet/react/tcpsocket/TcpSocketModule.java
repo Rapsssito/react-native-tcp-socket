@@ -15,6 +15,10 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.io.IOException;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 
 public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpReceiverTask.OnDataReceivedListener {
@@ -131,6 +135,24 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         end(cId);
     }
 
+    @ReactMethod
+    public void listen(final Integer cId, final String host, final Integer port) {
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                try {
+                    TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, host, port);
+                    socketClients.put(cId, server);
+                    onConnect(cId, host, port);
+                } catch (UnknownHostException uhe) {
+                    onError(cId, uhe.getMessage());
+                } catch (IOException ioe) {
+                    onError(cId, ioe.getMessage());
+                }
+            }
+        }.execute();
+    }
+
     // TcpReceiverTask.OnDataReceivedListener
 
     @Override
@@ -185,5 +207,29 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         eventParams.putString("error", error);
 
         sendEvent("error", eventParams);
+    }
+
+    @Override
+    public void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress){
+        if (shuttingDown) {
+            return;
+        }
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", serverId);
+
+        WritableMap infoParams = Arguments.createMap();
+        infoParams.putInt("id", clientId);
+
+        final InetAddress address = socketAddress.getAddress();
+
+        WritableMap addressParams = Arguments.createMap();
+        addressParams.putString("address", address.getHostAddress());
+        addressParams.putInt("port", socketAddress.getPort());
+        addressParams.putString("family", address instanceof Inet6Address ? "IPv6" : "IPv4");
+
+        infoParams.putMap("address", addressParams);
+        eventParams.putMap("info", infoParams);
+
+        sendEvent("connection", eventParams);
     }
 }

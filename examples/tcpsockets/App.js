@@ -12,7 +12,7 @@ import {
   View
 } from 'react-native';
 
-var net = require('react-native-tcp-socket');
+var TcpSocket = require('react-native-tcp-socket');
 
 function randomPort() {
   return Math.random() * 60536 | 0 + 5000; // 60536-65536
@@ -34,36 +34,37 @@ class App extends React.Component {
 
   componentDidMount() {
     const serverPort = 5000;
-    const serverHost = "192.168.1.42";
+    const serverHost = "127.0.0.1";
     let server;
-    // let server = net.createServer((socket) => {
-    //   this.updateChatter('server connected on ' + JSON.stringify(socket.address()));
+    let client;
+    server = TcpSocket.createServer((socket) => {
+      this.updateChatter('server connected on ' + JSON.stringify(socket.address()));
 
-    //   socket.on('data', (data) => {
-    //     this.updateChatter('Server Received: ' + data);
-    //     socket.write('Echo server\r\n');
-    //   });
+      socket.on('data', (data) => {
+        this.updateChatter('Server Received: ' + data);
+        socket.write('Echo server\r\n');
+      });
 
-    //   socket.on('error', (error) => {
-    //     this.updateChatter('error ' + error);
-    //   });
+      socket.on('error', (error) => {
+        this.updateChatter('error ' + error);
+      });
 
-    //   socket.on('close', (error) => {
-    //     this.updateChatter('server client closed ' + (error ? error : ''));
-    //   });
-    // }).listen(serverPort, () => {
-    //   this.updateChatter('opened server on ' + JSON.stringify(server.address()));
-    // });
+      socket.on('close', (error) => {
+        this.updateChatter('server client closed ' + (error ? error : ''));
+      });
+    }).listen(serverPort, serverHost, () => {
+      this.updateChatter('opened server on ' + JSON.stringify(server.address()));
+    });
 
-    // server.on('error', (error) => {
-    //   this.updateChatter('error ' + error);
-    // });
+    server.on('error', (error) => {
+      this.updateChatter('error ' + error);
+    });
 
-    // server.on('close', () => {
-    //   this.updateChatter('server close');
-    // });
+    server.on('close', () => {
+      this.updateChatter('server close');
+    });
 
-    let client = net.createConnection({
+    client = TcpSocket.createConnection({
       port: serverPort,
       host: serverHost,
       // localAddress: "192.168.1.35",
@@ -75,20 +76,16 @@ class App extends React.Component {
     });
 
     client.on('data', (data) => {
-      console.log("Received", data.toString());
       this.updateChatter('Client Received: ' + data);
-
-      // this.client.destroy(); // kill client after server's response
-      // this.server.close();
+      this.client.destroy(); // kill client after server's response
+      this.server.close();
     });
 
     client.on('error', (error) => {
-      console.log(error);
       this.updateChatter('client error ' + error);
     });
 
     client.on('close', () => {
-      console.log("Client closed");
       this.updateChatter('client close');
     });
 
