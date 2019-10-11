@@ -36,7 +36,7 @@ Linking the package manually is not required anymore with [Autolinking](https://
 
 - **Android Platform:**
 
-  Modify your **android/build.gradle** configuration to match `minSdkVersion = 21`:
+  Modify your **`android/build.gradle`** configuration to match `minSdkVersion = 23`:
   ```
   buildscript {
     ext {
@@ -46,7 +46,7 @@ Linking the package manually is not required anymore with [Autolinking](https://
     }
   ```
 
-  Modify your **android/app/src/main/AndroidManifest.xml** and add the following:
+  Modify your **`android/app/src/main/AndroidManifest.xml`** and add the following:
   ```
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -148,7 +148,7 @@ server.on('close', () => {
   * [`destroy()`](#destroy)
 
 #### `createConnection()`
-Creates a TCP connection using the given `options`.
+`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#options).
 ##### `options`
 **Required**. Available options for creating a socket. It is an `object` with the following properties:
 
@@ -165,6 +165,9 @@ Creates a TCP connection using the given `options`.
   * [`createServer(callback)`](#createserver)
   * [`listen(port[, host])`](#listen)
   * [`close()`](#close)
+
+#### `listen()`
+`listen(port[, host])` creates a TCP server socket listening on the given port. If the host is not explicity selected, the socket will be bound to `'0.0.0.0'`.
 
 ## Maintainers
 Looking for maintainers!
