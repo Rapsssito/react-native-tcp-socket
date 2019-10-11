@@ -15,8 +15,6 @@ import java.net.Socket;
  * should handle synchronicity.
  */
 public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiverTask.OnDataReceivedListener>, Void, Void> {
-    private static final String TAG = "TcpReceiverTask";
-
     /**
      * An infinite loop to block and read data from the socket.
      */
