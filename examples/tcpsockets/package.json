@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "16.10.2",
     "react-native": "0.61.2",
-    "react-native-tcp-socket": "^1.0.0"
+    "react-native-tcp-socket": "^1.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.6.4",
