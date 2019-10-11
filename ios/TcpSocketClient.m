@@ -123,7 +123,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     // GCDAsyncSocket doesn't recognize 0.0.0.0
     if ([@"0.0.0.0" isEqualToString: host]) {
-        host = @"localhost";
+        host = nil;
     }
     BOOL isListening = [_tcpSocket acceptOnInterface:host port:port error:error];
     if (isListening == YES) {
