@@ -14,6 +14,7 @@ public class TcpSocketServer extends TcpSocketClient {
     private TcpReceiverTask.OnDataReceivedListener receiverListener;
     private int clientSocketIds = 6000;
     private SparseArray<TcpSocketClient> socketClients;
+    private SparseArray<TcpSocketClient> serverSocketClients = new SparseArray<>();
 
     private AsyncTask listening = new AsyncTask() {
         @Override
@@ -23,6 +24,7 @@ public class TcpSocketServer extends TcpSocketClient {
                     Socket socket = serverSocket.accept();
                     Integer clientId = getClientId();
                     TcpSocketClient socketClient = new TcpSocketClient(receiverListener, clientId, socket);
+                    serverSocketClients.put(clientId, socketClient);
                     socketClients.put(clientId, socketClient);
                     receiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
                 }
@@ -73,8 +75,21 @@ public class TcpSocketServer extends TcpSocketClient {
 
         // close the socket
         if (serverSocket != null && !serverSocket.isClosed()) {
+            closeAllClients();
             serverSocket.close();
             serverSocket = null;
         }
+    }
+
+    private void closeAllClients() throws IOException {
+        /**
+         * Closes all the sockets connected to the server
+         */
+        for (int i = 0; i < serverSocketClients.size(); i++) {
+            int key = serverSocketClients.keyAt(i);
+            TcpSocketClient socket = serverSocketClients.get(key);
+            socket.close();
+        }
+        serverSocketClients.clear();
     }
 }
