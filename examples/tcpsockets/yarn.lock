@@ -5132,10 +5132,10 @@ react-is@^16.8.1, react-is@^16.8.4, react-is@^16.8.6:
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.10.2.tgz#984120fd4d16800e9a738208ab1fba422d23b5ab"
   integrity sha512-INBT1QEgtcCCgvccr5/86CfD71fw9EPmDxgiJX4I2Ddr6ZsV6iFXsuby+qWJPtmNuMY0zByTsG4468P7nHuNWA==
 
-react-native-tcp-socket@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/react-native-tcp-socket/-/react-native-tcp-socket-1.0.0.tgz#e3159ed0dda8045446d307c041c0076b31cf1c9e"
-  integrity sha512-ZX1hKIxjR8COhQ9cOhHodrxB12kKqmC6Ce2goztQi73LkZZi+lajBRZ/2+0plN+4VJ9+1wl+OtBLgxan2kYIDA==
+react-native-tcp-socket@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/react-native-tcp-socket/-/react-native-tcp-socket-1.0.1.tgz#6d89ccf5a9f1b7b990c769e30fe81c35b0c60066"
+  integrity sha512-JIFtTZFwYaFHd7wOM0vPh5Orb39y9ziulMxw7H72CW/JTdNCCSaJJ0h6LSbo7jq1kQ5Z1DdY0ARqZ2l6gQ0ctA==
   dependencies:
     buffer "^5.4.3"
     events "^3.0.0"
