@@ -32,14 +32,14 @@ public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiver
         int bufferCount;
         try {
             BufferedInputStream in = new BufferedInputStream(socket.getInputStream());
-            while (!isCancelled()) {
+            while (!isCancelled() && !socket.isClosed()) {
                 bufferCount = in.read(buffer);
                 if (bufferCount > 0) {
                     receiverListener.onData(socketId, Arrays.copyOfRange(buffer, 0, bufferCount));
                 }
             }
         } catch (IOException ioe) {
-            if (receiverListener != null) {
+            if (receiverListener != null && !socket.isClosed()) {
                 receiverListener.onError(socketId, ioe.getMessage());
             }
             this.cancel(false);
