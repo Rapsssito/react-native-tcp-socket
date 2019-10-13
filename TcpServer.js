@@ -1,108 +1,79 @@
 'use strict';
 
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
 var {
-  NativeModules
+    NativeModules
 } = require('react-native');
 var Sockets = NativeModules.TcpSockets;
 
-var Socket = require('./TcpSocket');
+import Socket from './TcpSocket';
 
-function TcpServer(connectionListener: (socket: Socket) => void) {
-  if (!(this instanceof TcpServer)) {
-    return new TcpServer(connectionListener);
-  }
-
-  if (EventEmitter instanceof Function) {
-    EventEmitter.call(this);
-  }
-
-  var self = this;
-
-  this._socket = new Socket();
-
-  // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  this._socket.on('connect', function() {
-    self.emit('listening');
-  });
-  // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  this._socket.on('connection', function(socket) {
-    self._connections++;
-    self.emit('connection', socket);
-  });
-  // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  this._socket.on('error', function(error) {
-    self.emit('error', error);
-  });
-
-  if (typeof connectionListener === 'function') {
-    self.on('connection', connectionListener);
-  }
-
-  this._connections = 0;
-}
-
-util.inherits(TcpServer, EventEmitter);
-
-TcpServer.prototype._debug = function() {
-  if (__DEV__) {
-    var args = [].slice.call(arguments);
-    console.log.apply(console, args);
-  }
-};
-
-// TODO : determine how to properly overload this with flow
-TcpServer.prototype.listen = function() : TcpServer {
-  var args = this._socket._normalizeConnectArgs(arguments);
-  var options = args[0];
-  var callback = args[1];
-
-  var port = options.port;
-  var host = options.host || '0.0.0.0';
-
-  if (callback) {
-    this.once('listening', callback);
-  }
-
-  this._socket._registerEvents();
-  Sockets.listen(this._socket._id, host, port);
-
-  return this;
-};
-
-TcpServer.prototype.getConnections = function(callback: (err: ?any, count: number) => void) {
-  if (typeof callback === 'function') {
-    callback.invoke(null, this._connections);
-  }
-};
-
-TcpServer.prototype.address = function() : { port: number, address: string, family: string } {
-  return this._socket ? this._socket.address() : {};
-};
-
-TcpServer.prototype.close = function(callback: ?() => void) {
-  if (typeof callback === 'function') {
-    if (!this._socket) {
-      this.once('close', function close() {
-        callback(new Error('Not running'));
-      });
-    } else {
-      this.once('close', callback);
+export default class TcpServer extends Socket {
+    constructor(connectionListener) {
+        super(connectionListener);
+        this.connectionListener = connectionListener;
+        this._connections = 0;
     }
-  }
 
-  if (this._socket) {
-    this._socket.end();
-  }
+    _onConnect(address) {
+        this._debug('received', 'connect');
 
-  var self = this;
-  setImmediate(function () {
-    self.emit('close');
-  });
-};
+        this.setConnected(this, address);
+        this.emit('connect');
+        this.emit('listening');
 
-// unimplemented net.Server apis
-TcpServer.prototype.ref = TcpServer.prototype.unref = function() { /* nop */ };
+        this.read(0);
+    };
 
-module.exports = TcpServer;
+    _onConnection(info) {
+        this._debug('received', 'connection');
+        this._connections++;
+
+        let socket = new Socket({ id: info.id });
+
+        socket._registerEvents();
+        this.setConnected(socket, info.address);
+        this.connectionListener(socket);
+        this.emit('connection', socket);
+    }
+
+    _debug() {
+        if (__DEV__) {
+            var args = [].slice.call(arguments);
+            console.log.apply(console, args);
+        }
+    }
+
+    // TODO : determine how to properly overload this with flow
+    listen() {
+        var args = this._normalizeConnectArgs(arguments);
+        var options = args[0];
+        var callback = args[1];
+
+        var port = options.port;
+        var host = options.host || '0.0.0.0';
+
+        if (callback) {
+            this.once('listening', callback);
+        }
+
+        this._registerEvents();
+        Sockets.listen(this._id, host, port);
+        return this;
+    }
+
+    getConnections(callback) {
+        if (typeof callback === 'function') {
+            callback.invoke(null, this._connections);
+        }
+    }
+
+    close(callback) {
+        if (callback){
+            this.once('close', callback);
+        }        
+        this.destroy();
+    }
+
+    ref() { }
+    unref() { /* nop */ };
+}

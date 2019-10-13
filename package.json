@@ -39,10 +39,8 @@
   },
   "dependencies": {
     "buffer": "^5.4.3",
-    "events": "^3.0.0",
     "ip-regex": "^4.1.0",
     "process": "^0.11.10",
-    "stream-browserify": "^2.0.2",
-    "util": "^0.12.1"
+    "stream-browserify": "^2.0.2"
   }
 }
