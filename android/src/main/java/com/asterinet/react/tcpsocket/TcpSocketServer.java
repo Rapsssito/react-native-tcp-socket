@@ -20,7 +20,7 @@ public class TcpSocketServer extends TcpSocketClient {
         @Override
         protected Void doInBackground(Object[] objects) {
             try {
-                while (!isCancelled()) {
+                while (!isCancelled() && !serverSocket.isClosed()) {
                     Socket socket = serverSocket.accept();
                     Integer clientId = getClientId();
                     TcpSocketClient socketClient = new TcpSocketClient(receiverListener, clientId, socket);
@@ -29,7 +29,9 @@ public class TcpSocketServer extends TcpSocketClient {
                     receiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
                 }
             } catch (IOException e) {
-                receiverListener.onError(getId(), e.getMessage());
+                if (!serverSocket.isClosed()){
+                    receiverListener.onError(getId(), e.getMessage());
+                }                
             }
             return null;
         }
