@@ -6,9 +6,7 @@ if (!(global.process && global.process.nextTick)) {
 
 var Buffer = global.Buffer = global.Buffer || require('buffer').Buffer;
 
-var util = require('util');
 var stream = require('stream-browserify');
-// var EventEmitter = require('events').EventEmitter;
 var ipRegex = require('ip-regex');
 var {
     NativeEventEmitter,
@@ -24,7 +22,7 @@ var STATE = {
     CONNECTED: 2
 };
 
-class TcpSocket extends stream.Duplex {
+export default class TcpSocket extends stream.Duplex {
     constructor(options) {
         super(options);
         if (options && options.id) {
@@ -268,9 +266,9 @@ class TcpSocket extends stream.Duplex {
 
         let socket = new TcpSocket({ id: info.id });
 
-        this.socket._registerEvents();
+        socket._registerEvents();
         this.setConnected(socket, info.address);
-        this.emit('connection', this.socket);
+        socket.emit('connection', socket);
     };
 
     _onData(data) {
@@ -419,5 +417,3 @@ function normalizeError(err) {
         return err;
     }
 }
-
-module.exports = TcpSocket;
