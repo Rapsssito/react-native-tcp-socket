@@ -1,37 +1,45 @@
 'use strict';
 
-var ipRegex = require('ip-regex');
+import ipRegex from 'ip-regex';
 
-var Socket = require('./TcpSocket');
-var Server = require('./TcpServer');
+import Socket from './TcpSocket';
+import Server from './TcpServer';
 
-exports.createServer = function(connectionListener: (socket: Socket)  => void) : Server {
-  return new Server(connectionListener);
+function createServer(connectionListener) {
+    return new Server(connectionListener);
 };
 
 // TODO : determine how to properly overload this with flow
-exports.connect = exports.createConnection = function() : Socket {
-  var tcpSocket = new Socket();
-  return Socket.prototype.connect.apply(tcpSocket, tcpSocket._normalizeConnectArgs(arguments));
+function createConnection() {
+    var tcpSocket = new Socket();
+    return Socket.prototype.connect.apply(tcpSocket, tcpSocket._normalizeConnectArgs(arguments));
+}
+
+function isIP(input) {
+    var result = 0;
+    if (ipRegex.v4({ exact: true }).test(input)) {
+        result = 4;
+    } else if (ipRegex.v6({ exact: true }).test(input)) {
+        result = 6;
+    }
+    return result;
 };
 
-exports.isIP = function(input: string) : number {
-  var result = 0;
-  if (ipRegex.v4({exact: true}).test(input)) {
-    result = 4;
-  } else if (ipRegex.v6({exact: true}).test(input)) {
-    result = 6;
-  }
-  return result;
+function isIPv4(input) {
+    return isIP(input) === 4;
 };
 
-exports.isIPv4 = function(input: string) : boolean {
-  return exports.isIP(input) === 4;
+function isIPv6(input) {
+    return isIP(input) === 6;
 };
 
-exports.isIPv6 = function(input: string) : boolean {
-  return exports.isIP(input) === 6;
-};
-
-exports.Socket = Socket;
-exports.Server = Server;
+module.exports = {
+    Socket: Socket,
+    Server: Server,
+    isIPv4: isIPv4,
+    isIPv4: isIPv6,
+    isIP: isIP,
+    connect: createConnection,
+    createConnection: createConnection,
+    createServer: createServer,
+}
