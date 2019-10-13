@@ -122,6 +122,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     }
                     socketClient.close();
                     onClose(cId, null);
+                    socketClients.remove(cId);
                 } catch (IOException e) {
                     onClose(cId, e.getMessage());
                 }

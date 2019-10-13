@@ -75,8 +75,10 @@ public class TcpSocketClient {
      * @param data
      */
     public void write(final byte[] data) throws IOException {
-        OutputStream output = socket.getOutputStream();
-        output.write(data);
+        if (socket != null && !socket.isClosed()) {
+            OutputStream output = socket.getOutputStream();
+            output.write(data);
+        }
     }
 
     /**
