@@ -2370,6 +2370,11 @@ eventemitter3@^3.0.0:
   resolved "https://registry.npmjs.org/eventemitter3/-/eventemitter3-3.1.2.tgz#2d3d48f9c346698fce83a85d7d664e98535df6e7"
   integrity sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==
 
+events@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.npmjs.org/events/-/events-3.0.0.tgz#9a0a0dfaf62893d92b875b8f2698ca4114973e88"
+  integrity sha512-Dc381HFWJzEOhQ+d8pkNon++bk9h6cdAoAj4iE6Q4y6xgTzySWXlKn05/TVNpjnfRqi/X0EpJEJohPjNI3zpVA==
+
 exec-sh@^0.3.2:
   version "0.3.2"
   resolved "https://registry.npmjs.org/exec-sh/-/exec-sh-0.3.2.tgz#6738de2eb7c8e671d0366aea0b0db8c6f7d7391b"
@@ -5107,12 +5112,13 @@ react-is@^16.8.1, react-is@^16.8.4, react-is@^16.8.6:
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.10.2.tgz#984120fd4d16800e9a738208ab1fba422d23b5ab"
   integrity sha512-INBT1QEgtcCCgvccr5/86CfD71fw9EPmDxgiJX4I2Ddr6ZsV6iFXsuby+qWJPtmNuMY0zByTsG4468P7nHuNWA==
 
-react-native-tcp-socket@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/react-native-tcp-socket/-/react-native-tcp-socket-1.1.0.tgz#c90f81602bc037ea92437027e0f0114707709fe1"
-  integrity sha512-HBVWFh36hBI0xvgCdfAVGIH+1Otc/E9A90IohaZvwav1JJYvbmVd/8T7J1BeI4LTfkz4sKrbs4TIkf8pSUtfnA==
+react-native-tcp-socket@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.npmjs.org/react-native-tcp-socket/-/react-native-tcp-socket-1.1.1.tgz#f192f4fea91621507564be5f966a6d837250b674"
+  integrity sha512-g8J54D8Qo/FKupsloGm75gNynK2/UXvAAJl5yfc/dFYbtnVD4Duf3Yb0xVz/J0cqOxF5IwfcRZL38yZg8CcOrA==
   dependencies:
     buffer "^5.4.3"
+    events "^3.0.0"
     ip-regex "^4.1.0"
     process "^0.11.10"
     stream-browserify "^2.0.2"
