@@ -8,6 +8,6 @@
 #import <React/RCTEventEmitter.h>
 #import "CocoaAsyncSocket/GCDAsyncSocket.h"
 
-@interface TcpSocket : RCTEventEmitter<SocketClientDelegate>
+@interface TcpSockets : RCTEventEmitter<SocketClientDelegate>
 
 @end

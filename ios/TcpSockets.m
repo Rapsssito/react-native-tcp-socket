@@ -8,7 +8,7 @@
 #import <React/RCTConvert.h>
 #import <React/RCTLog.h>
 
-#import "TcpSocket.h"
+#import "TcpSockets.h"
 #import "TcpSocketClient.h"
 
 // offset native ids by 5000
