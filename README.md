@@ -1,8 +1,6 @@
 # react-native-tcp-socket
 React Native TCP socket API for Android & iOS. It allows you to create TCP clients and servers sockets, simulating node's [net](https://nodejs.org/api/net.html) API.
 
-### WARNING: this library has not been tested on iOS
-
 ## Table of Contents
 
 - [Getting started](#getting-started)
@@ -156,9 +154,9 @@ server.on('close', () => {
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | **`host`** | `String` | **Required**. A valid server IP address in IPv4 format or `"localhost"`. |
 | **`port`** | `Number`  | **Required**. A valid server port. |
-| `[localAddress]` | `String` | A valid local IP address to bind the socket. If not specified, the OS will decide. |
+| `[localAddress]` | `String` | **Required in iOS**. A valid local IP address to bind the socket. If not specified, the OS will decide. |
 | `[localPort]` | `Number` | A valid local port to bind the socket. If not specified, the OS will decide. |
-| `[interface]`| `String` | The interface to bind the socket. If not specified, it will use the current active connection. The current options are: `"wifi"`|
+| `[interface]`| `String` | (Android only). The interface to bind the socket. If not specified, it will use the current active connection. The current options are: `"wifi"`|
 
 ### Server
 * **Methods:**
