@@ -34,13 +34,16 @@
     "react-native": ">=0.59.0-rc.0 <1.0.x"
   },
   "devDependencies": {
-    "react": "^16.8.3",
-    "react-native": "^0.61.2"
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "prettier": "^1.18.2",
+    "react": "^16.11.0",
+    "react-native": "^0.61.4"
   },
   "dependencies": {
     "buffer": "^5.4.3",
     "events": "^3.0.0",
-    "ip-regex": "^4.1.0",
     "process": "^0.11.10",
     "stream-browserify": "^2.0.2"
   }
