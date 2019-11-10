@@ -23,7 +23,7 @@ import java.net.UnknownHostException;
 
 public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpReceiverTask.OnDataReceivedListener {
 
-    private final ReactApplicationContext reactContext;
+    private final ReactApplicationContext mReactContext;
     private SparseArray<TcpSocketClient> socketClients = new SparseArray<>();
     private boolean shuttingDown = false;
 
@@ -31,7 +31,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        this.reactContext = reactContext;
+        mReactContext = reactContext;
     }
 
     @Override
@@ -40,7 +40,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     }
 
     private void sendEvent(String eventName, WritableMap params) {
-        reactContext
+        mReactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
     }
@@ -55,7 +55,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
      */
     @ReactMethod
     public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 // Check for cID
@@ -87,7 +87,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 TcpSocketClient socketClient = socketClients.get(cId);
@@ -112,7 +112,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @ReactMethod
     public void end(final Integer cId) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 try {
@@ -138,7 +138,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @ReactMethod
     public void listen(final Integer cId, final String host, final Integer port) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 try {
