@@ -85,6 +85,14 @@ If you can't or don't want to use the CLI tool, you can also manually link the l
   	```
 </details>
 
+## React Native Compatibility
+To use this library you need to ensure you are using the correct version of React Native. If you are using a version of React Native that is lower than `0.60` you will need to upgrade before attempting to use this library.
+
+| `react-native-tcp-socket` version         | Required React Native Version                                                     |
+| ----------------------------------------- | --------------------------------------------------------------------------------- |
+| `1.3.x`                                   | `>= 0.61`                                                                         |
+| `1.2.2`                                   | `>= 0.60`                                                                         |
+
 ## Usage
 Import the library:
 ```javascript
