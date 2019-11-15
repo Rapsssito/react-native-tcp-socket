@@ -163,9 +163,9 @@ server.on('close', () => {
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | **`host`** | `String` | **Required**. A valid server IP address in IPv4 format or `"localhost"`. |
 | **`port`** | `Number`  | **Required**. A valid server port. |
-| `[localAddress]` | `String` | A valid local IP address to bind the socket. If not specified, the OS will decide. |
+| `[localAddress]` | `String` | A valid local IP address to bind the socket. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `[localPort]` | `Number` | A valid local port to bind the socket. If not specified, the OS will decide. |
-| `[interface]`| `String` | The interface to bind the socket. If not specified, it will use the current active connection. The current options are: `"wifi"`|
+| `[interface]`| `String` | The interface to bind the socket. If not specified, it will use the current active connection. The options are: `"wifi"`. |
 
 ### Server
 * **Methods:**
