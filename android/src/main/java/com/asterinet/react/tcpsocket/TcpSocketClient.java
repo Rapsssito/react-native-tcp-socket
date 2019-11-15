@@ -2,13 +2,9 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
 import android.os.AsyncTask;
 import android.util.Pair;
-import android.net.ConnectivityManager;
 
-import java.util.concurrent.CountDownLatch;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -20,7 +16,6 @@ public class TcpSocketClient {
     private Socket socket;
 
     protected Integer id;
-    protected Network selectedNetwork;
 
     public TcpSocketClient() {
 
@@ -35,17 +30,15 @@ public class TcpSocketClient {
      * @param localPort    local port to bound to
      */
     public TcpSocketClient(final Context context, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
-                           final String address, final Integer port, final String localAddress, final int localPort, final String iface)
-            throws IOException, InterruptedException {
+                           final String address, final Integer port, final String localAddress, final int localPort, final Network network)
+            throws IOException {
         this.id = id;
-        // Get the network interface
-        selectNetwork(context, iface);
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(localAddress);
         InetAddress remoteInetAddress = InetAddress.getByName(address);
         // Create the socket
         socket = new Socket();
-        selectedNetwork.bindSocket(socket);
+        network.bindSocket(socket);
         socket.setReuseAddress(true);
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
@@ -95,40 +88,5 @@ public class TcpSocketClient {
             socket.close();
             socket = null;
         }
-    }
-
-    private void selectNetwork(final Context context, final String iface) throws InterruptedException {
-        /**
-         * Returns a network given its interface name:
-         * "wifi" -> WIFI
-         * "cellular" -> Cellular
-         * etc...
-         */
-        final CountDownLatch awaitingNetwork = new CountDownLatch(1); // only needs to be counted down once to release waiting threads
-        final ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
-
-        switch (iface) {
-            case "wifi":
-                requestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
-                cm.requestNetwork(requestBuilder.build(), new ConnectivityManager.NetworkCallback() {
-                    @Override
-                    public void onAvailable(Network network) {
-                        selectedNetwork = network;
-                        awaitingNetwork.countDown(); // Stop waiting
-                    }
-
-                    @Override
-                    public void onUnavailable() {
-                        awaitingNetwork.countDown(); // Stop waiting
-                    }
-                });
-                awaitingNetwork.await();
-                break;
-            default:
-                selectedNetwork = cm.getActiveNetwork();
-                break;
-        }
-
     }
 }
