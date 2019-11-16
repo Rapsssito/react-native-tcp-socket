@@ -1,14 +1,9 @@
 'use strict';
 
-if (!(global.process && global.process.nextTick)) global.process = require('process'); // needed to make stream-browserify happy
-
 const Buffer = (global.Buffer = global.Buffer || require('buffer').Buffer);
-
-const stream = require('stream-browserify');
-const { NativeEventEmitter, NativeModules } = require('react-native');
+import { NativeEventEmitter, NativeModules } from 'react-native';
 const Sockets = NativeModules.TcpSockets;
-const Base64Str = require('./base64-str');
-const noop = function() {};
+
 let instances = 0;
 const STATE = {
     DISCONNECTED: 0,
@@ -16,29 +11,41 @@ const STATE = {
     CONNECTED: 2,
 };
 
-export default class TcpSocket extends stream.Duplex {
-    constructor(options) {
-        super(options);
-        if (options && options.id) {
-            // e.g. incoming server connections
-            this._id = Number(options.id);
-            if (this._id <= instances) throw new Error(`Socket id ${this._id}already in use`);
-        } else {
-            // javascript generated sockets range from 1-1000
-            this._id = instances++;
-        }
+export default class TcpSocket {
+    constructor(id) {
+        this._id = id || instances++; // range from 1-1000
         this._eventEmitter = new NativeEventEmitter(Sockets);
-        stream.Duplex.call(this, {});
-
-        // ensure compatibility with node's EventEmitter
-        if (!this.on) this.on = this.addListener.bind(this);
-        // these will be set once there is a connection
-        this.writable = this.readable = false;
         this._state = STATE.DISCONNECTED;
-        this.read(0);
     }
 
-    // TODO : determine how to properly overload this with flow
+    on(event, callback) {
+        switch (event) {
+            case 'data':
+                this._eventEmitter.addListener('data', (evt) => {
+                    if (evt.id !== this._id) return;
+                    const bufferTest = new Buffer(evt.data, 'base64');
+                    callback(bufferTest);
+                });
+                break;
+            case 'error':
+                this._eventEmitter.addListener('error', (evt) => {
+                    if (evt.id !== this._id) return;
+                    callback(evt.error);
+                });
+                break;
+            default:
+                this._eventEmitter.addListener(event, (evt) => {
+                    if (evt.id !== this._id) return;
+                    callback();
+                });
+                break;
+        }
+    }
+
+    off(event, callback) {
+        this._eventEmitter.removeListener(event, callback);
+    }
+
     connect(options, callback) {
         this._registerEvents();
         // Normalize args
@@ -47,46 +54,16 @@ export default class TcpSocket extends stream.Duplex {
         options.localPort = Number(options.localPort) || 0;
         options.localAddress = options.localAddress || '0.0.0.0';
         options.interface = options.interface || '';
-
-        // Perform some checks
-        if (typeof callback === 'function') this.once('connect', callback);
-
-        if (!isLegalPort(options.port))
-            throw new RangeError(`"port" option should be >= 0 and < 65536: ${options.port}`);
-
-        if (!isLegalPort(options.localPort))
-            throw new RangeError(
-                `"localPort" option should be >= 0 and < 65536: ${options.localPort}`
-            );
-
+        const connectListener = this._eventEmitter.addListener('connect', (address) => {
+            connectListener.remove();
+            if (callback) callback(address);
+        });
         if (options.timeout) this.setTimeout(options.timeout);
         else if (this._timeout) this._activeTimer(this._timeout.msecs);
-
         this._state = STATE.CONNECTING;
-
         this._destroyed = false;
         Sockets.connect(this._id, options.host, options.port, options);
-
         return this;
-    }
-
-    read(n) {
-        if (n === 0) return stream.Readable.prototype.read.call(this, n);
-
-        this.read = stream.Readable.prototype.read;
-        this._consuming = true;
-        return this.read(n);
-    }
-
-    // Just call handle.readStart until we have enough in the buffer
-    _read(n) {
-        if (this._state === STATE.CONNECTING) {
-            this.once('connect', () => this._read(n));
-        } else if (!this._reading) {
-            // not already reading, start the flow
-            this._reading = true;
-            this.resume();
-        }
     }
 
     _activeTimer(msecs, wrapper) {
@@ -96,7 +73,7 @@ export default class TcpSocket extends stream.Duplex {
             const self = this;
             wrapper = function() {
                 self._timeout = null;
-                self.emit('timeout');
+                self._eventEmitter.emit('timeout');
             };
         }
 
@@ -117,13 +94,12 @@ export default class TcpSocket extends stream.Duplex {
     setTimeout(msecs, callback) {
         if (msecs === 0) {
             this._clearTimeout();
-            if (callback) this.removeListener('timeout', callback);
+            if (callback) this._eventEmitter.removeListener('timeout', callback);
         } else {
-            if (callback) this.once('timeout', callback);
+            if (callback) this._eventEmitter.once('timeout', callback);
 
             this._activeTimer(msecs);
         }
-
         return this;
     }
 
@@ -132,110 +108,52 @@ export default class TcpSocket extends stream.Duplex {
     }
 
     end(data, encoding) {
-        stream.Duplex.prototype.end.call(this, data, encoding);
-        this.writable = false;
-
         if (this._destroyed) return;
-
         if (data) this.write(data, encoding);
-
-        if (this.readable) {
-            this.read(0);
-            this.readable = false;
-        }
-
         this._destroyed = true;
         Sockets.end(this._id);
+    }
+
+    close() {
+        this.destroy();
     }
 
     destroy() {
         if (!this._destroyed) {
             this._destroyed = true;
             this._clearTimeout();
-
             Sockets.destroy(this._id);
         }
     }
 
     _registerEvents() {
-        if (this._subs && this._subs.length > 0) return;
-
-        this._subs = [
-            this._eventEmitter.addListener('connect', (ev) => {
-                if (this._id !== ev.id) return;
-
-                this._onConnect(ev.address);
-            }),
-            this._eventEmitter.addListener('connection', (ev) => {
-                if (this._id !== ev.id) return;
-
-                this._onConnection(ev.info);
-            }),
-            this._eventEmitter.addListener('data', (ev) => {
-                if (this._id !== ev.id) return;
-
-                this._onData(ev.data);
-            }),
-            this._eventEmitter.addListener('close', (ev) => {
-                if (this._id !== ev.id) return;
-
-                this._onClose(ev.hadError);
-            }),
-            this._eventEmitter.addListener('error', (ev) => {
-                if (this._id !== ev.id) return;
-
-                this._onError(ev.error);
-            }),
-        ];
+        this._eventEmitter.addListener('connect', (ev) => {
+            if (this._id !== ev.id) return;
+            this._onConnect(ev.address);
+        });
+        this._eventEmitter.addListener('close', (ev) => {
+            if (this._id !== ev.id) return;
+            this._onClose(ev.hadError);
+        });
+        this._eventEmitter.addListener('error', (ev) => {
+            if (this._id !== ev.id) return;
+            this._onError(ev.error);
+        });
     }
 
     _unregisterEvents() {
-        this._subs.forEach((e) => e.remove());
-        this._subs = [];
+        this._eventEmitter.listeners().forEach((listener) => listener.remove());
     }
 
     _onConnect(address) {
-        this.setConnected(this, address);
-        this.emit('connect');
-
-        this.read(0);
+        this.setConnected(address);
     }
 
-    _onConnection(info) {
-        const socket = new TcpSocket({ id: info.id });
-
-        socket._registerEvents();
-        this.setConnected(socket, info.address);
-        socket.emit('connection', socket);
+    _onClose() {
+        this.setDisconnected();
     }
 
-    _onData(data) {
-        if (this._timeout) this._activeTimer(this._timeout.msecs);
-
-        if (data && data.length > 0) {
-            // debug('got data');
-
-            // read success.
-            // In theory (and in practice) calling readStop right now
-            // will prevent this from being called again until _read() gets
-            // called again.
-
-            const ret = this.push(new Buffer(data, 'base64'));
-            if (this._reading && !ret) {
-                this._reading = false;
-                this.pause();
-            }
-
-            return;
-        }
-    }
-
-    _onClose(hadError) {
-        this.setDisconnected(this, hadError);
-    }
-
-    _onError(error) {
-        this.emit('error', normalizeError(error));
+    _onError() {
         this.destroy();
     }
 
@@ -245,18 +163,16 @@ export default class TcpSocket extends stream.Duplex {
             throw new TypeError(
                 `Invalid data, chunk must be a string or buffer, not ${typeof chunk}`
             );
-
-        return stream.Duplex.prototype.write.apply(this, arguments);
+        this._write(chunk, encoding, cb);
     }
 
     _write(buffer, encoding, callback) {
         const self = this;
-
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
-        callback = callback || noop;
+        callback = callback || (() => {});
         let str;
-        if (typeof buffer === 'string') str = Base64Str.encode(buffer);
+        if (typeof buffer === 'string') str = new Buffer(buffer).toString('base64');
         else if (Buffer.isBuffer(buffer)) str = buffer.toString('base64');
         else
             throw new TypeError(
@@ -265,32 +181,11 @@ export default class TcpSocket extends stream.Duplex {
 
         Sockets.write(this._id, str, function(err) {
             if (self._timeout) self._activeTimer(self._timeout.msecs);
-
-            err = normalizeError(err);
             if (err) return callback(err);
-
             callback();
         });
 
         return true;
-    }
-
-    // Returns an array [options] or [options, cb]
-    // It is the same as the argument of Socket.prototype.connect().
-    _normalizeConnectArgs(args) {
-        let options = {};
-
-        if (args[0] !== null && typeof args[0] === 'object') {
-            // connect(options, [cb])
-            options = args[0];
-        } else {
-            // connect(port, [host], [cb])
-            options.port = args[0];
-            if (typeof args[1] === 'string') options.host = args[1];
-        }
-
-        const cb = args[args.length - 1];
-        return typeof cb === 'function' ? [options, cb] : [options];
     }
 
     // unimplemented net.Socket apis
@@ -300,33 +195,14 @@ export default class TcpSocket extends stream.Duplex {
     setKeepAlive() {}
     setEncoding() {}
 
-    setConnected(socket, address) {
-        socket.writable = socket.readable = true;
-        socket._state = STATE.CONNECTED;
-        socket._address = address;
+    setConnected(address) {
+        this._state = STATE.CONNECTED;
+        this._address = address;
     }
 
-    setDisconnected(socket, hadError) {
-        if (socket._state === STATE.DISCONNECTED) return;
-
-        socket._unregisterEvents();
-        socket._state = STATE.DISCONNECTED;
-        socket.emit('close', hadError);
-    }
-}
-
-// Check that the port number is not NaN when coerced to a number,
-// is an integer and that it falls within the legal range of port numbers.
-function isLegalPort(port) {
-    if (typeof port === 'string' && port.trim() === '') return false;
-
-    return +port === port >>> 0 && port >= 0 && port <= 0xffff;
-}
-
-function normalizeError(err) {
-    if (err) {
-        if (typeof err === 'string') err = new Error(err);
-
-        return err;
+    setDisconnected() {
+        if (this._state === STATE.DISCONNECTED) return;
+        this._unregisterEvents();
+        this._state = STATE.DISCONNECTED;
     }
 }
