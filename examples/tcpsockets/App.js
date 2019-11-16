@@ -12,7 +12,7 @@ import {
     View
 } from 'react-native';
 
-var TcpSocket = require('react-native-tcp-socket');
+import TcpSocket from 'react-native-tcp-socket';
 
 class App extends React.Component {
     constructor(props) {
