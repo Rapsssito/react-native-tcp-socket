@@ -2,62 +2,43 @@
 
 const { NativeModules } = require('react-native');
 const Sockets = NativeModules.TcpSockets;
+import TcpSocket from './TcpSocket';
 
-import Socket from './TcpSocket';
-
-export default class TcpServer extends Socket {
-    constructor(connectionListener) {
-        super(connectionListener);
-        this.connectionListener = connectionListener;
+export default class TcpServer extends TcpSocket {
+    constructor(connectionCallback) {
+        super();
+        this.connectionCallback = connectionCallback;
         this._connections = 0;
-    }
-
-    _onConnect(address) {
-        this.setConnected(this, address);
-        this.emit('connect');
-        this.emit('listening');
-
-        this.read(0);
     }
 
     _onConnection(info) {
         this._connections++;
-
-        const socket = new Socket({ id: info.id });
-
+        const socket = new TcpSocket(info.id);
         socket._registerEvents();
-        this.setConnected(socket, info.address);
-        this.connectionListener(socket);
-        this.emit('connection', socket);
+        socket.setConnected(info.address);
+        this.connectionCallback(socket);
     }
 
-    listen() {
-        const args = this._normalizeConnectArgs(arguments);
-        const options = args[0];
-        const callback = args[1];
-
-        const port = options.port;
-        const host = options.host || '0.0.0.0';
-
-        if (callback) this.once('listening', callback);
+    listen(port, host, callback) {
+        host = host || '0.0.0.0';
+        const listenEvent = this._eventEmitter.addListener('listening', () => {
+            this._eventEmitter.removeSubscription(listenEvent);
+            if (callback) callback();
+        });
 
         this._registerEvents();
+        this._eventEmitter.addListener('connection', (ev) => {
+            if (this._id !== ev.id) return;
+            this._onConnection(ev.info);
+        });
         Sockets.listen(this._id, host, port);
         return this;
     }
 
     getConnections(callback) {
-        if (typeof callback === 'function') callback.invoke(null, this._connections);
-    }
-
-    close(callback) {
-        if (callback) this.once('close', callback);
-
-        this.destroy();
+        callback(this._connections);
     }
 
     ref() {}
-    unref() {
-        /* nop */
-    }
+    unref() {}
 }
