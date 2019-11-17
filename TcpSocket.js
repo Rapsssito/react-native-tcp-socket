@@ -1,10 +1,9 @@
 'use strict';
 
+import { NativeModules } from 'react-native';
 const Buffer = (global.Buffer = global.Buffer || require('buffer').Buffer);
-import { NativeEventEmitter, NativeModules } from 'react-native';
 const Sockets = NativeModules.TcpSockets;
 
-let instances = 0;
 const STATE = {
     DISCONNECTED: 0,
     CONNECTING: 1,
@@ -12,9 +11,9 @@ const STATE = {
 };
 
 export default class TcpSocket {
-    constructor(id) {
-        this._id = id || instances++; // range from 1-1000
-        this._eventEmitter = new NativeEventEmitter(Sockets);
+    constructor(id, eventEmitter) {
+        this._id = id;
+        this._eventEmitter = eventEmitter;
         this._state = STATE.DISCONNECTED;
     }
 
@@ -157,16 +156,7 @@ export default class TcpSocket {
         this.destroy();
     }
 
-    // eslint-disable-next-line no-unused-vars
-    write(chunk, encoding, cb) {
-        if (typeof chunk !== 'string' && !Buffer.isBuffer(chunk))
-            throw new TypeError(
-                `Invalid data, chunk must be a string or buffer, not ${typeof chunk}`
-            );
-        this._write(chunk, encoding, cb);
-    }
-
-    _write(buffer, encoding, callback) {
+    write(buffer, encoding, callback) {
         const self = this;
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
@@ -184,16 +174,7 @@ export default class TcpSocket {
             if (err) return callback(err);
             callback();
         });
-
-        return true;
     }
-
-    // unimplemented net.Socket apis
-    ref() {}
-    unref() {}
-    setNoDelay() {}
-    setKeepAlive() {}
-    setEncoding() {}
 
     setConnected(address) {
         this._state = STATE.CONNECTED;
