@@ -1,19 +1,19 @@
 'use strict';
 
-const { NativeModules } = require('react-native');
+import { NativeModules } from 'react-native';
 const Sockets = NativeModules.TcpSockets;
 import TcpSocket from './TcpSocket';
 
 export default class TcpServer extends TcpSocket {
-    constructor(connectionCallback) {
-        super();
+    constructor(id, eventEmitter, connectionCallback) {
+        super(id, eventEmitter);
         this.connectionCallback = connectionCallback;
         this._connections = 0;
     }
 
     _onConnection(info) {
         this._connections++;
-        const socket = new TcpSocket(info.id);
+        const socket = new TcpSocket(info.id, this._eventEmitter);
         socket._registerEvents();
         socket.setConnected(info.address);
         this.connectionCallback(socket);
@@ -38,7 +38,4 @@ export default class TcpServer extends TcpSocket {
     getConnections(callback) {
         callback(this._connections);
     }
-
-    ref() {}
-    unref() {}
 }
