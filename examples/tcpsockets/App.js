@@ -63,7 +63,7 @@ class App extends React.Component {
         client = TcpSocket.createConnection({
             port: serverPort,
             host: serverHost,
-            // localAddress: "192.168.1.35",
+            localAddress: "127.0.0.1",
             // localPort: 20000,
             // interface: "wifi"
         }, (address) => {
