@@ -1,8 +1,13 @@
 package com.asterinet.react.tcpsocket;
 
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.util.SparseArray;
 import android.util.Base64;
+import android.net.Network;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -19,19 +24,21 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-
+import java.util.concurrent.CountDownLatch;
 
 public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpReceiverTask.OnDataReceivedListener {
 
-    private final ReactApplicationContext reactContext;
+    private final ReactApplicationContext mReactContext;
     private SparseArray<TcpSocketClient> socketClients = new SparseArray<>();
+    private SparseArray<Network> mNetworkMap = new SparseArray<>();
+    private Network mSelectedNetwork;
     private boolean shuttingDown = false;
 
     public static final String TAG = "TcpSockets";
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        this.reactContext = reactContext;
+        mReactContext = reactContext;
     }
 
     @Override
@@ -40,9 +47,51 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     }
 
     private void sendEvent(String eventName, WritableMap params) {
-        reactContext
+        mReactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
+    }
+
+    private void selectNetwork(final String iface, final String ipAddress) throws InterruptedException {
+        /**
+         * Returns a network given its interface name:
+         * "wifi" -> WIFI
+         * "cellular" -> Cellular
+         * etc...
+         */
+        Network cachedNetwork = mNetworkMap.get(ipAddress.hashCode());
+        if (cachedNetwork != null){
+            mSelectedNetwork = cachedNetwork;
+            return;
+        }
+        final CountDownLatch awaitingNetwork = new CountDownLatch(1); // only needs to be counted down once to release waiting threads
+        final ConnectivityManager cm = (ConnectivityManager) mReactContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
+        switch (iface) {
+            case "wifi":
+                requestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+                cm.requestNetwork(requestBuilder.build(), new ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onAvailable(Network network) {
+                        mSelectedNetwork = network;
+                        if (ipAddress != "0.0.0.0")
+                            mNetworkMap.put(ipAddress.hashCode(), mSelectedNetwork);
+                        awaitingNetwork.countDown(); // Stop waiting
+                    }
+
+                    @Override
+                    public void onUnavailable() {
+                        awaitingNetwork.countDown(); // Stop waiting
+                    }
+                });
+                awaitingNetwork.await();
+                break;
+            default:
+                mSelectedNetwork = cm.getActiveNetwork();
+                break;
+        }
+        if (ipAddress != "0.0.0.0")
+            mNetworkMap.put(ipAddress.hashCode(), mSelectedNetwork);
     }
 
     /**
@@ -55,7 +104,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
      */
     @ReactMethod
     public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 // Check for cID
@@ -72,12 +121,14 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 String iface = options.getString("interface");
                 int localPort = options.getInt("localPort");
                 try {
-                    client = new TcpSocketClient(getReactApplicationContext(), TcpSocketModule.this, cId, host, port, localAddress, localPort, iface);
+                    // Get the network interface
+                    selectNetwork(iface, localAddress);
+                    client = new TcpSocketClient(getReactApplicationContext(), TcpSocketModule.this, cId, host, port, localAddress, localPort, mSelectedNetwork);
                     socketClients.put(cId, client);
                     onConnect(cId, host, port);
                 } catch (IOException e) {
                     onError(cId, e.getMessage());
-                } catch (InterruptedException e){
+                } catch (InterruptedException e) {
                     onError(cId, e.getMessage());
                 }
                 return;
@@ -87,7 +138,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 TcpSocketClient socketClient = socketClients.get(cId);
@@ -112,7 +163,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @ReactMethod
     public void end(final Integer cId) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 try {
@@ -138,7 +189,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @ReactMethod
     public void listen(final Integer cId, final String host, final Integer port) {
-        new GuardedAsyncTask<Void, Void>(getReactApplicationContext().getExceptionHandler()) {
+        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 try {

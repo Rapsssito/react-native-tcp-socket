@@ -12,11 +12,11 @@ class TCPSockets {
         this._eventEmitter = new NativeEventEmitter(Sockets);
     }
 
-    createServer(connectionListener) {
+    createServer(connectionListener?: void) {
         return new Server(this.instances++, this._eventEmitter, connectionListener);
     }
 
-    createConnection(options, callback) {
+    createConnection(options: any, callback?: void) {
         const tcpSocket = new Socket(this.instances++, this._eventEmitter);
         return tcpSocket.connect(options, callback);
     }
