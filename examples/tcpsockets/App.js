@@ -12,11 +12,7 @@ import {
     View
 } from 'react-native';
 
-var TcpSocket = require('react-native-tcp-socket');
-
-function randomPort() {
-    return Math.random() * 60536 | 0 + 5000; // 60536-65536
-}
+import TcpSocket from 'react-native-tcp-socket';
 
 class App extends React.Component {
     constructor(props) {
@@ -70,8 +66,8 @@ class App extends React.Component {
             localAddress: "127.0.0.1",
             // localPort: 20000,
             // interface: "wifi"
-        }, () => {
-            this.updateChatter('opened client on ' + JSON.stringify(client.address()));
+        }, (address) => {
+            this.updateChatter('opened client on ' + JSON.stringify(address));
             client.write('Hello, server! Love, Client.');
         });
 

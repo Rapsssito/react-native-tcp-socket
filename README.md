@@ -4,6 +4,7 @@ React Native TCP socket API for Android & iOS. It allows you to create TCP clien
 ## Table of Contents
 
 - [Getting started](#getting-started)
+- [Compatibility](#react-native-compatibility)
 - [Usage](#usage)
 - [API](#icon-component)
   - [Client](#client)
@@ -85,6 +86,14 @@ If you can't or don't want to use the CLI tool, you can also manually link the l
   	```
 </details>
 
+## React Native Compatibility
+To use this library you need to ensure you are using the correct version of React Native. If you are using a version of React Native that is lower than `0.60` you will need to upgrade before attempting to use this library.
+
+| `react-native-tcp-socket` version         | Required React Native Version                                                     |
+| ----------------------------------------- | --------------------------------------------------------------------------------- |
+| `1.3.x`                                   | `>= 0.61`                                                                         |
+| `1.2.2`                                   | `>= 0.60`                                                                         |
+
 ## Usage
 Import the library:
 ```javascript
@@ -154,9 +163,9 @@ server.on('close', () => {
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | **`host`** | `String` | **Required**. A valid server IP address in IPv4 format or `"localhost"`. |
 | **`port`** | `Number`  | **Required**. A valid server port. |
-| `[localAddress]` | `String` | **Required in iOS**. A valid local IP address to bind the socket. If not specified, the OS will decide. |
+| `[localAddress]` | `String` | A valid local IP address to bind the socket. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `[localPort]` | `Number` | A valid local port to bind the socket. If not specified, the OS will decide. |
-| `[interface]`| `String` | (Android only). The interface to bind the socket. If not specified, it will use the current active connection. The current options are: `"wifi"`|
+| `[interface]`| `String` | The interface to bind the socket. If not specified, it will use the current active connection. The options are: `"wifi"`. |
 
 ### Server
 * **Methods:**
