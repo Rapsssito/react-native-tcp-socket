@@ -12,7 +12,7 @@ import java.net.Socket;
 public class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
     private TcpReceiverTask.OnDataReceivedListener receiverListener;
-    private int clientSocketIds = 6000;
+    private int clientSocketIds;
     private SparseArray<TcpSocketClient> socketClients;
     private SparseArray<TcpSocketClient> serverSocketClients = new SparseArray<>();
 
@@ -42,6 +42,7 @@ public class TcpSocketServer extends TcpSocketClient {
                            final String address, final Integer port) throws IOException {
         this.id = id;
         this.socketClients = socketClients;
+        clientSocketIds = this.id * 1000;
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
