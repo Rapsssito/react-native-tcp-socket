@@ -29,7 +29,7 @@ public class TcpSocketClient {
      * @param localAddress local address to bound to
      * @param localPort    local port to bound to
      */
-    public TcpSocketClient(final Context context, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
+    public TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
                            final String address, final Integer port, final String localAddress, final int localPort, final Network network)
             throws IOException {
         this.id = id;
@@ -38,7 +38,8 @@ public class TcpSocketClient {
         InetAddress remoteInetAddress = InetAddress.getByName(address);
         // Create the socket
         socket = new Socket();
-        network.bindSocket(socket);
+        if (network != null)
+            network.bindSocket(socket);
         socket.setReuseAddress(true);
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));

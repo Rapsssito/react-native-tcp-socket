@@ -59,6 +59,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
          * "cellular" -> Cellular
          * etc...
          */
+        mSelectedNetwork = null;
         Network cachedNetwork = mNetworkMap.get(ipAddress.hashCode());
         if (cachedNetwork != null){
             mSelectedNetwork = cachedNetwork;
@@ -74,7 +75,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     @Override
                     public void onAvailable(Network network) {
                         mSelectedNetwork = network;
-                        if (ipAddress != "0.0.0.0")
+                        if (!ipAddress.equals("0.0.0.0"))
                             mNetworkMap.put(ipAddress.hashCode(), mSelectedNetwork);
                         awaitingNetwork.countDown(); // Stop waiting
                     }
@@ -86,11 +87,12 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 });
                 awaitingNetwork.await();
                 break;
+            case "cellular": // TODO
             default:
-                mSelectedNetwork = cm.getActiveNetwork();
+                mSelectedNetwork = null;
                 break;
         }
-        if (ipAddress != "0.0.0.0")
+        if (mSelectedNetwork!= null && !ipAddress.equals("0.0.0.0"))
             mNetworkMap.put(ipAddress.hashCode(), mSelectedNetwork);
     }
 
@@ -123,7 +125,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 try {
                     // Get the network interface
                     selectNetwork(iface, localAddress);
-                    client = new TcpSocketClient(getReactApplicationContext(), TcpSocketModule.this, cId, host, port, localAddress, localPort, mSelectedNetwork);
+                    client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, localAddress, localPort, mSelectedNetwork);
                     socketClients.put(cId, client);
                     onConnect(cId, host, port);
                 } catch (IOException e) {
