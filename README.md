@@ -90,7 +90,7 @@ To use this library you need to ensure you are using the correct version of Reac
 
 | `react-native-tcp-socket` version         | Required React Native Version                                                     |
 | ----------------------------------------- | --------------------------------------------------------------------------------- |
-| `1.3.x`                                   | `>= 0.61`                                                                         |
+| `3.x.x`                                   | `>= 0.61`                                                                         |
 | `1.2.2`                                   | `>= 0.??`                                                                         |
 
 ## Usage
