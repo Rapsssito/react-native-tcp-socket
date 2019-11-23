@@ -30,7 +30,7 @@ class App extends React.Component {
 
     componentDidMount() {
         const serverPort = Number(9 + (Math.random()*999).toFixed(0));
-        const serverHost = "127.0.0.1";
+        const serverHost = "0.0.0.0";
         let server;
         let client;
         server = TcpSocket.createServer((socket) => {
@@ -63,7 +63,7 @@ class App extends React.Component {
         client = TcpSocket.createConnection({
             port: serverPort,
             host: serverHost,
-            localAddress: "127.0.0.1",
+            // localAddress: "127.0.0.1",
             // localPort: 20000,
             // interface: "wifi"
         }, (address) => {

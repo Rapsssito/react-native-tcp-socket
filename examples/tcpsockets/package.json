@@ -11,9 +11,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "react": "16.12.0",
+    "react": "16.9.0",
     "react-native": "0.61.4",
-    "react-native-tcp-socket": "^1.3.3"
+    "react-native-tcp-socket": "https://github.com/Rapsssito/react-native-tcp-socket"
   },
   "devDependencies": {
     "@babel/core": "^7.7.2",
