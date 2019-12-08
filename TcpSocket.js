@@ -53,9 +53,10 @@ export default class TcpSocket {
         options.localPort = Number(options.localPort) || 0;
         options.localAddress = options.localAddress || '0.0.0.0';
         options.interface = options.interface || '';
-        const connectListener = this._eventEmitter.addListener('connect', (address) => {
+        const connectListener = this._eventEmitter.addListener('connect', (ev) => {
+            if (this._id !== ev.id) return;
             connectListener.remove();
-            if (callback) callback(address);
+            if (callback) callback(ev.address);
         });
         if (options.timeout) this.setTimeout(options.timeout);
         else if (this._timeout) this._activeTimer(this._timeout.msecs);
