@@ -48,8 +48,8 @@ class App extends React.Component {
             socket.on('close', (error) => {
                 this.updateChatter('server client closed ' + (error ? error : ''));
             });
-        }).listen(serverPort, serverHost, () => {
-            this.updateChatter('opened server on ' + JSON.stringify(server.address()));
+        }).listen(serverPort, serverHost, (address) => {
+            this.updateChatter('opened server on ' + JSON.stringify(address));
         });
 
         server.on('error', (error) => {
@@ -63,7 +63,7 @@ class App extends React.Component {
         client = TcpSocket.createConnection({
             port: serverPort,
             host: serverHost,
-            // localAddress: "127.0.0.1",
+            localAddress: "127.0.0.1",
             // localPort: 20000,
             // interface: "wifi"
         }, (address) => {
