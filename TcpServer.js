@@ -21,11 +21,11 @@ export default class TcpServer extends TcpSocket {
 
     listen(port, host, callback) {
         host = host || '0.0.0.0';
-        const listenEvent = this._eventEmitter.addListener('listening', () => {
-            this._eventEmitter.removeSubscription(listenEvent);
-            if (callback) callback();
+        const connectListener = this._eventEmitter.addListener('connect', (ev) => {
+            if (this._id !== ev.id) return;
+            connectListener.remove();
+            if (callback) callback(ev.address);
         });
-
         this._registerEvents();
         this._eventEmitter.addListener('connection', (ev) => {
             if (this._id !== ev.id) return;
