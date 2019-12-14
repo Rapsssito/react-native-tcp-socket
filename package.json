@@ -1,15 +1,16 @@
 {
   "name": "react-native-tcp-socket",
   "title": "React Native Tcp Socket",
-  "version": "3.0.3",
+  "version": "0.0.0-development",
   "description": "React Native TCP socket API for Android & iOS",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "semantic-release": "semantic-release"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Rapsssito/react-native-tcp-socket.git",
+    "url": "https://github.com/Rapsssito/react-native-tcp-socket.git",
     "baseUrl": "https://github.com/Rapsssito/react-native-tcp-socket"
   },
   "keywords": [
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@babel/core": "^7.7.2",
     "@babel/runtime": "^7.7.2",
+    "@semantic-release/github": "^5.5.5",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-prettier": "^3.1.1",
@@ -42,7 +44,8 @@
     "metro-react-native-babel-preset": "^0.57.0",
     "prettier": "^1.18.2",
     "react": "16.9.0",
-    "react-native": "^0.61.4"
+    "react-native": "^0.61.4",
+    "semantic-release": "^15.13.31"
   },
   "dependencies": {
     "buffer": "^5.4.3"
