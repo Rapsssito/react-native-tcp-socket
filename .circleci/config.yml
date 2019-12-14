@@ -5,4 +5,3 @@ jobs:
       - image: circleci/node:4.8.2 
     steps:
       - checkout
-      - run: npm ci
