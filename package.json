@@ -1,7 +1,7 @@
 {
   "name": "react-native-tcp-socket",
   "title": "React Native Tcp Socket",
-  "version": "0.0.0-development",
+  "version": "3.0.5",
   "description": "React Native TCP socket API for Android & iOS",
   "main": "index.js",
   "scripts": {
