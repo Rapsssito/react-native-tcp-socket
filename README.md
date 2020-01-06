@@ -146,11 +146,12 @@ server.on('close', () => {
   console.log('Server closed connection');
 });
 ```
+
 ## API
 ### Client
 * **Methods:**
   * [`createConnection(options[, callback])`](#createconnection)
-  * [`write(data)`](#write)
+  * [`write(data[, encoding][, callback])`](#write)
   * [`destroy()`](#destroy)
 
 #### `createConnection()`
@@ -160,11 +161,18 @@ server.on('close', () => {
 
 | Property              | Type                                    | Description                                                                                        |
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **`host`** | `String` | **Required**. A valid server IP address in IPv4 format or `"localhost"`. |
-| **`port`** | `Number`  | **Required**. A valid server port. |
-| `[localAddress]` | `String` | A valid local IP address to bind the socket. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
-| `[localPort]` | `Number` | A valid local port to bind the socket. If not specified, the OS will decide. |
-| `[interface]`| `String` | The interface to bind the socket. If not specified, it will use the current active connection. The options are: `"wifi"`. |
+| **`host`** | `<string>` | **Required**. A valid server IP address in IPv4 format or `"localhost"`. |
+| **`port`** | `<number>`  | **Required**. A valid server port. |
+| `[localAddress]` | `<string>` | A valid local IP address to bind the socket. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
+| `[localPort]` | `<number>` | A valid local port to bind the socket. If not specified, the OS will decide. |
+| `[interface]`| `<string>` | The interface to bind the socket. If not specified, it will use the current active connection. The options are: `"wifi"`. |
+
+#### `write()`
+* `data`: `<string> | <Buffer> | <Uint8Array>`
+* `encoding`: `<string>`. Only used when `data` is `string`. Default: `utf8`.
+* `callback `: `<Function>`
+
+`write(data[, encoding][, callback])` sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
 
 ### Server
 * **Methods:**
@@ -179,10 +187,6 @@ server.on('close', () => {
 Looking for maintainers!
 
 * [Rapsssito](https://github.com/rapsssito)
-
-## Contributing
-
-PR's welcome!
 
 ## Acknowledgments
 

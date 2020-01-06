@@ -22,7 +22,7 @@ export default class TcpSocket {
             case 'data':
                 this._eventEmitter.addListener('data', (evt) => {
                     if (evt.id !== this._id) return;
-                    const bufferTest = new Buffer(evt.data, 'base64');
+                    const bufferTest = Buffer.from(evt.data, 'base64');
                     callback(bufferTest);
                 });
                 break;
@@ -157,14 +157,21 @@ export default class TcpSocket {
         this.destroy();
     }
 
+    /**
+     *
+     * @param {string | Buffer | Uint8Array} buffer
+     * @param {string} encoding
+     * @param {Function} callback
+     */
     write(buffer, encoding, callback) {
         const self = this;
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
         callback = callback || (() => {});
         let str;
-        if (typeof buffer === 'string') str = new Buffer(buffer).toString('base64');
+        if (typeof buffer === 'string') str = Buffer.from(buffer, encoding).toString('base64');
         else if (Buffer.isBuffer(buffer)) str = buffer.toString('base64');
+        else if (buffer instanceof Uint8Array || Array.isArray(buffer)) str = Buffer.from(buffer);
         else
             throw new TypeError(
                 `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
