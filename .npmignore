@@ -11,7 +11,8 @@ README.md
 .babelrc
 babel.config.js
 .editorconfig
-.eslintrc
+.eslintrc.json
+.prettierrc
 .flowconfig
 .watchmanconfig
 jsconfig.json
@@ -24,8 +25,13 @@ jsconfig.json
 .eslintignore
 codecov.yml
 
+# Tests
+__tests__/
+jest.config.js
+jest.setup.js
+
 # Example
-example/
+examples/
 
 # Android
 android/*/build/
