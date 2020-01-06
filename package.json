@@ -4,13 +4,6 @@
   "version": "3.1.0",
   "description": "React Native TCP socket API for Android & iOS",
   "main": "src/index.js",
-  "files": [
-    "/android",
-    "!/android/build",
-    "/ios",
-    "/src",
-    "/*.podspec"
-  ],
   "scripts": {
     "test": "jest",
     "lint": "eslint ."
