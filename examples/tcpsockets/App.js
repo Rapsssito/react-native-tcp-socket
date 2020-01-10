@@ -42,7 +42,7 @@ class App extends React.Component {
             });
 
             socket.on('error', (error) => {
-                this.updateChatter('error ' + error);
+                this.updateChatter('server client error ' + error);
             });
 
             socket.on('close', (error) => {
