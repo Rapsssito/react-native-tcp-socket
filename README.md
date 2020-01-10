@@ -117,7 +117,7 @@ client.on('close', function(){
 });
 
 // Write on the socket
-client.write("Hello server!");
+client.write('Hello server!');
 
 // Close socket
 client.destroy();
@@ -155,18 +155,18 @@ server.on('close', () => {
   * [`destroy()`](#destroy)
 
 #### `createConnection()`
-`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#options).
-##### `options`
-**Required**. Available options for creating a socket. It is an `object` with the following properties:
+`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createConnection:%20options).
+##### `createConnection: options`
+**Required**. Available options for creating a socket. It must be an `object` with the following properties:
 
 | Property              | Type                                    | Description                                                                                        |
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | **`port`** | `<number>`  | **Required**. Port the socket should connect to. |
-| `host` | `<string>` | Host the socket should connect to. IP address in IPv4 format or `"localhost"`. **Default**: `"localhost"`. |
+| `host` | `<string>` | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
 | `reuseAddress`| `<boolean>` | Enable/disable the reuseAddress socket option. **Default**: `false`. |
 | `localAddress` | `<string>` | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort` | `<number>` | Local port the socket should connect from. If not specified, the OS will decide. |
-| `interface`| `<string>` | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `"wifi"`. |
+| `interface`| `<string>` | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi'`. |
 
 #### `write()`
 * `data`: `<string> | <Buffer> | <Uint8Array>`
@@ -178,11 +178,21 @@ server.on('close', () => {
 ### Server
 * **Methods:**
   * [`createServer(callback)`](#createserver)
-  * [`listen(port[, host])`](#listen)
+  * [`listen(options[, callback])`](#listen)
   * [`close()`](#close)
 
 #### `listen()`
-`listen(port[, host])` creates a TCP server socket listening on the given port. If the host is not explicity selected, the socket will be bound to `'0.0.0.0'`.
+`listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen:%20options).
+
+##### `listen: options`
+**Required**. Available options for creating a server socket. It must be an `object` with the following properties:
+
+| Property              | Type                                    | Description                                                                                        |
+| --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **`port`** | `<number>`  | **Required**. Port the socket should listen to. |
+| `host` | `<string>` | Host the socket should listen to. IP address in IPv4 format or `'localhost'`. **Default**: `'0.0.0.0'`. |
+| `reuseAddress`| `<boolean>` | Enable/disable the reuseAddress socket option. **Default**: `false`. |
+
 
 ## Maintainers
 Looking for maintainers!

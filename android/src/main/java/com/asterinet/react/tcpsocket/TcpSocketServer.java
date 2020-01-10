@@ -3,6 +3,8 @@ package com.asterinet.react.tcpsocket;
 import android.os.AsyncTask;
 import android.util.SparseArray;
 
+import com.facebook.react.bridge.ReadableMap;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -39,14 +41,20 @@ public class TcpSocketServer extends TcpSocketClient {
 
 
     public TcpSocketServer(final SparseArray<TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
-                           final String address, final Integer port) throws IOException {
+                           final ReadableMap options) throws IOException {
         super(id);
+        // Get data from options
+        Integer port = options.getInt("port");
+        String address = options.getString("host");
         this.socketClients = socketClients;
         clientSocketIds = (1 + getId()) * 1000;
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
         serverSocket = new ServerSocket(port, 50, localInetAddress);
+        // setReuseAddress
+        boolean reuseAddress = options.getBoolean("reuseAddress");
+        serverSocket.setReuseAddress(reuseAddress);
         mReceiverListener = receiverListener;
         listen();
     }

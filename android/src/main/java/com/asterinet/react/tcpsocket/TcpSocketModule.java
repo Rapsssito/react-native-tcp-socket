@@ -187,13 +187,15 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @SuppressWarnings("unused")
     @ReactMethod
-    public void listen(final Integer cId, final String host, final Integer port) {
+    public void listen(final Integer cId, final ReadableMap options) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 try {
-                    TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, host, port);
+                    TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, options);
                     socketClients.put(cId, server);
+                    Integer port = options.getInt("port");
+                    String host = options.getString("host");
                     onConnect(cId, host, port);
                 } catch (Exception uhe) {
                     onError(cId, uhe.getMessage());
