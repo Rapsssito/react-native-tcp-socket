@@ -23,7 +23,10 @@ export default class TcpServer extends TcpSocket {
     listen(options, callback) {
         // Normalize args
         if (arguments[0] instanceof Number) {
-            // Old version: listen(port[, host][, callback])
+            // Deprecated old version: listen(port[, host][, callback])
+            console.warn(
+                'TcpServer.listen(port[, host][, callback]) is deprecated. It has been moved to TcpServer.listen(options[, callback]) and will be removed in react-native-tcp-socket@4.0.0'
+            );
             options.port = arguments[0];
             options.host = arguments[1] || '0.0.0.0';
             callback = arguments[2];
