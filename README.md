@@ -155,7 +155,7 @@ server.on('close', () => {
   * [`destroy()`](#destroy)
 
 #### `createConnection()`
-`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createConnection:%20options).
+`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
 ##### `createConnection: options`
 **Required**. Available options for creating a socket. It must be an `object` with the following properties:
 
@@ -182,7 +182,7 @@ server.on('close', () => {
   * [`close()`](#close)
 
 #### `listen()`
-`listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen:%20options).
+`listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).
 
 ##### `listen: options`
 **Required**. Available options for creating a server socket. It must be an `object` with the following properties:
