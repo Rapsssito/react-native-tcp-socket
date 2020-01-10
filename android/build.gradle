@@ -66,6 +66,7 @@ dependencies {
 }
 
 def configureReactNativePom(def pom) {
+    //noinspection UnnecessaryQualifiedReference
     def packageJson = new groovy.json.JsonSlurper().parseText(file('../package.json').text)
 
     pom.project {

@@ -108,6 +108,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
      * @param port socket port to be bound
      * @param options extra options
      */
+    @SuppressWarnings("unused")
     @ReactMethod
     public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
@@ -123,13 +124,12 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, TAG + "createSocket called twice with the same id.");
                     return;
                 }
-                String localAddress = options.getString("localAddress");
-                String iface = options.getString("interface");
-                int localPort = options.getInt("localPort");
                 try {
                     // Get the network interface
+                    String localAddress = options.getString("localAddress");
+                    String iface = options.getString("interface");
                     selectNetwork(iface, localAddress);
-                    client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, localAddress, localPort, mSelectedNetwork);
+                    client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, options, mSelectedNetwork);
                     socketClients.put(cId, client);
                     onConnect(cId, host, port);
                 } catch (Exception e) {
@@ -139,6 +139,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.execute();
     }
 
+    @SuppressWarnings("unused")
     @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
@@ -178,11 +179,13 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.execute();
     }
 
+    @SuppressWarnings("unused")
     @ReactMethod
     public void destroy(final Integer cId) {
         end(cId);
     }
 
+    @SuppressWarnings("unused")
     @ReactMethod
     public void listen(final Integer cId, final String host, final Integer port) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
