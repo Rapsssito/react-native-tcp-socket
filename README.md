@@ -161,11 +161,12 @@ server.on('close', () => {
 
 | Property              | Type                                    | Description                                                                                        |
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **`host`** | `<string>` | **Required**. A valid server IP address in IPv4 format or `"localhost"`. |
-| **`port`** | `<number>`  | **Required**. A valid server port. |
-| `[localAddress]` | `<string>` | A valid local IP address to bind the socket. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
-| `[localPort]` | `<number>` | A valid local port to bind the socket. If not specified, the OS will decide. |
-| `[interface]`| `<string>` | The interface to bind the socket. If not specified, it will use the current active connection. The options are: `"wifi"`. |
+| **`port`** | `<number>`  | **Required**. Port the socket should connect to. |
+| `host` | `<string>` | Host the socket should connect to. IP address in IPv4 format or `"localhost"`. **Default**: `"localhost"`. |
+| `reuseAddress`| `<boolean>` | Enable/disable the reuseAddress socket option. **Default**: `false`. |
+| `localAddress` | `<string>` | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
+| `localPort` | `<number>` | Local port the socket should connect from. If not specified, the OS will decide. |
+| `interface`| `<string>` | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `"wifi"`. |
 
 #### `write()`
 * `data`: `<string> | <Buffer> | <Uint8Array>`
