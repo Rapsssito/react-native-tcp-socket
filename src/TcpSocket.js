@@ -114,10 +114,6 @@ export default class TcpSocket {
         Sockets.end(this._id);
     }
 
-    close() {
-        this.destroy();
-    }
-
     destroy() {
         if (!this._destroyed) {
             this._destroyed = true;

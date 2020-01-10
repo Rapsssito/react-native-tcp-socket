@@ -8,15 +8,16 @@ export default class TcpServer extends TcpSocket {
     constructor(id, eventEmitter, connectionCallback) {
         super(id, eventEmitter);
         this.connectionCallback = connectionCallback;
-        this._connections = 0;
+        this._connections = [];
     }
 
-    _onConnection(info) {
-        this._connections++;
-        const socket = new TcpSocket(info.id, this._eventEmitter);
-        socket._registerEvents();
-        socket.setConnected(info.address);
-        this.connectionCallback(socket);
+    close() {
+        this.destroy();
+        this._connections.forEach((clientSocket) => clientSocket.destroy());
+    }
+
+    getConnections(callback) {
+        callback(this._connections.length);
     }
 
     listen(port, host, callback) {
@@ -35,7 +36,11 @@ export default class TcpServer extends TcpSocket {
         return this;
     }
 
-    getConnections(callback) {
-        callback(this._connections);
+    _onConnection(info) {
+        const socket = new TcpSocket(info.id, this._eventEmitter);
+        socket._registerEvents();
+        socket.setConnected(info.address);
+        this._connections.push(socket);
+        this.connectionCallback(socket);
     }
 }
