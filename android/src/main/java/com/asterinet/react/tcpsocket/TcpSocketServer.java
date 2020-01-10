@@ -40,9 +40,9 @@ public class TcpSocketServer extends TcpSocketClient {
 
     public TcpSocketServer(final SparseArray<TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
                            final String address, final Integer port) throws IOException {
-        this.id = id;
+        super(id);
         this.socketClients = socketClients;
-        clientSocketIds = (1 + this.id) * 1000;
+        clientSocketIds = (1 + getId()) * 1000;
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket

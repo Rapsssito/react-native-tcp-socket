@@ -17,10 +17,10 @@ public class TcpSocketClient {
     private Socket socket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
-    protected Integer id;
+    private Integer id;
 
-    public TcpSocketClient() {
-
+    public TcpSocketClient(final int id) {
+        this.id = id;
     }
 
     /**
@@ -33,7 +33,7 @@ public class TcpSocketClient {
     public TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
                            final String address, final Integer port, final ReadableMap options, final Network network)
             throws IOException {
-        this.id = id;
+        this(id);
         // Get the addresses
         String localAddress = options.getString("localAddress");
         InetAddress localInetAddress = InetAddress.getByName(localAddress);
@@ -55,7 +55,7 @@ public class TcpSocketClient {
     }
 
     public TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final Socket socket) {
-        this.id = id;
+        this(id);
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
         mReceiverListener = receiverListener;
