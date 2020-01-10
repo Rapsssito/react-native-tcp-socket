@@ -11,27 +11,27 @@ import java.net.Socket;
 
 public class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
-    private TcpReceiverTask.OnDataReceivedListener receiverListener;
+    private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
     private int clientSocketIds;
     private SparseArray<TcpSocketClient> socketClients;
-    private SparseArray<TcpSocketClient> serverSocketClients = new SparseArray<>();
+    private final SparseArray<TcpSocketClient> serverSocketClients = new SparseArray<>();
 
-    private AsyncTask listening = new AsyncTask() {
+    private final AsyncTask listening = new AsyncTask() {
         @Override
         protected Void doInBackground(Object[] objects) {
             try {
                 while (!isCancelled() && !serverSocket.isClosed()) {
                     Socket socket = serverSocket.accept();
-                    Integer clientId = getClientId();
-                    TcpSocketClient socketClient = new TcpSocketClient(receiverListener, clientId, socket);
+                    int clientId = getClientId();
+                    TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
                     serverSocketClients.put(clientId, socketClient);
                     socketClients.put(clientId, socketClient);
-                    receiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
+                    mReceiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
                 }
             } catch (IOException e) {
-                if (!serverSocket.isClosed()){
-                    receiverListener.onError(getId(), e.getMessage());
-                }                
+                if (!serverSocket.isClosed()) {
+                    mReceiverListener.onError(getId(), e.getMessage());
+                }
             }
             return null;
         }
@@ -42,19 +42,19 @@ public class TcpSocketServer extends TcpSocketClient {
                            final String address, final Integer port) throws IOException {
         this.id = id;
         this.socketClients = socketClients;
-        clientSocketIds = this.id * 1000;
+        clientSocketIds = (1 + this.id) * 1000;
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
         serverSocket = new ServerSocket(port, 50, localInetAddress);
-        this.receiverListener = receiverListener;
+        mReceiverListener = receiverListener;
         listen();
     }
 
     /**
-     * Next id for a client socket
+     * Next ID for a client socket
      *
-     * @return
+     * @return The next ID for a client socket
      */
     private int getClientId() {
         return clientSocketIds++;
@@ -66,33 +66,25 @@ public class TcpSocketServer extends TcpSocketClient {
 
     @Override
     public void write(final byte[] data) {
-        receiverListener.onError(getId(), "SERVER CANNOT WRITE");
+        mReceiverListener.onError(getId(), "SERVER CANNOT WRITE");
     }
 
     @Override
-    public void close() throws IOException {
-        if (listening != null && !listening.isCancelled()) {
-            // stop the receiving task
-            listening.cancel(true);
-        }
+    public void close() {
+        try {
+            if (listening != null && !listening.isCancelled()) {
+                // stop the receiving task
+                listening.cancel(true);
+            }
 
-        // close the socket
-        if (serverSocket != null && !serverSocket.isClosed()) {
-            closeAllClients();
-            serverSocket.close();
-            serverSocket = null;
+            // close the socket
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+                mReceiverListener.onClose(getId(), null);
+                serverSocket = null;
+            }
+        } catch (IOException e) {
+            mReceiverListener.onClose(getId(), e.getMessage());
         }
-    }
-
-    private void closeAllClients() throws IOException {
-        /**
-         * Closes all the sockets connected to the server
-         */
-        for (int i = 0; i < serverSocketClients.size(); i++) {
-            int key = serverSocketClients.keyAt(i);
-            TcpSocketClient socket = serverSocketClients.get(key);
-            socket.close();
-        }
-        serverSocketClients.clear();
     }
 }

@@ -1,6 +1,5 @@
 package com.asterinet.react.tcpsocket;
 
-import android.content.Context;
 import android.net.Network;
 import android.os.AsyncTask;
 import android.util.Pair;
@@ -14,6 +13,7 @@ import java.net.Socket;
 public class TcpSocketClient {
     private TcpReceiverTask receiverTask;
     private Socket socket;
+    private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
     protected Integer id;
 
@@ -44,6 +44,7 @@ public class TcpSocketClient {
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
         receiverTask = new TcpReceiverTask();
+        mReceiverListener = receiverListener;
         receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
     }
 
@@ -51,6 +52,7 @@ public class TcpSocketClient {
         this.id = id;
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
+        mReceiverListener = receiverListener;
         receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
     }
 
@@ -66,7 +68,7 @@ public class TcpSocketClient {
     /**
      * Sends data from the socket
      *
-     * @param data
+     * @param data data to be sent
      */
     public void write(final byte[] data) throws IOException {
         if (socket != null && !socket.isClosed()) {
@@ -78,16 +80,21 @@ public class TcpSocketClient {
     /**
      * Shuts down the receiver task, closing the socket.
      */
-    public void close() throws IOException {
-        if (receiverTask != null && !receiverTask.isCancelled()) {
-            // stop the receiving task
-            receiverTask.cancel(true);
-        }
+    public void close() {
+        try {
+            if (receiverTask != null && !receiverTask.isCancelled()) {
+                // stop the receiving task
+                receiverTask.cancel(true);
+            }
 
-        // close the socket
-        if (socket != null && !socket.isClosed()) {
-            socket.close();
-            socket = null;
+            // close the socket
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+                mReceiverListener.onClose(getId(), null);
+                socket = null;
+            }
+        } catch (IOException e) {
+            mReceiverListener.onClose(getId(), e.getMessage());
         }
     }
 }

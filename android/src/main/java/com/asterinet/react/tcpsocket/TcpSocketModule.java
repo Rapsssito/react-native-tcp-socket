@@ -23,16 +23,17 @@ import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpReceiverTask.OnDataReceivedListener {
 
     private final ReactApplicationContext mReactContext;
-    private SparseArray<TcpSocketClient> socketClients = new SparseArray<>();
-    private SparseArray<Network> mNetworkMap = new SparseArray<>();
+    private final SparseArray<TcpSocketClient> socketClients = new SparseArray<>();
+    private final SparseArray<Network> mNetworkMap = new SparseArray<>();
     private Network mSelectedNetwork;
-    private boolean shuttingDown = false;
 
     public static final String TAG = "TcpSockets";
 
@@ -42,7 +43,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     }
 
     @Override
-    public String getName() {
+    public @NonNull String getName() {
         return TAG;
     }
 
@@ -52,18 +53,21 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 .emit(eventName, params);
     }
 
-    private void selectNetwork(final String iface, final String ipAddress) throws InterruptedException {
-        /**
-         * Returns a network given its interface name:
-         * "wifi" -> WIFI
-         * "cellular" -> Cellular
-         * etc...
-         */
+    /**
+     * Returns a network given its interface name:
+     * "wifi" -> WIFI
+     * "cellular" -> Cellular
+     * etc...
+     */
+    private void selectNetwork(@Nullable final String iface, @Nullable final String ipAddress) throws InterruptedException {
+        if (iface == null) return;
         mSelectedNetwork = null;
-        Network cachedNetwork = mNetworkMap.get(ipAddress.hashCode());
-        if (cachedNetwork != null){
-            mSelectedNetwork = cachedNetwork;
-            return;
+        if (ipAddress != null){
+            Network cachedNetwork = mNetworkMap.get(ipAddress.hashCode());
+            if (cachedNetwork != null){
+                mSelectedNetwork = cachedNetwork;
+                return;
+            }
         }
         final CountDownLatch awaitingNetwork = new CountDownLatch(1); // only needs to be counted down once to release waiting threads
         final ConnectivityManager cm = (ConnectivityManager) mReactContext.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -75,7 +79,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     @Override
                     public void onAvailable(Network network) {
                         mSelectedNetwork = network;
-                        if (!ipAddress.equals("0.0.0.0"))
+                        if (ipAddress != null && !ipAddress.equals("0.0.0.0"))
                             mNetworkMap.put(ipAddress.hashCode(), mSelectedNetwork);
                         awaitingNetwork.countDown(); // Stop waiting
                     }
@@ -92,17 +96,17 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 mSelectedNetwork = null;
                 break;
         }
-        if (mSelectedNetwork!= null && !ipAddress.equals("0.0.0.0"))
+        if (mSelectedNetwork!= null && ipAddress != null && !ipAddress.equals("0.0.0.0"))
             mNetworkMap.put(ipAddress.hashCode(), mSelectedNetwork);
     }
 
     /**
      * Creates a TCP Socket and establish a connection with the given host
      *
-     * @param cId
-     * @param host
-     * @param port
-     * @param options
+     * @param cId socket ID
+     * @param host socket IP address
+     * @param port socket port to be bound
+     * @param options extra options
      */
     @ReactMethod
     public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
@@ -128,12 +132,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, localAddress, localPort, mSelectedNetwork);
                     socketClients.put(cId, client);
                     onConnect(cId, host, port);
-                } catch (IOException e) {
-                    onError(cId, e.getMessage());
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     onError(cId, e.getMessage());
                 }
-                return;
             }
         }.execute();
     }
@@ -158,7 +159,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 if (callback != null) {
                     callback.invoke();
                 }
-                return;
             }
         }.execute();
     }
@@ -168,18 +168,12 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
-                try {
-                    TcpSocketClient socketClient = socketClients.get(cId);
-                    if (socketClient == null){
-                        return;
-                    }
-                    socketClient.close();
-                    onClose(cId, null);
-                    socketClients.remove(cId);
-                } catch (IOException e) {
-                    onClose(cId, e.getMessage());
+                TcpSocketClient socketClient = socketClients.get(cId);
+                if (socketClient == null) {
+                    return;
                 }
-                return;
+                socketClient.close();
+                socketClients.remove(cId);
             }
         }.execute();
     }
@@ -198,10 +192,8 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, host, port);
                     socketClients.put(cId, server);
                     onConnect(cId, host, port);
-                } catch (UnknownHostException uhe) {
+                } catch (Exception uhe) {
                     onError(cId, uhe.getMessage());
-                } catch (IOException ioe) {
-                    onError(cId, ioe.getMessage());
                 }
             }
         }.execute();
@@ -211,9 +203,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @Override
     public void onConnect(Integer id, String host, int port) {
-        if (shuttingDown) {
-            return;
-        }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         WritableMap addressParams = Arguments.createMap();
@@ -226,9 +215,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @Override
     public void onData(Integer id, byte[] data) {
-        if (shuttingDown) {
-            return;
-        }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));
@@ -238,9 +224,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @Override
     public void onClose(Integer id, String error) {
-        if (shuttingDown) {
-            return;
-        }
         if (error != null) {
             onError(id, error);
         }
@@ -253,9 +236,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @Override
     public void onError(Integer id, String error) {
-        if (shuttingDown) {
-            return;
-        }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putString("error", error);
@@ -265,9 +245,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @Override
     public void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress){
-        if (shuttingDown) {
-            return;
-        }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", serverId);
 
