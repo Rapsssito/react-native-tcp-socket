@@ -47,7 +47,8 @@ class TcpSocketClient {
             boolean reuseAddress = options.getBoolean("reuseAddress");
             socket.setReuseAddress(reuseAddress);
         } catch (Exception e) {
-            // Ignore errors
+            // Default to true
+            socket.setReuseAddress(true);
         }
         // bind
         int localPort = options.getInt("localPort");

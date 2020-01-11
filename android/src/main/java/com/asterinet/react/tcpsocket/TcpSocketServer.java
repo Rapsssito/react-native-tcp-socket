@@ -59,7 +59,8 @@ public class TcpSocketServer extends TcpSocketClient {
             boolean reuseAddress = options.getBoolean("reuseAddress");
             serverSocket.setReuseAddress(reuseAddress);
         } catch (Exception e) {
-            // Ignore errors
+            // Default to true
+            serverSocket.setReuseAddress(true);
         }
         mReceiverListener = receiverListener;
         listen();
