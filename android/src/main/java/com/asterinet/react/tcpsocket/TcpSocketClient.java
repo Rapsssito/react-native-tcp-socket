@@ -5,7 +5,6 @@ import android.os.AsyncTask;
 import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.ReadableType;
 
 import java.io.OutputStream;
 import java.io.IOException;
@@ -13,14 +12,14 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class TcpSocketClient {
+class TcpSocketClient {
     private TcpReceiverTask receiverTask;
     private Socket socket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
-    private Integer id;
+    private final int id;
 
-    public TcpSocketClient(final int id) {
+    TcpSocketClient(final int id) {
         this.id = id;
     }
 
@@ -44,9 +43,11 @@ public class TcpSocketClient {
         if (network != null)
             network.bindSocket(socket);
         // setReuseAddress
-        if (options.getType("reuseAddress") == ReadableType.Boolean){
+        try {
             boolean reuseAddress = options.getBoolean("reuseAddress");
             socket.setReuseAddress(reuseAddress);
+        } catch (Exception e) {
+            // Ignore errors
         }
         // bind
         int localPort = options.getInt("localPort");
@@ -54,14 +55,16 @@ public class TcpSocketClient {
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
         receiverTask = new TcpReceiverTask();
         mReceiverListener = receiverListener;
+        //noinspection unchecked
         receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
     }
 
-    public TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final Socket socket) {
+    TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final Socket socket) {
         this(id);
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
         mReceiverListener = receiverListener;
+        //noinspection unchecked
         receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
     }
 

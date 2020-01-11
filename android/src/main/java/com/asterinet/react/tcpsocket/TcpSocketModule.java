@@ -1,6 +1,7 @@
 package com.asterinet.react.tcpsocket;
 
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
@@ -35,7 +36,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     private final SparseArray<Network> mNetworkMap = new SparseArray<>();
     private Network mSelectedNetwork;
 
-    public static final String TAG = "TcpSockets";
+    private static final String TAG = "TcpSockets";
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -108,6 +109,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
      * @param port socket port to be bound
      * @param options extra options
      */
+    @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
@@ -139,6 +141,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.execute();
     }
 
+    @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
@@ -164,6 +167,8 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.execute();
     }
 
+    @SuppressLint("StaticFieldLeak")
+    @SuppressWarnings("unused")
     @ReactMethod
     public void end(final Integer cId) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
@@ -185,6 +190,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         end(cId);
     }
 
+    @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void listen(final Integer cId, final ReadableMap options) {
@@ -194,7 +200,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 try {
                     TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, options);
                     socketClients.put(cId, server);
-                    Integer port = options.getInt("port");
+                    int port = options.getInt("port");
                     String host = options.getString("host");
                     onConnect(cId, host, port);
                 } catch (Exception uhe) {

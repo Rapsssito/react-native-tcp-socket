@@ -1,10 +1,10 @@
 package com.asterinet.react.tcpsocket;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.SparseArray;
 
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.ReadableType;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -16,9 +16,10 @@ public class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
     private int clientSocketIds;
-    private SparseArray<TcpSocketClient> socketClients;
+    private final SparseArray<TcpSocketClient> socketClients;
     private final SparseArray<TcpSocketClient> serverSocketClients = new SparseArray<>();
 
+    @SuppressLint("StaticFieldLeak")
     private final AsyncTask listening = new AsyncTask() {
         @Override
         protected Void doInBackground(Object[] objects) {
@@ -45,7 +46,7 @@ public class TcpSocketServer extends TcpSocketClient {
                            final ReadableMap options) throws IOException {
         super(id);
         // Get data from options
-        Integer port = options.getInt("port");
+        int port = options.getInt("port");
         String address = options.getString("host");
         this.socketClients = socketClients;
         clientSocketIds = (1 + getId()) * 1000;
@@ -54,9 +55,11 @@ public class TcpSocketServer extends TcpSocketClient {
         // Create the socket
         serverSocket = new ServerSocket(port, 50, localInetAddress);
         // setReuseAddress
-        if (options.getType("reuseAddress") == ReadableType.Boolean){
+        try {
             boolean reuseAddress = options.getBoolean("reuseAddress");
             serverSocket.setReuseAddress(reuseAddress);
+        } catch (Exception e) {
+            // Ignore errors
         }
         mReceiverListener = receiverListener;
         listen();
@@ -72,6 +75,7 @@ public class TcpSocketServer extends TcpSocketClient {
     }
 
     private void listen() {
+        //noinspection unchecked
         listening.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
