@@ -4,6 +4,7 @@ import android.os.AsyncTask;
 import android.util.SparseArray;
 
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableType;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -53,8 +54,10 @@ public class TcpSocketServer extends TcpSocketClient {
         // Create the socket
         serverSocket = new ServerSocket(port, 50, localInetAddress);
         // setReuseAddress
-        boolean reuseAddress = options.getBoolean("reuseAddress");
-        serverSocket.setReuseAddress(reuseAddress);
+        if (options.getType("reuseAddress") == ReadableType.Boolean){
+            boolean reuseAddress = options.getBoolean("reuseAddress");
+            serverSocket.setReuseAddress(reuseAddress);
+        }
         mReceiverListener = receiverListener;
         listen();
     }
