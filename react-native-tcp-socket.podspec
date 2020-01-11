@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.homepage     = "https://github.com/Rapsssito/react-native-tcp-socket"
   s.license      = "MIT"
   # s.license    = { :type => "MIT", :file => "FILE_LICENSE" }
-  s.authors      = { "Rapsssito" => "yourname@email.com" }
+  s.authors      = { "Rapsssito" => "contact@rodrigomartin.dev" }
   s.platforms    = { :ios => "9.0", :tvos => "10.0" }
   s.source       = { :git => "https://github.com/Rapsssito/react-native-tcp-socket.git", :tag => "#{s.version}" }
 
@@ -20,7 +20,8 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   s.dependency "React"
-	
+  s.dependency "CocoaAsyncSocket"
+  
   # s.dependency "..."
 end
 
