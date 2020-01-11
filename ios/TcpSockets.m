@@ -106,8 +106,7 @@ RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId) {
 }
 
 RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
-                  host:(NSString *)host
-                  port:(int)port)
+                  withOptions:(nonnull NSDictionary *)options)
 {
     TcpSocketClient* client = _clients[cId];
     if (!client) {
@@ -115,7 +114,7 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
     }
 
     NSError *error = nil;
-    if (![client listen:host port:port error:&error])
+    if (![client listen:options error:&error])
     {
         [self onError:client withError:error];
         return;

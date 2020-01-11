@@ -108,7 +108,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
               @"family": @"unkown" };
 }
 
-- (BOOL)listen:(NSString *)host port:(int)port error:(NSError **)error
+- (BOOL)listen:(NSDictionary *)options error:(NSError **)error
 {
     if (_tcpSocket) {
         if (error) {
@@ -121,6 +121,10 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
     [_tcpSocket setUserData: _id];
 
+    // Get the host and port
+    NSString *host = options[@"host"];
+    int port = [options[@"port"] intValue];
+    
     // GCDAsyncSocket doesn't recognize 0.0.0.0
     if ([@"0.0.0.0" isEqualToString: host]) {
         host = nil;
