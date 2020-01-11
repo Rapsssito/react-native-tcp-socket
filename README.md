@@ -117,7 +117,7 @@ client.on('close', function(){
 });
 
 // Write on the socket
-client.write("Hello server!");
+client.write('Hello server!');
 
 // Close socket
 client.destroy();
@@ -155,17 +155,20 @@ server.on('close', () => {
   * [`destroy()`](#destroy)
 
 #### `createConnection()`
-`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#options).
-##### `options`
-**Required**. Available options for creating a socket. It is an `object` with the following properties:
+`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
+##### `createConnection: options`
+**Required**. Available options for creating a socket. It must be an `object` with the following properties:
 
-| Property              | Type                                    | Description                                                                                        |
-| --------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **`host`** | `<string>` | **Required**. A valid server IP address in IPv4 format or `"localhost"`. |
-| **`port`** | `<number>`  | **Required**. A valid server port. |
-| `[localAddress]` | `<string>` | A valid local IP address to bind the socket. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
-| `[localPort]` | `<number>` | A valid local port to bind the socket. If not specified, the OS will decide. |
-| `[interface]`| `<string>` | The interface to bind the socket. If not specified, it will use the current active connection. The options are: `"wifi"`. |
+| Property              | Type   | iOS  | Android |Description                                                                                        |
+| --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
+| **`port`** | `<number>` | ✅  |   ✅   | **Required**. Port the socket should connect to. |
+| `host` | `<string>` | ✅  |   ✅  | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
+| `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
+| `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
+| `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi'`. |
+| `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
+
+**Note**: The platforms marked as ❌ use the default value.
 
 #### `write()`
 * `data`: `<string> | <Buffer> | <Uint8Array>`
@@ -177,11 +180,22 @@ server.on('close', () => {
 ### Server
 * **Methods:**
   * [`createServer(callback)`](#createserver)
-  * [`listen(port[, host])`](#listen)
+  * [`listen(options[, callback])`](#listen)
   * [`close()`](#close)
 
 #### `listen()`
-`listen(port[, host])` creates a TCP server socket listening on the given port. If the host is not explicity selected, the socket will be bound to `'0.0.0.0'`.
+`listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).
+
+##### `listen: options`
+**Required**. Available options for creating a server socket. It must be an `object` with the following properties:
+
+| Property              | Type   | iOS  | Android |Description                                                                                        |
+| --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
+| **`port`** | `<number>`  | ✅  |   ✅    | **Required**. Port the socket should listen to. |
+| `host` | `<string>` | ✅  |   ✅    | Host the socket should listen to. IP address in IPv4 format or `'localhost'`. **Default**: `'0.0.0.0'`. |
+| `reuseAddress`| `<boolean>` | ❌  |   ✅    | Enable/disable the reuseAddress socket option. **Default**: `true`. |
+
+**Note**: The platforms marked as ❌ use the default value.
 
 ## Maintainers
 Looking for maintainers!

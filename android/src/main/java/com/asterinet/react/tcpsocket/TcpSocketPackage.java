@@ -11,9 +11,11 @@ import com.facebook.react.uimanager.ViewManager;
 
 import androidx.annotation.NonNull;
 
+@SuppressWarnings("unused")
 public class TcpSocketPackage implements ReactPackage {
     @Override
     public @NonNull List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
+        //noinspection ArraysAsListWithZeroOrOneArgument
         return Arrays.<NativeModule>asList(new TcpSocketModule(reactContext));
     }
 

@@ -20,8 +20,21 @@ export default class TcpServer extends TcpSocket {
         callback(this._connections.length);
     }
 
-    listen(port, host, callback) {
-        host = host || '0.0.0.0';
+    listen(options, callback) {
+        let gotOptions = {};
+        // Normalize args
+        if (typeof arguments[0] === 'number') {
+            // Deprecated old version: listen(port[, host][, callback])
+            console.warn(
+                'TcpServer.listen(port[, host][, callback]) is deprecated and has been moved to TcpServer.listen(options[, callback]). It will be removed in react-native-tcp-socket@4.0.0'
+            );
+            gotOptions.port = arguments[0];
+            gotOptions.host = arguments[1];
+            callback = arguments[2];
+        } else {
+            gotOptions = options;
+        }
+        gotOptions.host = gotOptions.host || '0.0.0.0';
         const connectListener = this._eventEmitter.addListener('connect', (ev) => {
             if (this._id !== ev.id) return;
             connectListener.remove();
@@ -32,7 +45,7 @@ export default class TcpServer extends TcpSocket {
             if (this._id !== ev.id) return;
             this._onConnection(ev.info);
         });
-        Sockets.listen(this._id, host, port);
+        Sockets.listen(this._id, gotOptions);
         return this;
     }
 
