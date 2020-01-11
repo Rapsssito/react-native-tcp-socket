@@ -168,6 +168,8 @@ server.on('close', () => {
 | `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi'`. |
 | `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
 
+**Note**: The platforms marked as ❌ use the default value.
+
 #### `write()`
 * `data`: `<string> | <Buffer> | <Uint8Array>`
 * `encoding`: `<string>`. Only used when `data` is `string`. Default: `utf8`.
@@ -193,6 +195,7 @@ server.on('close', () => {
 | `host` | `<string>` | ✅  |   ✅    | Host the socket should listen to. IP address in IPv4 format or `'localhost'`. **Default**: `'0.0.0.0'`. |
 | `reuseAddress`| `<boolean>` | ❌  |   ✅    | Enable/disable the reuseAddress socket option. **Default**: `true`. |
 
+**Note**: The platforms marked as ❌ use the default value.
 
 ## Maintainers
 Looking for maintainers!
