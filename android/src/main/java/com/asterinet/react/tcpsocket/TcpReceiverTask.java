@@ -18,8 +18,9 @@ public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiver
     /**
      * An infinite loop to block and read data from the socket.
      */
+    @SafeVarargs
     @Override
-    protected Void doInBackground(Pair<TcpSocketClient, TcpReceiverTask.OnDataReceivedListener>... params) {
+    protected final Void doInBackground(Pair<TcpSocketClient, TcpReceiverTask.OnDataReceivedListener>... params) {
         if (params.length > 1) {
             throw new IllegalArgumentException("This task is only for a single socket/listener pair.");
         }
@@ -52,6 +53,7 @@ public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiver
     /**
      * Listener interface for receive events.
      */
+    @SuppressWarnings("WeakerAccess")
     public interface OnDataReceivedListener {
         void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress);
 

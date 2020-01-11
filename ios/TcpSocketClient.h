@@ -69,11 +69,10 @@ typedef enum RCTTCPError RCTTCPError;
 /**
  * Starts listening on a local host and port
  *
- * @param local ip address
- * @param local port
+ * @param options NSDictionary which must have a @"port" and @"host" to specify where to listen
  * @return true if connected, false if there was an error
  */
-- (BOOL)listen:(NSString *)host port:(int)port error:(NSError **)error;
+- (BOOL)listen:(NSDictionary *)options error:(NSError **)error;
 
 /**
  * Returns the address information

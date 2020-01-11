@@ -1,7 +1,10 @@
 package com.asterinet.react.tcpsocket;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.SparseArray;
+
+import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,9 +16,10 @@ public class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
     private int clientSocketIds;
-    private SparseArray<TcpSocketClient> socketClients;
+    private final SparseArray<TcpSocketClient> socketClients;
     private final SparseArray<TcpSocketClient> serverSocketClients = new SparseArray<>();
 
+    @SuppressLint("StaticFieldLeak")
     private final AsyncTask listening = new AsyncTask() {
         @Override
         protected Void doInBackground(Object[] objects) {
@@ -39,14 +43,25 @@ public class TcpSocketServer extends TcpSocketClient {
 
 
     public TcpSocketServer(final SparseArray<TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
-                           final String address, final Integer port) throws IOException {
-        this.id = id;
+                           final ReadableMap options) throws IOException {
+        super(id);
+        // Get data from options
+        int port = options.getInt("port");
+        String address = options.getString("host");
         this.socketClients = socketClients;
-        clientSocketIds = (1 + this.id) * 1000;
+        clientSocketIds = (1 + getId()) * 1000;
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
         serverSocket = new ServerSocket(port, 50, localInetAddress);
+        // setReuseAddress
+        try {
+            boolean reuseAddress = options.getBoolean("reuseAddress");
+            serverSocket.setReuseAddress(reuseAddress);
+        } catch (Exception e) {
+            // Default to true
+            serverSocket.setReuseAddress(true);
+        }
         mReceiverListener = receiverListener;
         listen();
     }
@@ -61,6 +76,7 @@ public class TcpSocketServer extends TcpSocketClient {
     }
 
     private void listen() {
+        //noinspection unchecked
         listening.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 

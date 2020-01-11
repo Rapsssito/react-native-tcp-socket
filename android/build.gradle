@@ -14,7 +14,7 @@ buildscript {
             jcenter()
         }
         dependencies {
-            classpath 'com.android.tools.build:gradle:3.4.1'
+            classpath 'com.android.tools.build:gradle:3.5.3'
         }
     }
 }
@@ -66,6 +66,7 @@ dependencies {
 }
 
 def configureReactNativePom(def pom) {
+    //noinspection UnnecessaryQualifiedReference
     def packageJson = new groovy.json.JsonSlurper().parseText(file('../package.json').text)
 
     pom.project {

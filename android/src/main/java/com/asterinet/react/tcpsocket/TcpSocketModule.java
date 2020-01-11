@@ -1,6 +1,7 @@
 package com.asterinet.react.tcpsocket;
 
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
@@ -35,7 +36,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     private final SparseArray<Network> mNetworkMap = new SparseArray<>();
     private Network mSelectedNetwork;
 
-    public static final String TAG = "TcpSockets";
+    private static final String TAG = "TcpSockets";
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -108,6 +109,8 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
      * @param port socket port to be bound
      * @param options extra options
      */
+    @SuppressLint("StaticFieldLeak")
+    @SuppressWarnings("unused")
     @ReactMethod
     public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
@@ -123,13 +126,12 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, TAG + "createSocket called twice with the same id.");
                     return;
                 }
-                String localAddress = options.getString("localAddress");
-                String iface = options.getString("interface");
-                int localPort = options.getInt("localPort");
                 try {
                     // Get the network interface
+                    String localAddress = options.getString("localAddress");
+                    String iface = options.getString("interface");
                     selectNetwork(iface, localAddress);
-                    client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, localAddress, localPort, mSelectedNetwork);
+                    client = new TcpSocketClient(TcpSocketModule.this, cId, host, port, options, mSelectedNetwork);
                     socketClients.put(cId, client);
                     onConnect(cId, host, port);
                 } catch (Exception e) {
@@ -139,6 +141,8 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.execute();
     }
 
+    @SuppressLint("StaticFieldLeak")
+    @SuppressWarnings("unused")
     @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
@@ -163,6 +167,8 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.execute();
     }
 
+    @SuppressLint("StaticFieldLeak")
+    @SuppressWarnings("unused")
     @ReactMethod
     public void end(final Integer cId) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
@@ -178,19 +184,24 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.execute();
     }
 
+    @SuppressWarnings("unused")
     @ReactMethod
     public void destroy(final Integer cId) {
         end(cId);
     }
 
+    @SuppressLint("StaticFieldLeak")
+    @SuppressWarnings("unused")
     @ReactMethod
-    public void listen(final Integer cId, final String host, final Integer port) {
+    public void listen(final Integer cId, final ReadableMap options) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 try {
-                    TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, host, port);
+                    TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, options);
                     socketClients.put(cId, server);
+                    int port = options.getInt("port");
+                    String host = options.getString("host");
                     onConnect(cId, host, port);
                 } catch (Exception uhe) {
                     onError(cId, uhe.getMessage());
