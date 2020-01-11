@@ -46,3 +46,6 @@ buck-out/
 
 # Editor config
 .vscode
+
+# CocoaPods
+/ios/Pods/
