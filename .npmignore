@@ -65,9 +65,11 @@ ios/*.xcodeproj/xcuserdata
 *.mode2v3
 *.perspectivev3
 *.xcuserstate
-project.xcworkspace/
+*.xcworkspace/
 xcuserdata/
 ios/build/
+Podfile
+Podfile.lock
 
 # Misc
 .DS_Store
