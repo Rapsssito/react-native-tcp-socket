@@ -4,7 +4,7 @@
  */
 
 #import <React/RCTBridgeModule.h>
-#import "GCDAsyncSocket.h"
+#import "CocoaAsyncSocket/GCDAsyncSocket.h"
 
 extern NSString *const RCTTCPErrorDomain;
 

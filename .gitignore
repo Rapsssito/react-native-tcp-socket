@@ -20,7 +20,8 @@ DerivedData
 *.hmap
 *.ipa
 *.xcuserstate
-project.xcworkspace
+*.xcworkspace
+/ios/Pods/
 
 # Android/IntelliJ
 #
@@ -46,6 +47,3 @@ buck-out/
 
 # Editor config
 .vscode
-
-# CocoaPods
-/ios/Pods/

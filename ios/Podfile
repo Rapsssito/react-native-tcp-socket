@@ -5,8 +5,6 @@ target 'TcpSockets' do
   # Comment the next line if you don't want to use dynamic frameworks
   use_frameworks!
 
-  # Pods for TcpSockets
-  pod 'CocoaAsyncSocket'
   # Necessary for react-native
   pod 'FBLazyVector', :path => "../node_modules/react-native/Libraries/FBLazyVector"
   pod 'FBReactNativeSpec', :path => "../node_modules/react-native/Libraries/FBReactNativeSpec"
