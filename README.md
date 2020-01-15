@@ -63,8 +63,8 @@ If you can't or don't want to use the CLI tool, you can also manually link the l
 <summary>Manually link the library on iOS</summary>
 
 1. In XCode, in the project navigator, right click `Libraries` ➜ `Add Files to [your project's name]`
-2. Go to `node_modules` ➜ `react-native-tcp-socket` and add `TcpSocket.xcodeproj`
-3. In XCode, in the project navigator, select your project. Add `libTcpSocket.a` to your project's `Build Phases` ➜ `Link Binary With Libraries`
+2. Go to `node_modules` ➜ `react-native-tcp-socket` and add `TcpSockets.xcodeproj`
+3. In XCode, in the project navigator, select your project. Add `libTcpSockets.a` to your project's `Build Phases` ➜ `Link Binary With Libraries`
 4. Run your project (`Cmd+R`)<
 </details>
 
@@ -72,7 +72,7 @@ If you can't or don't want to use the CLI tool, you can also manually link the l
 <summary>Manually link the library on Android</summary>
 
 1. Open up `android/app/src/main/java/[...]/MainApplication.java`
-  - Add `import com.reactlibrary.TcpSocketPackage;` to the imports at the top of the file
+  - Add `import com.asterinet.react.tcpsocket.TcpSocketPackage;` to the imports at the top of the file
   - Add `new TcpSocketPackage()` to the list returned by the `getPackages()` method
 2. Append the following lines to `android/settings.gradle`:
   	```
