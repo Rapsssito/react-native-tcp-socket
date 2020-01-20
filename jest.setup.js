@@ -8,7 +8,7 @@ jest.mock('react-native', () => {
 
     return {
         NativeModules: {
-            TCPSockets: {
+            TcpSockets: {
                 connect: jest.fn(),
                 end: jest.fn(),
                 destroy: jest.fn(),
