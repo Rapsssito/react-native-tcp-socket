@@ -11,38 +11,65 @@ const STATE = {
 };
 
 export default class TcpSocket {
+    /**
+     * Initialices a TcpSocket.
+     *
+     * @param {Number} id
+     * @param {import('react-native').NativeEventEmitter} eventEmitter
+     */
     constructor(id, eventEmitter) {
         this._id = id;
         this._eventEmitter = eventEmitter;
         this._state = STATE.DISCONNECTED;
     }
 
-    on(event, callback) {
+    /**
+     * Adds a listener to be invoked when events of the specified type are emitted by the `TcpSocket`.
+     * An optional calling `context` may be provided.
+     * The data arguments emitted will be passed to the listener callback.
+     *
+     * @param {string} event  Name of the event to listen to
+     * @param {function(object): void} callback Function to invoke when the specified event is emitted
+     * @param {any} [context] Optional context object to use when invoking the listener
+     * @returns {import('react-native').NativeEventSubscription}
+     */
+    on(event, callback, context) {
         switch (event) {
             case 'data':
-                this._eventEmitter.addListener('data', (evt) => {
-                    if (evt.id !== this._id) return;
-                    const bufferTest = Buffer.from(evt.data, 'base64');
-                    callback(bufferTest);
-                });
-                break;
+                return this._eventEmitter.addListener(
+                    'data',
+                    (evt) => {
+                        if (evt.id !== this._id) return;
+                        const bufferTest = Buffer.from(evt.data, 'base64');
+                        callback(bufferTest);
+                    },
+                    context
+                );
             case 'error':
-                this._eventEmitter.addListener('error', (evt) => {
-                    if (evt.id !== this._id) return;
-                    callback(evt.error);
-                });
-                break;
+                return this._eventEmitter.addListener(
+                    'error',
+                    (evt) => {
+                        if (evt.id !== this._id) return;
+                        callback(evt.error);
+                    },
+                    context
+                );
             default:
-                this._eventEmitter.addListener(event, (evt) => {
-                    if (evt.id !== this._id) return;
-                    callback();
-                });
-                break;
+                return this._eventEmitter.addListener(
+                    event,
+                    (evt) => {
+                        if (evt.id !== this._id) return;
+                        callback();
+                    },
+                    context
+                );
         }
     }
 
-    off(event, callback) {
-        this._eventEmitter.removeListener(event, callback);
+    off() {
+        console.warn(
+            'TCPSocket.off() is deprecated and produces no effect, please use the listener remove() method instead.'
+        );
     }
 
     connect(options, callback) {
