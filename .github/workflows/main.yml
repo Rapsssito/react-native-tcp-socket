@@ -1,4 +1,4 @@
-name: Tests
+name: tests
 
 on:
   pull_request:
@@ -17,5 +17,5 @@ jobs:
     - name: ESLint
       run: yarn lint
 
-    - name: Tests
+    - name: Test
       run: yarn test

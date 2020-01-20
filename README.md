@@ -1,4 +1,7 @@
 # react-native-tcp-socket
+![](https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg)
+
+
 React Native TCP socket API for Android & iOS. It allows you to create TCP clients and servers sockets, simulating node's [net](https://nodejs.org/api/net.html) API.
 
 ## Table of Contents
