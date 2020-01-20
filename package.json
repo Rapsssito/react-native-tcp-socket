@@ -5,7 +5,7 @@
   "description": "React Native TCP socket API for Android & iOS",
   "main": "src/index.js",
   "scripts": {
-    "test": "jest",
+    "test": "jest ./__tests__",
     "lint": "eslint ."
   },
   "repository": {
@@ -35,10 +35,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.7.7",
+    "babel-jest": "^24.9.0",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-prettier": "^3.1.1",
     "jest": "^24.9.0",
+    "metro-react-native-babel-preset": "^0.58.0",
     "prettier": "^1.18.2",
     "react": "16.9.0",
     "react-native": "^0.61.4"
