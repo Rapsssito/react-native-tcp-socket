@@ -12,6 +12,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import androidx.annotation.Nullable;
+
 class TcpSocketClient {
     private TcpReceiverTask receiverTask;
     private Socket socket;
@@ -23,23 +25,29 @@ class TcpSocketClient {
         this.id = id;
     }
 
-    /**
-     * TcpSocketClient constructor
-     *
-     * @param address server address
-     * @param port    server port
-     * @param options extra options
-     */
-    public TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
-                           final String address, final Integer port, final ReadableMap options, final Network network)
-            throws IOException {
+    TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, @Nullable final Socket socket) {
         this(id);
+        this.socket = socket;
+        receiverTask = new TcpReceiverTask();
+        mReceiverListener = receiverListener;
+    }
+
+
+    public int getId() {
+        return id;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void connect(final String address, final Integer port, final ReadableMap options, final Network network) throws IOException {
+        if (socket != null) throw new IOException("Already connected");
+        socket = new Socket();
         // Get the addresses
         String localAddress = options.getString("localAddress");
         InetAddress localInetAddress = InetAddress.getByName(localAddress);
         InetAddress remoteInetAddress = InetAddress.getByName(address);
-        // Create the socket
-        socket = new Socket();
         if (network != null)
             network.bindSocket(socket);
         // setReuseAddress
@@ -54,28 +62,12 @@ class TcpSocketClient {
         int localPort = options.getInt("localPort");
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
-        receiverTask = new TcpReceiverTask();
-        mReceiverListener = receiverListener;
+        startListening();
+    }
+
+    public void startListening() {
         //noinspection unchecked
-        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
-    }
-
-    TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final Socket socket) {
-        this(id);
-        this.socket = socket;
-        receiverTask = new TcpReceiverTask();
-        mReceiverListener = receiverListener;
-        //noinspection unchecked
-        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
-    }
-
-
-    public int getId() {
-        return id;
-    }
-
-    public Socket getSocket() {
-        return socket;
+        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, mReceiverListener));
     }
 
     /**
@@ -99,7 +91,6 @@ class TcpSocketClient {
                 // stop the receiving task
                 receiverTask.cancel(true);
             }
-
             // close the socket
             if (socket != null && !socket.isClosed()) {
                 socket.close();

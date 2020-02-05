@@ -165,7 +165,10 @@ export default class TcpSocket {
     }
 
     _unregisterEvents() {
-        this._eventEmitter.listeners().forEach((listener) => listener.remove());
+        this._eventEmitter.removeAllListeners('connect');
+        this._eventEmitter.removeAllListeners('close');
+        this._eventEmitter.removeAllListeners('error');
+        this._eventEmitter.removeAllListeners('data');
     }
 
     _onConnect(address) {
