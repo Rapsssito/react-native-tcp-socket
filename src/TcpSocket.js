@@ -21,6 +21,7 @@ export default class TcpSocket {
         this._id = id;
         this._eventEmitter = eventEmitter;
         this._state = STATE.DISCONNECTED;
+        this._listeners = [];
     }
 
     /**
@@ -31,9 +32,14 @@ export default class TcpSocket {
      * @param {string} event  Name of the event to listen to
      * @param {function(object): void} callback Function to invoke when the specified event is emitted
      * @param {any} [context] Optional context object to use when invoking the listener
-     * @returns {import('react-native').NativeEventSubscription}
      */
     on(event, callback, context) {
+        const newListener = this._selectListener(event, callback, context);
+        this._listeners.push(newListener);
+        return newListener;
+    }
+
+    _selectListener(event, callback, context) {
         switch (event) {
             case 'data':
                 return this._eventEmitter.addListener(
@@ -59,7 +65,7 @@ export default class TcpSocket {
                     event,
                     (evt) => {
                         if (evt.id !== this._id) return;
-                        callback();
+                        callback(evt);
                     },
                     context
                 );
@@ -80,8 +86,7 @@ export default class TcpSocket {
         options.localPort = Number(options.localPort) || 0;
         options.localAddress = options.localAddress || '0.0.0.0';
         options.interface = options.interface || '';
-        const connectListener = this._eventEmitter.addListener('connect', (ev) => {
-            if (this._id !== ev.id) return;
+        const connectListener = this.on('connect', (ev) => {
             connectListener.remove();
             if (callback) callback(ev.address);
         });
@@ -150,25 +155,13 @@ export default class TcpSocket {
     }
 
     _registerEvents() {
-        this._eventEmitter.addListener('connect', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onConnect(ev.address);
-        });
-        this._eventEmitter.addListener('close', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onClose(ev.hadError);
-        });
-        this._eventEmitter.addListener('error', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onError(ev.error);
-        });
+        this.on('connect', (ev) => this._onConnect(ev.address));
+        this.on('close', (ev) => this._onClose(ev.hadError));
+        this.on('error', (ev) => this._onError(ev.error));
     }
 
     _unregisterEvents() {
-        this._eventEmitter.removeAllListeners('connect');
-        this._eventEmitter.removeAllListeners('close');
-        this._eventEmitter.removeAllListeners('error');
-        this._eventEmitter.removeAllListeners('data');
+        this._listeners.forEach((listener) => listener.remove());
     }
 
     _onConnect(address) {

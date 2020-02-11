@@ -35,16 +35,12 @@ export default class TcpServer extends TcpSocket {
             gotOptions = options;
         }
         gotOptions.host = gotOptions.host || '0.0.0.0';
-        const connectListener = this._eventEmitter.addListener('connect', (ev) => {
-            if (this._id !== ev.id) return;
+        const connectListener = this.on('connect', (ev) => {
             connectListener.remove();
             if (callback) callback(ev.address);
         });
         this._registerEvents();
-        this._eventEmitter.addListener('connection', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onConnection(ev.info);
-        });
+        this.on('connection', (ev) => this._onConnection(ev.info));
         Sockets.listen(this._id, gotOptions);
         return this;
     }
