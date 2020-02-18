@@ -1,3 +1,10 @@
+## [3.2.8](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.7...v3.2.8) (2020-02-18)
+
+
+### Bug Fixes
+
+* Fixed error removing already removed listeners ([7712876](https://github.com/Rapsssito/react-native-tcp-socket/commit/7712876bc6a61ee2efee57161f2a09dc5ff1b0a1))
+
 ## [3.2.7](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.6...v3.2.7) (2020-02-18)
 
 
