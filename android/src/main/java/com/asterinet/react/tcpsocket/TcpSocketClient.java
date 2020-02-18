@@ -12,6 +12,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 class TcpSocketClient {
@@ -25,7 +26,7 @@ class TcpSocketClient {
         this.id = id;
     }
 
-    TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, @Nullable final Socket socket) {
+    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
         this(id);
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
@@ -41,25 +42,25 @@ class TcpSocketClient {
         return socket;
     }
 
-    public void connect(final String address, final Integer port, final ReadableMap options, final Network network) throws IOException {
+    public void connect(@NonNull final String address, @NonNull final Integer port, @NonNull final ReadableMap options, @Nullable final Network network) throws IOException {
         if (socket != null) throw new IOException("Already connected");
         socket = new Socket();
         // Get the addresses
-        String localAddress = options.getString("localAddress");
-        InetAddress localInetAddress = InetAddress.getByName(localAddress);
-        InetAddress remoteInetAddress = InetAddress.getByName(address);
+        final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : "0.0.0.0";
+        final InetAddress localInetAddress = InetAddress.getByName(localAddress);
+        final InetAddress remoteInetAddress = InetAddress.getByName(address);
         if (network != null)
             network.bindSocket(socket);
         // setReuseAddress
-        try {
+        if (options.hasKey("reuseAddress")) {
             boolean reuseAddress = options.getBoolean("reuseAddress");
             socket.setReuseAddress(reuseAddress);
-        } catch (Exception e) {
+        } else {
             // Default to true
             socket.setReuseAddress(true);
         }
+        final int localPort = options.hasKey("localPort") ? options.getInt("localPort") : 0;
         // bind
-        int localPort = options.getInt("localPort");
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
         startListening();

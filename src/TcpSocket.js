@@ -83,9 +83,6 @@ export default class TcpSocket {
         // Normalize args
         options.host = options.host || 'localhost';
         options.port = Number(options.port) || 0;
-        options.localPort = Number(options.localPort) || 0;
-        options.localAddress = options.localAddress || '0.0.0.0';
-        options.interface = options.interface || '';
         const connectListener = this.on('connect', (ev) => {
             connectListener.remove();
             if (callback) callback(ev.address);

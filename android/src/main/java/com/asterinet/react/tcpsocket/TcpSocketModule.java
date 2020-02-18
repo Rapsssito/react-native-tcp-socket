@@ -35,6 +35,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     private final ReactApplicationContext mReactContext;
     private final ConcurrentHashMap<Integer, TcpSocketClient> socketClients = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Network> mNetworkMap = new ConcurrentHashMap<>();
+    @Nullable
     private Network mSelectedNetwork;
 
     private static final String TAG = "TcpSockets";
@@ -114,15 +115,10 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
-    public void connect(final Integer cId, final String host, final Integer port, final ReadableMap options) {
+    public void connect(@NonNull final Integer cId, @NonNull final String host, @NonNull final Integer port, @NonNull final ReadableMap options) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
-                // Check for cID
-                if (cId == null) {
-                    onError(cId, TAG + "createSocket called with nil id parameter.");
-                    return;
-                }
                 TcpSocketClient client = socketClients.get(cId);
                 if (client != null) {
                     onError(cId, TAG + "createSocket called twice with the same id.");
@@ -130,8 +126,8 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 }
                 try {
                     // Get the network interface
-                    String localAddress = options.getString("localAddress");
-                    String iface = options.getString("interface");
+                    String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : null;
+                    String iface = options.hasKey("interface") ? options.getString("interface") : null;
                     selectNetwork(iface, localAddress);
                     client = new TcpSocketClient(TcpSocketModule.this, cId, null);
                     socketClients.put(cId, client);
