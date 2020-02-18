@@ -12,10 +12,17 @@ class TCPSockets {
         this._eventEmitter = new NativeEventEmitter(Sockets);
     }
 
+    /**
+     * @param {(socket: Socket) => void} connectionListener
+     */
     createServer(connectionListener) {
         return new Server(this.instances++, this._eventEmitter, connectionListener);
     }
 
+    /**
+     * @param {{ host: string; port: number; timeout: number; }} options
+     * @param {(address: string) => void} callback
+     */
     createConnection(options, callback) {
         const tcpSocket = new Socket(this.instances++, this._eventEmitter);
         return tcpSocket.connect(options, callback);
