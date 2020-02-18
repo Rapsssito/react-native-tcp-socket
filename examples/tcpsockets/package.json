@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "ios": "react-native run-ios",
+    "ios": "react-native run-ios simulator='iPhone 11'",
+    "pods": "cd ios && pod install",
     "start": "react-native start",
     "test": "jest",
     "clean": "cd android && ./gradlew clean",
@@ -13,7 +14,7 @@
   "dependencies": {
     "react": "16.9.0",
     "react-native": "0.61.4",
-    "react-native-tcp-socket": "https://github.com/Rapsssito/react-native-tcp-socket"
+    "react-native-tcp-socket": "^3.2.6"
   },
   "devDependencies": {
     "@babel/core": "^7.7.2",
