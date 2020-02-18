@@ -1,3 +1,10 @@
+## [3.2.7](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.6...v3.2.7) (2020-02-18)
+
+
+### Bug Fixes
+
+* **iOS:** Fixed error when connecting without localAddress ([18c430d](https://github.com/Rapsssito/react-native-tcp-socket/commit/18c430d5a357f075f91ec90402b0b12a5b4f7da3))
+
 ## [3.2.6](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.5...v3.2.6) (2020-02-11)
 
 
