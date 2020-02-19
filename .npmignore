@@ -6,6 +6,8 @@ yarn.lock
 CONTRIBUTING.md
 CODE_OF_CONDUCT.md
 README.md
+.releaserc
+jsconfig.json
 
 # Config files
 .babelrc

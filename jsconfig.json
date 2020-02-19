@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "allowSyntheticDefaultImports": true,
+        "checkJs": true
+    },
+    "exclude": ["node_modules", "coverage", ".github"]
+}

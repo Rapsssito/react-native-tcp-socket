@@ -12,6 +12,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 class TcpSocketClient {
     private TcpReceiverTask receiverTask;
     private Socket socket;
@@ -23,50 +26,11 @@ class TcpSocketClient {
         this.id = id;
     }
 
-    /**
-     * TcpSocketClient constructor
-     *
-     * @param address server address
-     * @param port    server port
-     * @param options extra options
-     */
-    public TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
-                           final String address, final Integer port, final ReadableMap options, final Network network)
-            throws IOException {
-        this(id);
-        // Get the addresses
-        String localAddress = options.getString("localAddress");
-        InetAddress localInetAddress = InetAddress.getByName(localAddress);
-        InetAddress remoteInetAddress = InetAddress.getByName(address);
-        // Create the socket
-        socket = new Socket();
-        if (network != null)
-            network.bindSocket(socket);
-        // setReuseAddress
-        try {
-            boolean reuseAddress = options.getBoolean("reuseAddress");
-            socket.setReuseAddress(reuseAddress);
-        } catch (Exception e) {
-            // Default to true
-            socket.setReuseAddress(true);
-        }
-        // bind
-        int localPort = options.getInt("localPort");
-        socket.bind(new InetSocketAddress(localInetAddress, localPort));
-        socket.connect(new InetSocketAddress(remoteInetAddress, port));
-        receiverTask = new TcpReceiverTask();
-        mReceiverListener = receiverListener;
-        //noinspection unchecked
-        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
-    }
-
-    TcpSocketClient(final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final Socket socket) {
+    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
         this(id);
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
         mReceiverListener = receiverListener;
-        //noinspection unchecked
-        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, receiverListener));
     }
 
 
@@ -76,6 +40,35 @@ class TcpSocketClient {
 
     public Socket getSocket() {
         return socket;
+    }
+
+    public void connect(@NonNull final String address, @NonNull final Integer port, @NonNull final ReadableMap options, @Nullable final Network network) throws IOException {
+        if (socket != null) throw new IOException("Already connected");
+        socket = new Socket();
+        // Get the addresses
+        final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : "0.0.0.0";
+        final InetAddress localInetAddress = InetAddress.getByName(localAddress);
+        final InetAddress remoteInetAddress = InetAddress.getByName(address);
+        if (network != null)
+            network.bindSocket(socket);
+        // setReuseAddress
+        if (options.hasKey("reuseAddress")) {
+            boolean reuseAddress = options.getBoolean("reuseAddress");
+            socket.setReuseAddress(reuseAddress);
+        } else {
+            // Default to true
+            socket.setReuseAddress(true);
+        }
+        final int localPort = options.hasKey("localPort") ? options.getInt("localPort") : 0;
+        // bind
+        socket.bind(new InetSocketAddress(localInetAddress, localPort));
+        socket.connect(new InetSocketAddress(remoteInetAddress, port));
+        startListening();
+    }
+
+    public void startListening() {
+        //noinspection unchecked
+        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, mReceiverListener));
     }
 
     /**
@@ -99,7 +92,6 @@ class TcpSocketClient {
                 // stop the receiving task
                 receiverTask.cancel(true);
             }
-
             // close the socket
             if (socket != null && !socket.isClosed()) {
                 socket.close();

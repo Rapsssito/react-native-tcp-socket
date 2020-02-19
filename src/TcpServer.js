@@ -5,10 +5,17 @@ const Sockets = NativeModules.TcpSockets;
 import TcpSocket from './TcpSocket';
 
 export default class TcpServer extends TcpSocket {
+    /**
+     * @param {number} id
+     * @param {import("react-native").NativeEventEmitter} eventEmitter
+     * @param {(socket: TcpSocket) => void} connectionCallback
+     */
     constructor(id, eventEmitter, connectionCallback) {
         super(id, eventEmitter);
         this.connectionCallback = connectionCallback;
+        /** @type {TcpSocket[]} */
         this._connections = [];
+        this._eventEmitter = eventEmitter;
     }
 
     close() {
@@ -16,10 +23,17 @@ export default class TcpServer extends TcpSocket {
         this._connections.forEach((clientSocket) => clientSocket.destroy());
     }
 
+    /**
+     * @param {(arg0: number) => void} callback
+     */
     getConnections(callback) {
         callback(this._connections.length);
     }
 
+    /**
+     * @param {{ port: number; host: any; }} options
+     * @param {(arg0: any) => void} callback
+     */
     listen(options, callback) {
         let gotOptions = {};
         // Normalize args
@@ -35,20 +49,19 @@ export default class TcpServer extends TcpSocket {
             gotOptions = options;
         }
         gotOptions.host = gotOptions.host || '0.0.0.0';
-        const connectListener = this._eventEmitter.addListener('connect', (ev) => {
-            if (this._id !== ev.id) return;
+        const connectListener = this.on('connect', (ev) => {
             connectListener.remove();
             if (callback) callback(ev.address);
         });
         this._registerEvents();
-        this._eventEmitter.addListener('connection', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onConnection(ev.info);
-        });
+        this.on('connection', (ev) => this._onConnection(ev.info));
         Sockets.listen(this._id, gotOptions);
         return this;
     }
 
+    /**
+     * @param {{ id: number; address: string; }} info
+     */
     _onConnection(info) {
         const socket = new TcpSocket(info.id, this._eventEmitter);
         socket._registerEvents();

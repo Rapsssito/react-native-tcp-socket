@@ -2,7 +2,6 @@ package com.asterinet.react.tcpsocket;
 
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
-import android.util.SparseArray;
 
 import com.facebook.react.bridge.ReadableMap;
 
@@ -11,13 +10,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class TcpSocketServer extends TcpSocketClient {
+public final class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
     private int clientSocketIds;
-    private final SparseArray<TcpSocketClient> socketClients;
-    private final SparseArray<TcpSocketClient> serverSocketClients = new SparseArray<>();
+    private final ConcurrentHashMap<Integer, TcpSocketClient> socketClients;
 
     @SuppressLint("StaticFieldLeak")
     private final AsyncTask listening = new AsyncTask() {
@@ -28,8 +27,8 @@ public class TcpSocketServer extends TcpSocketClient {
                     Socket socket = serverSocket.accept();
                     int clientId = getClientId();
                     TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
-                    serverSocketClients.put(clientId, socketClient);
                     socketClients.put(clientId, socketClient);
+                    socketClient.startListening();
                     mReceiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
                 }
             } catch (IOException e) {
@@ -42,7 +41,7 @@ public class TcpSocketServer extends TcpSocketClient {
     };
 
 
-    public TcpSocketServer(final SparseArray<TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
+    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
                            final ReadableMap options) throws IOException {
         super(id);
         // Get data from options
@@ -88,7 +87,7 @@ public class TcpSocketServer extends TcpSocketClient {
     @Override
     public void close() {
         try {
-            if (listening != null && !listening.isCancelled()) {
+            if (!listening.isCancelled()) {
                 // stop the receiving task
                 listening.cancel(true);
             }

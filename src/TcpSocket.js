@@ -10,17 +10,40 @@ const STATE = {
     CONNECTED: 2,
 };
 
+class RemovableListener {
+    /**
+     * @param {import("react-native").EmitterSubscription} listener
+     * @param {import("react-native").NativeEventEmitter} eventEmitter
+     */
+    constructor(listener, eventEmitter) {
+        this._listener = listener;
+        this._eventEmitter = eventEmitter;
+        this._removed = false;
+    }
+
+    isRemoved() {
+        return this._removed;
+    }
+
+    remove() {
+        this._eventEmitter.removeSubscription(this._listener);
+        this._removed = true;
+    }
+}
+
 export default class TcpSocket {
     /**
      * Initialices a TcpSocket.
      *
-     * @param {Number} id
+     * @param {number} id
      * @param {import('react-native').NativeEventEmitter} eventEmitter
      */
     constructor(id, eventEmitter) {
         this._id = id;
         this._eventEmitter = eventEmitter;
         this._state = STATE.DISCONNECTED;
+        /** @type {RemovableListener[]} */
+        this._listeners = [];
     }
 
     /**
@@ -31,9 +54,20 @@ export default class TcpSocket {
      * @param {string} event  Name of the event to listen to
      * @param {function(object): void} callback Function to invoke when the specified event is emitted
      * @param {any} [context] Optional context object to use when invoking the listener
-     * @returns {import('react-native').NativeEventSubscription}
      */
     on(event, callback, context) {
+        const newListener = this._selectListener(event, callback, context);
+        const removableListener = new RemovableListener(newListener, this._eventEmitter);
+        this._listeners.push(removableListener);
+        return removableListener;
+    }
+
+    /**
+     * @param {string} event
+     * @param {function(any):void} callback
+     * @param {any} [context]
+     */
+    _selectListener(event, callback, context) {
         switch (event) {
             case 'data':
                 return this._eventEmitter.addListener(
@@ -59,7 +93,7 @@ export default class TcpSocket {
                     event,
                     (evt) => {
                         if (evt.id !== this._id) return;
-                        callback();
+                        callback(evt);
                     },
                     context
                 );
@@ -72,16 +106,16 @@ export default class TcpSocket {
         );
     }
 
+    /**
+     * @param {{ host: string; port: number; timeout: number; }} options
+     * @param {(address: string) => void} [callback]
+     */
     connect(options, callback) {
         this._registerEvents();
         // Normalize args
         options.host = options.host || 'localhost';
         options.port = Number(options.port) || 0;
-        options.localPort = Number(options.localPort) || 0;
-        options.localAddress = options.localAddress || '0.0.0.0';
-        options.interface = options.interface || '';
-        const connectListener = this._eventEmitter.addListener('connect', (ev) => {
-            if (this._id !== ev.id) return;
+        const connectListener = this.on('connect', (ev) => {
             connectListener.remove();
             if (callback) callback(ev.address);
         });
@@ -93,6 +127,10 @@ export default class TcpSocket {
         return this;
     }
 
+    /**
+     * @param {number} msecs
+     * @param {() => void} [wrapper]
+     */
     _activeTimer(msecs, wrapper) {
         if (this._timeout && this._timeout.handle) clearTimeout(this._timeout.handle);
 
@@ -118,12 +156,16 @@ export default class TcpSocket {
         }
     }
 
+    /**
+     * @param {number} msecs
+     * @param {{ (...args: any[]): any; (...args: any[]): any; }} [callback]
+     */
     setTimeout(msecs, callback) {
         if (msecs === 0) {
             this._clearTimeout();
             if (callback) this._eventEmitter.removeListener('timeout', callback);
         } else {
-            if (callback) this._eventEmitter.once('timeout', callback);
+            if (callback) this._eventEmitter.once('timeout', callback, this);
 
             this._activeTimer(msecs);
         }
@@ -134,6 +176,10 @@ export default class TcpSocket {
         return this._address;
     }
 
+    /**
+     * @param {string | Buffer | Uint8Array} data
+     * @param {BufferEncoding} [encoding]
+     */
     end(data, encoding) {
         if (this._destroyed) return;
         if (data) this.write(data, encoding);
@@ -150,24 +196,19 @@ export default class TcpSocket {
     }
 
     _registerEvents() {
-        this._eventEmitter.addListener('connect', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onConnect(ev.address);
-        });
-        this._eventEmitter.addListener('close', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onClose(ev.hadError);
-        });
-        this._eventEmitter.addListener('error', (ev) => {
-            if (this._id !== ev.id) return;
-            this._onError(ev.error);
-        });
+        this.on('connect', (ev) => this._onConnect(ev.address));
+        this.on('close', () => this._onClose());
+        this.on('error', () => this._onError());
     }
 
     _unregisterEvents() {
-        this._eventEmitter.listeners().forEach((listener) => listener.remove());
+        this._listeners.forEach((listener) => (listener.isRemoved() ? listener.remove() : null));
+        this._listeners = [];
     }
 
+    /**
+     * @param {string} address
+     */
     _onConnect(address) {
         this.setConnected(address);
     }
@@ -183,8 +224,8 @@ export default class TcpSocket {
     /**
      *
      * @param {string | Buffer | Uint8Array} buffer
-     * @param {string} encoding
-     * @param {Function} callback
+     * @param {BufferEncoding} [encoding]
+     * @param {(error?: string) => void} [callback]
      */
     write(buffer, encoding, callback) {
         const self = this;
@@ -200,13 +241,23 @@ export default class TcpSocket {
                 `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
             );
 
-        Sockets.write(this._id, str, function(err) {
-            if (self._timeout) self._activeTimer(self._timeout.msecs);
-            if (err) return callback(err);
-            callback();
-        });
+        Sockets.write(
+            this._id,
+            str,
+            /**
+             * @param {string} err
+             */
+            function(err) {
+                if (self._timeout) self._activeTimer(self._timeout.msecs);
+                if (err) return callback(err);
+                callback();
+            }
+        );
     }
 
+    /**
+     * @param {string} address
+     */
     setConnected(address) {
         this._state = STATE.CONNECTED;
         this._address = address;
