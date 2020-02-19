@@ -47,3 +47,7 @@ buck-out/
 
 # Editor config
 .vscode
+
+# Tests
+coverage
+!coverage/coverage-final.json
