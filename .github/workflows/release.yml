@@ -1,4 +1,4 @@
-name: Release
+name: release
 
 on:
   push:
@@ -18,6 +18,10 @@ jobs:
           node-version: 12
       - name: Install dependencies
         run: yarn ci
+      - name: ESLint
+        run: yarn lint
+      - name: Test
+        run: yarn test
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
