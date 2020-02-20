@@ -1,3 +1,10 @@
+## [3.2.9](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.8...v3.2.9) (2020-02-20)
+
+
+### Bug Fixes
+
+* Fixed an error when sending a Uint8Array from write() ([4d44d3e](https://github.com/Rapsssito/react-native-tcp-socket/commit/4d44d3e06a32d09bda683a55b4dc4629f51ee58d))
+
 ## [3.2.8](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.7...v3.2.8) (2020-02-18)
 
 
