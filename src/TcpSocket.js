@@ -222,6 +222,9 @@ export default class TcpSocket {
     }
 
     /**
+     * Sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
+     *
+     * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
      *
      * @param {string | Buffer | Uint8Array} buffer
      * @param {BufferEncoding} [encoding]
@@ -232,18 +235,10 @@ export default class TcpSocket {
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
         callback = callback || (() => {});
-        let str;
-        if (typeof buffer === 'string') str = Buffer.from(buffer, encoding).toString('base64');
-        else if (Buffer.isBuffer(buffer)) str = buffer.toString('base64');
-        else if (buffer instanceof Uint8Array || Array.isArray(buffer)) str = Buffer.from(buffer);
-        else
-            throw new TypeError(
-                `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
-            );
-
+        const generatedBuffer = this._generateSendBuffer(buffer, encoding);
         Sockets.write(
             this._id,
-            str,
+            generatedBuffer.toString('base64'),
             /**
              * @param {string} err
              */
@@ -253,6 +248,20 @@ export default class TcpSocket {
                 callback();
             }
         );
+    }
+
+    /**
+     * @param {string | Buffer | Uint8Array} buffer
+     * @param {BufferEncoding} [encoding]
+     */
+    _generateSendBuffer(buffer, encoding) {
+        if (typeof buffer === 'string') return Buffer.from(buffer, encoding);
+        else if (Buffer.isBuffer(buffer)) return buffer;
+        else if (buffer instanceof Uint8Array || Array.isArray(buffer)) return Buffer.from(buffer);
+        else
+            throw new TypeError(
+                `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
+            );
     }
 
     /**
