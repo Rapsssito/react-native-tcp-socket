@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "types": "lib/types/index.d.ts",
   "scripts": {
-    "ci": "yarn install --frozen-lockfile && yarn lint && yarn test",
+    "ci": "yarn install --frozen-lockfile && yarn lint && yarn declaration:build && yarn checkjs && yarn test",
     "lint": "eslint .",
     "checkjs": "tsc",
     "test": "jest ./__tests__",
