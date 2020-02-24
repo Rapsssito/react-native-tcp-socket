@@ -4,7 +4,7 @@
         "declaration": true,
         "noEmit": false,
         "emitDeclarationOnly": true,
-        "outFile": "./lib/types/index.d.ts"
+        "outDir": "./lib/types"
     },
     "exclude": ["__tests__", "__mocks__"]
 }
