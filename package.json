@@ -9,6 +9,17 @@
     "ci": "yarn install --frozen-lockfile",
     "lint": "eslint ."
   },
+  "files": [
+    "/android/src/",
+    "/android/build.gradle",
+    "/ios",
+    "!Podfile*",
+    "/windows",
+    "/src",
+    "/lib",
+    "/*.podspec",
+    "/jest"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Rapsssito/react-native-tcp-socket.git",
