@@ -14,14 +14,16 @@ class TCPSockets {
 
     /**
      * @param {(socket: Socket) => void} connectionListener
+     * @returns {Server}
      */
     createServer(connectionListener) {
         return new Server(this.instances++, this._eventEmitter, connectionListener);
     }
 
     /**
-     * @param {{ host: string; port: number; timeout: number; }} options
+     * @param {import('./TcpSocket').ConnectionOptions} options
      * @param {(address: string) => void} callback
+     * @returns {Socket}
      */
     createConnection(options, callback) {
         const tcpSocket = new Socket(this.instances++, this._eventEmitter);
