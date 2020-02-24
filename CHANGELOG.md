@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.9...v3.3.0) (2020-02-24)
+
+
+### Features
+
+* Add TypeScript declaration file ([#29](https://github.com/Rapsssito/react-native-tcp-socket/issues/29)) ([99d26b9](https://github.com/Rapsssito/react-native-tcp-socket/commit/99d26b981e66463baa2be174445f0a946f42ab4d))
+
 ## [3.2.9](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.8...v3.2.9) (2020-02-20)
 
 
