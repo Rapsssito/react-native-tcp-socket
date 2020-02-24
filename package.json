@@ -4,6 +4,7 @@
   "version": "3.2.9",
   "description": "React Native TCP socket API for Android & iOS",
   "main": "src/index.js",
+  "types": "lib/types/index.d.ts",
   "scripts": {
     "ci": "yarn install --frozen-lockfile && yarn lint && yarn test",
     "lint": "eslint .",
