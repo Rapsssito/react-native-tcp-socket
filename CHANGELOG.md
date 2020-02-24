@@ -1,3 +1,10 @@
+## [3.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.3.0...v3.3.1) (2020-02-24)
+
+
+### Bug Fixes
+
+* Fixed TypeScript declaration files not being a module ([3e2213a](https://github.com/Rapsssito/react-native-tcp-socket/commit/3e2213a06c6917c8c0696cf31b905cd9e91f52e7))
+
 # [3.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.2.9...v3.3.0) (2020-02-24)
 
 
