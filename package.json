@@ -5,9 +5,9 @@
   "description": "React Native TCP socket API for Android & iOS",
   "main": "src/index.js",
   "scripts": {
-    "test": "jest ./__tests__",
-    "ci": "yarn install --frozen-lockfile",
-    "lint": "eslint ."
+    "ci": "yarn install --frozen-lockfile && yarn lint && yarn test",
+    "lint": "eslint .",
+    "test": "jest ./__tests__"
   },
   "files": [
     "/android/src/",
