@@ -33,6 +33,7 @@ export default class TcpServer extends TcpSocket {
     /**
      * @param {{ port: number; host: any; }} options
      * @param {(arg0: any) => void} callback
+     * @returns {TcpServer}
      */
     listen(options, callback) {
         let gotOptions = {};
