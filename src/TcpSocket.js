@@ -56,7 +56,7 @@ export default class TcpSocket {
      * The data arguments emitted will be passed to the listener callback.
      *
      * @param {string} event  Name of the event to listen to
-     * @param {function(object): void} callback Function to invoke when the specified event is emitted
+     * @param {(arg0: any) => void} callback Function to invoke when the specified event is emitted
      * @param {any} [context] Optional context object to use when invoking the listener
      * @returns {RemovableListener}
      */
@@ -210,7 +210,7 @@ export default class TcpSocket {
     }
 
     /**
-     * @private
+     * @protected
      */
     _registerEvents() {
         this.on('connect', (ev) => this._onConnect(ev.address));
@@ -277,6 +277,14 @@ export default class TcpSocket {
                 }
             }
         );
+    }
+
+    /**
+     * @param {string} address
+     */
+    setAsAlreadyConnected(address) {
+        this._registerEvents();
+        this.setConnected(address);
     }
 
     /**
