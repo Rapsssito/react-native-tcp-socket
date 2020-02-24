@@ -47,11 +47,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.7.7",
-    "babel-jest": "^24.9.0",
     "@semantic-release/changelog": "^5.0.0",
     "@semantic-release/git": "^9.0.0",
     "@semantic-release/github": "^7.0.0",
     "@semantic-release/npm": "^7.0.0",
+    "babel-jest": "^24.9.0",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-jest": "^23.6.0",
@@ -61,7 +61,8 @@
     "prettier": "^1.18.2",
     "react": "16.9.0",
     "react-native": "^0.61.4",
-    "semantic-release": "^17.0.1"
+    "semantic-release": "^17.0.1",
+    "typescript": "^3.8.2"
   },
   "dependencies": {
     "buffer": "^5.4.3"
