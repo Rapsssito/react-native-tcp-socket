@@ -7,7 +7,10 @@
   "scripts": {
     "ci": "yarn install --frozen-lockfile && yarn lint && yarn test",
     "lint": "eslint .",
-    "test": "jest ./__tests__"
+    "checkjs": "tsc",
+    "test": "jest ./__tests__",
+    "declaration:build": "tsc -p ./declaration.tsconfig.json",
+    "prepublishOnly": "yarn declaration:build && yarn checkjs"
   },
   "files": [
     "/android/src/",

@@ -1,8 +1,10 @@
 {
     "compilerOptions": {
-        "target": "es6",
-        "allowSyntheticDefaultImports": true,
-        "checkJs": true
+        "allowJs": true,
+        "checkJs": true,
+        "noEmit": true,
+        "strict": true,
+        "skipLibCheck": true,
     },
-    "exclude": ["node_modules", "coverage", ".github"]
+    "include": ["src/", "__tests__/", "__mocks__/"],
 }
