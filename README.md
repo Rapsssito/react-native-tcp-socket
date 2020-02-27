@@ -168,7 +168,7 @@ server.on('close', () => {
 | `host` | `<string>` | ✅  |   ✅  | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
 | `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
-| `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi'`. |
+| `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
 | `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
 
 **Note**: The platforms marked as ❌ use the default value.

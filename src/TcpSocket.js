@@ -32,7 +32,7 @@ class RemovableListener {
 }
 
 /**
- * @typedef {{ port: number; host?: string; timeout?: number; localAddress?: string, localPort?: number, interface?: 'wifi', reuseAddress?: boolean}} ConnectionOptions
+ * @typedef {{ port: number; host?: string; timeout?: number; localAddress?: string, localPort?: number, interface?: 'wifi' | 'cellular' | 'ethernet', reuseAddress?: boolean}} ConnectionOptions
  */
 export default class TcpSocket {
     /**
