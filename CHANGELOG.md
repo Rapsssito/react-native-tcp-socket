@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.3.1...v3.4.0) (2020-02-27)
+
+
+### Features
+
+* **Android:** Connect from "cellular" & "ethernet" interfaces ([14bea9b](https://github.com/Rapsssito/react-native-tcp-socket/commit/14bea9b49db0971ac38142dcc91376d7d3752212))
+
 ## [3.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.3.0...v3.3.1) (2020-02-24)
 
 

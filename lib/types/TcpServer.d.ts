@@ -33,11 +33,7 @@ export default class TcpServer extends TcpSocket {
         timeout?: number | undefined;
         localAddress?: string | undefined;
         localPort?: number | undefined;
-        interface?: "wifi" | undefined; /**
-         * @param {{ port: number; host: any; }} options
-         * @param {(arg0: any) => void} callback
-         * @returns {TcpServer}
-         */
+        interface?: "wifi" | "cellular" | "ethernet" | undefined;
         reuseAddress?: boolean | undefined;
     }, callback?: ((address: string) => void) | undefined): TcpServer;
     setTimeout(msecs: number, callback?: ((...args: any[]) => void) | undefined): TcpServer;

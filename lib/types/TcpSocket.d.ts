@@ -1,5 +1,5 @@
 /**
- * @typedef {{ port: number; host?: string; timeout?: number; localAddress?: string, localPort?: number, interface?: 'wifi', reuseAddress?: boolean}} ConnectionOptions
+ * @typedef {{ port: number; host?: string; timeout?: number; localAddress?: string, localPort?: number, interface?: 'wifi' | 'cellular' | 'ethernet', reuseAddress?: boolean}} ConnectionOptions
  */
 export default class TcpSocket {
     /**
@@ -47,7 +47,7 @@ export default class TcpSocket {
         timeout?: number | undefined;
         localAddress?: string | undefined;
         localPort?: number | undefined;
-        interface?: "wifi" | undefined;
+        interface?: "wifi" | "cellular" | "ethernet" | undefined;
         reuseAddress?: boolean | undefined;
     }, callback?: ((address: string) => void) | undefined): TcpSocket;
     _destroyed: boolean | undefined;
@@ -137,7 +137,7 @@ export type ConnectionOptions = {
     timeout?: number | undefined;
     localAddress?: string | undefined;
     localPort?: number | undefined;
-    interface?: "wifi" | undefined;
+    interface?: "wifi" | "cellular" | "ethernet" | undefined;
     reuseAddress?: boolean | undefined;
 };
 declare class RemovableListener {

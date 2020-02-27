@@ -19,7 +19,7 @@ declare class TCPSockets {
         timeout?: number | undefined;
         localAddress?: string | undefined;
         localPort?: number | undefined;
-        interface?: "wifi" | undefined;
+        interface?: "wifi" | "cellular" | "ethernet" | undefined;
         reuseAddress?: boolean | undefined;
     }, callback: (address: string) => void): Socket;
 }
