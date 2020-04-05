@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		13BE3DEE1AC21097009241FE /* TcpSockets.m in Sources */ = {isa = PBXBuildFile; fileRef = 13BE3DED1AC21097009241FE /* TcpSockets.m */; };
-		5B2C589623CCE7F900675C09 /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B2C589423CCE7F900675C09 /* GCDAsyncSocket.m */; };
 		7350006B1AFF9AB600ED3C82 /* TcpSocketClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 7350006A1AFF9AB600ED3C82 /* TcpSocketClient.m */; };
 		73D9377D1AFF9EBE00450142 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73D9377C1AFF9EBE00450142 /* CFNetwork.framework */; };
 		A3BFD955B1256CDF4A661141 /* Pods_TcpSockets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 306C7081FE46E252ED0AA4EC /* Pods_TcpSockets.framework */; };
@@ -34,8 +33,6 @@
 		21FB648B23550434005D9173 /* React */ = {isa = PBXFileReference; lastKnownFileType = folder; name = React; path = "../node_modules/react-native/React"; sourceTree = "<group>"; };
 		306C7081FE46E252ED0AA4EC /* Pods_TcpSockets.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TcpSockets.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4290C7B94EC5D125995B2E0E /* Pods-TcpSockets.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TcpSockets.release.xcconfig"; path = "Target Support Files/Pods-TcpSockets/Pods-TcpSockets.release.xcconfig"; sourceTree = "<group>"; };
-		5B2C589423CCE7F900675C09 /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDAsyncSocket.m; sourceTree = "<group>"; };
-		5B2C589523CCE7F900675C09 /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDAsyncSocket.h; sourceTree = "<group>"; };
 		735000691AFF9AB600ED3C82 /* TcpSocketClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TcpSocketClient.h; sourceTree = "<group>"; };
 		7350006A1AFF9AB600ED3C82 /* TcpSocketClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TcpSocketClient.m; sourceTree = "<group>"; };
 		73D9377C1AFF9EBE00450142 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
@@ -83,7 +80,6 @@
 		58B511D21A9E6C8500147676 = {
 			isa = PBXGroup;
 			children = (
-				5B2C589323CCE7F900675C09 /* CocoaAsyncSocket */,
 				73D9377C1AFF9EBE00450142 /* CFNetwork.framework */,
 				735000691AFF9AB600ED3C82 /* TcpSocketClient.h */,
 				7350006A1AFF9AB600ED3C82 /* TcpSocketClient.m */,
@@ -93,15 +89,6 @@
 				21FB648A23550434005D9173 /* Frameworks */,
 				2A7C4AF4314B875BA033EDC3 /* Pods */,
 			);
-			sourceTree = "<group>";
-		};
-		5B2C589323CCE7F900675C09 /* CocoaAsyncSocket */ = {
-			isa = PBXGroup;
-			children = (
-				5B2C589423CCE7F900675C09 /* GCDAsyncSocket.m */,
-				5B2C589523CCE7F900675C09 /* GCDAsyncSocket.h */,
-			);
-			path = CocoaAsyncSocket;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -187,7 +174,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B2C589623CCE7F900675C09 /* GCDAsyncSocket.m in Sources */,
 				7350006B1AFF9AB600ED3C82 /* TcpSocketClient.m in Sources */,
 				13BE3DEE1AC21097009241FE /* TcpSockets.m in Sources */,
 			);
