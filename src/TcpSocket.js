@@ -31,6 +31,9 @@ class RemovableListener {
     }
 }
 
+/**
+ * @typedef {{ port: number; host?: string; timeout?: number; localAddress?: string, localPort?: number, interface?: 'wifi' | 'cellular' | 'ethernet', reuseAddress?: boolean}} ConnectionOptions
+ */
 export default class TcpSocket {
     /**
      * Initialices a TcpSocket.
@@ -41,6 +44,7 @@ export default class TcpSocket {
     constructor(id, eventEmitter) {
         this._id = id;
         this._eventEmitter = eventEmitter;
+        /** @type {number} */
         this._state = STATE.DISCONNECTED;
         /** @type {RemovableListener[]} */
         this._listeners = [];
@@ -52,8 +56,9 @@ export default class TcpSocket {
      * The data arguments emitted will be passed to the listener callback.
      *
      * @param {string} event  Name of the event to listen to
-     * @param {function(object): void} callback Function to invoke when the specified event is emitted
+     * @param {(arg0: any) => void} callback Function to invoke when the specified event is emitted
      * @param {any} [context] Optional context object to use when invoking the listener
+     * @returns {RemovableListener}
      */
     on(event, callback, context) {
         const newListener = this._selectListener(event, callback, context);
@@ -63,6 +68,7 @@ export default class TcpSocket {
     }
 
     /**
+     * @private
      * @param {string} event
      * @param {function(any):void} callback
      * @param {any} [context]
@@ -100,6 +106,9 @@ export default class TcpSocket {
         }
     }
 
+    /**
+     * @deprecated
+     */
     off() {
         console.warn(
             'TCPSocket.off() is deprecated and produces no effect, please use the listener remove() method instead.'
@@ -107,7 +116,7 @@ export default class TcpSocket {
     }
 
     /**
-     * @param {{ host: string; port: number; timeout: number; }} options
+     * @param {ConnectionOptions} options
      * @param {(address: string) => void} [callback]
      */
     connect(options, callback) {
@@ -128,6 +137,7 @@ export default class TcpSocket {
     }
 
     /**
+     * @private
      * @param {number} msecs
      * @param {() => void} [wrapper]
      */
@@ -149,6 +159,9 @@ export default class TcpSocket {
         };
     }
 
+    /**
+     * @private
+     */
     _clearTimeout() {
         if (this._timeout) {
             clearTimeout(this._timeout.handle);
@@ -157,8 +170,9 @@ export default class TcpSocket {
     }
 
     /**
+     * @deprecated
      * @param {number} msecs
-     * @param {{ (...args: any[]): any; (...args: any[]): any; }} [callback]
+     * @param {(...args: any[]) => void } [callback]
      */
     setTimeout(msecs, callback) {
         if (msecs === 0) {
@@ -195,62 +209,72 @@ export default class TcpSocket {
         }
     }
 
+    /**
+     * @protected
+     */
     _registerEvents() {
         this.on('connect', (ev) => this._onConnect(ev.address));
         this.on('close', () => this._onClose());
         this.on('error', () => this._onError());
     }
 
+    /**
+     * @private
+     */
     _unregisterEvents() {
         this._listeners.forEach((listener) => (listener.isRemoved() ? listener.remove() : null));
         this._listeners = [];
     }
 
     /**
+     * @private
      * @param {string} address
      */
     _onConnect(address) {
         this.setConnected(address);
     }
 
+    /**
+     * @private
+     */
     _onClose() {
         this.setDisconnected();
     }
 
+    /**
+     * @private
+     */
     _onError() {
         this.destroy();
     }
 
     /**
+     * Sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
+     *
+     * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
      *
      * @param {string | Buffer | Uint8Array} buffer
      * @param {BufferEncoding} [encoding]
-     * @param {(error?: string) => void} [callback]
+     * @param {(error: string | null) => void} [callback]
      */
     write(buffer, encoding, callback) {
         const self = this;
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
         callback = callback || (() => {});
-        let str;
-        if (typeof buffer === 'string') str = Buffer.from(buffer, encoding).toString('base64');
-        else if (Buffer.isBuffer(buffer)) str = buffer.toString('base64');
-        else if (buffer instanceof Uint8Array || Array.isArray(buffer)) str = Buffer.from(buffer);
-        else
-            throw new TypeError(
-                `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
-            );
-
+        const generatedBuffer = this._generateSendBuffer(buffer, encoding);
         Sockets.write(
             this._id,
-            str,
+            generatedBuffer.toString('base64'),
             /**
              * @param {string} err
              */
             function(err) {
                 if (self._timeout) self._activeTimer(self._timeout.msecs);
-                if (err) return callback(err);
-                callback();
+                if (callback) {
+                    if (err) return callback(err);
+                    callback(null);
+                }
             }
         );
     }
@@ -258,11 +282,38 @@ export default class TcpSocket {
     /**
      * @param {string} address
      */
+    setAsAlreadyConnected(address) {
+        this._registerEvents();
+        this.setConnected(address);
+    }
+
+    /**
+     * @private
+     * @param {string | Buffer | Uint8Array} buffer
+     * @param {BufferEncoding} [encoding]
+     */
+    _generateSendBuffer(buffer, encoding) {
+        if (typeof buffer === 'string') return Buffer.from(buffer, encoding);
+        else if (Buffer.isBuffer(buffer)) return buffer;
+        else if (buffer instanceof Uint8Array || Array.isArray(buffer)) return Buffer.from(buffer);
+        else
+            throw new TypeError(
+                `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
+            );
+    }
+
+    /**
+     * @private
+     * @param {string} address
+     */
     setConnected(address) {
         this._state = STATE.CONNECTED;
         this._address = address;
     }
 
+    /**
+     * @private
+     */
     setDisconnected() {
         if (this._state === STATE.DISCONNECTED) return;
         this._unregisterEvents();

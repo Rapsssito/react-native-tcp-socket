@@ -1,4 +1,4 @@
-name: Release
+name: release
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12
-      - name: Install dependencies
+      - name: CI
         run: yarn ci
       - name: Release
         env:

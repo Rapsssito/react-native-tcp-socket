@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig",
+    "compilerOptions": {
+        "declaration": true,
+        "noEmit": false,
+        "emitDeclarationOnly": true,
+        "outDir": "./lib/types"
+    },
+    "exclude": ["__tests__", "__mocks__"]
+}

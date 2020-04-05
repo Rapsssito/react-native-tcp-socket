@@ -1,3 +1,5 @@
 examples/
 ios/
 android/
+coverage/
+node_modules/

@@ -26,19 +26,18 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpReceiverTask.OnDataReceivedListener {
-
+    private static final String TAG = "TcpSockets";
     private final ReactApplicationContext mReactContext;
     private final ConcurrentHashMap<Integer, TcpSocketClient> socketClients = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Network> mNetworkMap = new ConcurrentHashMap<>();
-    @Nullable
-    private Network mSelectedNetwork;
-
-    private static final String TAG = "TcpSockets";
+    private final CurrentNetwork currentNetwork = new CurrentNetwork();
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -55,53 +54,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         mReactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
-    }
-
-    /**
-     * Returns a network given its interface name:
-     * "wifi" -> WIFI
-     * "cellular" -> Cellular
-     * etc...
-     */
-    private void selectNetwork(@Nullable final String iface, @Nullable final String ipAddress) throws InterruptedException {
-        if (iface == null) return;
-        mSelectedNetwork = null;
-        if (ipAddress != null) {
-            Network cachedNetwork = mNetworkMap.get(ipAddress);
-            if (cachedNetwork != null) {
-                mSelectedNetwork = cachedNetwork;
-                return;
-            }
-        }
-        final CountDownLatch awaitingNetwork = new CountDownLatch(1); // only needs to be counted down once to release waiting threads
-        final ConnectivityManager cm = (ConnectivityManager) mReactContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
-        switch (iface) {
-            case "wifi":
-                requestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
-                cm.requestNetwork(requestBuilder.build(), new ConnectivityManager.NetworkCallback() {
-                    @Override
-                    public void onAvailable(Network network) {
-                        mSelectedNetwork = network;
-                        if (ipAddress != null && !ipAddress.equals("0.0.0.0"))
-                            mNetworkMap.put(ipAddress, mSelectedNetwork);
-                        awaitingNetwork.countDown(); // Stop waiting
-                    }
-
-                    @Override
-                    public void onUnavailable() {
-                        awaitingNetwork.countDown(); // Stop waiting
-                    }
-                });
-                awaitingNetwork.await();
-                break;
-            case "cellular": // TODO
-            default:
-                mSelectedNetwork = null;
-                break;
-        }
-        if (mSelectedNetwork != null && ipAddress != null && !ipAddress.equals("0.0.0.0"))
-            mNetworkMap.put(ipAddress, mSelectedNetwork);
     }
 
     /**
@@ -126,12 +78,12 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 }
                 try {
                     // Get the network interface
-                    String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : null;
-                    String iface = options.hasKey("interface") ? options.getString("interface") : null;
+                    final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : null;
+                    final String iface = options.hasKey("interface") ? options.getString("interface") : null;
                     selectNetwork(iface, localAddress);
                     client = new TcpSocketClient(TcpSocketModule.this, cId, null);
                     socketClients.put(cId, client);
-                    client.connect(host, port, options, mSelectedNetwork);
+                    client.connect(host, port, options, currentNetwork.getNetwork());
                     onConnect(cId, host, port);
                 } catch (Exception e) {
                     onError(cId, e.getMessage());
@@ -209,6 +161,68 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private void requestNetwork(final int transportType) throws InterruptedException {
+        final NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
+        requestBuilder.addTransportType(transportType);
+        final CountDownLatch awaitingNetwork = new CountDownLatch(1); // only needs to be counted down once to release waiting threads
+        final ConnectivityManager cm = (ConnectivityManager) mReactContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        cm.requestNetwork(requestBuilder.build(), new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                currentNetwork.setNetwork(network);
+                awaitingNetwork.countDown(); // Stop waiting
+            }
+
+            @Override
+            public void onUnavailable() {
+                awaitingNetwork.countDown(); // Stop waiting
+            }
+        });
+        // Timeout if there the network is unreachable
+        ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1);
+        exec.schedule(new Runnable() {
+            public void run() {
+                awaitingNetwork.countDown(); // Stop waiting
+            }
+        }, 5, TimeUnit.SECONDS);
+        awaitingNetwork.await();
+    }
+
+    // REQUEST NETWORK
+
+    /**
+     * Returns a network given its interface name:
+     * "wifi" -> WIFI
+     * "cellular" -> Cellular
+     * etc...
+     */
+    private void selectNetwork(@Nullable final String iface, @Nullable final String ipAddress) throws InterruptedException, IOException {
+        currentNetwork.setNetwork(null);
+        if (iface == null) return;
+        if (ipAddress != null) {
+            final Network cachedNetwork = mNetworkMap.get(iface + ipAddress);
+            if (cachedNetwork != null) {
+                currentNetwork.setNetwork(cachedNetwork);
+                return;
+            }
+        }
+        switch (iface) {
+            case "wifi":
+                requestNetwork(NetworkCapabilities.TRANSPORT_WIFI);
+                break;
+            case "cellular":
+                requestNetwork(NetworkCapabilities.TRANSPORT_CELLULAR);
+                break;
+            case "ethernet":
+                requestNetwork(NetworkCapabilities.TRANSPORT_ETHERNET);
+                break;
+        }
+        if (currentNetwork.getNetwork() == null) {
+            throw new IOException("Interface " + iface + " unreachable");
+        } else if (ipAddress != null && !ipAddress.equals("0.0.0.0"))
+            mNetworkMap.put(iface + ipAddress, currentNetwork.getNetwork());
+    }
+
     // TcpReceiverTask.OnDataReceivedListener
 
     @Override
@@ -272,5 +286,22 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         eventParams.putMap("info", infoParams);
 
         sendEvent("connection", eventParams);
+    }
+
+    private class CurrentNetwork {
+        @Nullable
+        Network network = null;
+
+        private CurrentNetwork() {
+        }
+
+        @Nullable
+        private Network getNetwork() {
+            return network;
+        }
+
+        private void setNetwork(@Nullable final Network network) {
+            this.network = network;
+        }
     }
 }
