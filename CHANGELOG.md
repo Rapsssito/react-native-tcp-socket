@@ -1,3 +1,10 @@
+## [3.4.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.4.1...v3.4.2) (2020-04-06)
+
+
+### Bug Fixes
+
+* Fix write() callback invoking IOException objects ([f07ee07](https://github.com/Rapsssito/react-native-tcp-socket/commit/f07ee07b7cf85957634ebd1a7a71b65c7f7e7c77)), closes [#39](https://github.com/Rapsssito/react-native-tcp-socket/issues/39)
+
 ## [3.4.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.4.0...v3.4.1) (2020-04-05)
 
 
