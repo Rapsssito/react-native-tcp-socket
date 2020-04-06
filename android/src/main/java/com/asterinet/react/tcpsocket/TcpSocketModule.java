@@ -95,7 +95,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
-    public void write(final Integer cId, final String base64String, final Callback callback) {
+    public void write(@NonNull final Integer cId, @NonNull final String base64String, @Nullable final Callback callback) {
         new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
@@ -105,14 +105,14 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 }
                 try {
                     socketClient.write(Base64.decode(base64String, Base64.NO_WRAP));
+                    if (callback != null) {
+                        callback.invoke();
+                    }
                 } catch (IOException e) {
                     if (callback != null) {
-                        callback.invoke(e);
-                        return;
+                        callback.invoke(e.toString());
                     }
-                }
-                if (callback != null) {
-                    callback.invoke();
+                    onError(cId, e.toString());
                 }
             }
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
