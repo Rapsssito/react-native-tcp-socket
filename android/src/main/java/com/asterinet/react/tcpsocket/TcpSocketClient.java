@@ -12,6 +12,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -44,7 +47,14 @@ class TcpSocketClient {
 
     public void connect(@NonNull final String address, @NonNull final Integer port, @NonNull final ReadableMap options, @Nullable final Network network) throws IOException {
         if (socket != null) throw new IOException("Already connected");
-        socket = new Socket();
+        final boolean isTls = options.hasKey("tls") && options.getBoolean("tls");
+        if (isTls) {
+            final SSLSocket sslSocket = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
+            sslSocket.setUseClientMode(true);
+            socket = sslSocket;
+        } else {
+            socket = new Socket();
+        }
         // Get the addresses
         final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : "0.0.0.0";
         final InetAddress localInetAddress = InetAddress.getByName(localAddress);
@@ -63,6 +73,7 @@ class TcpSocketClient {
         // bind
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
+        if (isTls) ((SSLSocket) socket).startHandshake();
         startListening();
     }
 
@@ -77,10 +88,11 @@ class TcpSocketClient {
      * @param data data to be sent
      */
     public void write(final byte[] data) throws IOException {
-        if (socket != null && !socket.isClosed()) {
-            OutputStream output = socket.getOutputStream();
-            output.write(data);
+        if (socket == null) {
+            throw new IOException("Socket is not connected.");
         }
+        OutputStream output = socket.getOutputStream();
+        output.write(data);
     }
 
     /**

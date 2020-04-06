@@ -169,6 +169,7 @@ server.on('close', () => {
 | `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
 | `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
+| `tls`| `<boolean>` | ❌  |   ✅  | Enable/disable SSL/TLS socket creation. **Default**: `false`. |
 | `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
 
 **Note**: The platforms marked as ❌ use the default value.
