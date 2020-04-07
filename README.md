@@ -193,7 +193,7 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
 | `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
 | `tls`| `<boolean>` | ❌  |   ✅  | Enable/disable SSL/TLS socket creation. **Default**: `false`. |
-| `tlsCert`| `<any>` | ❌  |   ✅  | Resource file to a CA (in .crt or .cer format, for instance) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _See [example](#SSL_Client)_. **Default**: `null`. |
+| `tlsCert`| `<any>` | ❌  |   ✅  | Resource file to a CA (in .crt or .cer format, for instance) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _See [example](#ssl-client)_. **Default**: `null`. |
 | `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
 | `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
 
