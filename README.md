@@ -170,7 +170,8 @@ const client = TcpSocket.createConnection({
     port: 8443,
     host: "example.com",
     tls: true,
-    tlsCert: require('./test.pem') // Self-signed certificate
+    // tlsCheckValidity: false, // Disable validity checking
+    // tlsCert: require('./selfmade.pem') // Self-signed certificate
 });
 
 // ...
