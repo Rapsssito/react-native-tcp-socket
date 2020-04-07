@@ -7,6 +7,7 @@ React Native TCP socket API for Android & iOS with SSL/TLS support. It allows yo
 ## Table of Contents
 
 - [Getting started](#getting-started)
+  - [Self-Signed SSL](#self-signed-ssl-only-available-for-react-native--060)
 - [Compatibility](#react-native-compatibility)
 - [Usage](#usage)
 - [API](#icon-component)
@@ -117,7 +118,7 @@ import TcpSocket from 'react-native-tcp-socket';
 ### Client
 ```javascript
 // Create socket
-var client = TcpSocket.createConnection(options);
+const client = TcpSocket.createConnection(options);
 
 client.on('data', function(data) {
   console.log('message was received', data);
@@ -140,7 +141,7 @@ client.destroy();
 
 ### Server
 ```javascript
-var server = TcpSocket.createServer(function(socket) {
+const server = TcpSocket.createServer(function(socket) {
   socket.on('data', (data) => {
     socket.write('Echo server', data);
   });
@@ -165,12 +166,14 @@ server.on('close', () => {
 
 ### SSL Client
 ```javascript
-var client = TcpSocket.createConnection({
+const client = TcpSocket.createConnection({
     port: 8443,
     host: "example.com",
     tls: true,
     tlsCert: require('./test.pem') // Self-signed certificate
 });
+
+// ...
 ```
 _Note: In order to use self-signed certificates make sure to [update your metro.config.js configuration](#self-signed-ssl-only-available-for-react-native--060)._
 
