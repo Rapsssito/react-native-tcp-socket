@@ -172,7 +172,7 @@ var client = TcpSocket.createConnection({
     tlsCert: require('./test.pem') // Self-signed certificate
 });
 ```
-_Note: In order to use self-signed certificates make sure to [update your metro.config.js configuration]()._
+_Note: In order to use self-signed certificates make sure to [update your metro.config.js configuration](#self-signed-ssl-only-available-for-react-native--060)._
 
 ## API
 ### Client
