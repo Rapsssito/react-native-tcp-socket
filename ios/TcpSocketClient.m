@@ -14,6 +14,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 @interface TcpSocketClient()
 {
 @private
+    BOOL _tls;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
     NSLock *_lock;
@@ -84,7 +85,10 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                                withTimeout:-1
                                      error:error];
     }
-
+    _tls = (options?[options[@"tls"] boolValue]:false);
+    if (_tls) {
+        [_tcpSocket startTLS:nil];
+    }
     return result;
 }
 
@@ -225,15 +229,26 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     [newSocket readDataWithTimeout:-1 tag:inComing.id.longValue];
 }
 
+-  (void)socketDidSecure:(GCDAsyncSocket *)sock
+{
+    // Only for TLS
+    if (!_clientDelegate) {
+        RCTLogWarn(@"socketDidSecure with nil clientDelegate for %@", [sock userData]);
+        return;
+    }
+    [_clientDelegate onConnect:self];
+}
+
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
 {
     if (!_clientDelegate) {
         RCTLogWarn(@"didConnectToHost with nil clientDelegate for %@", [sock userData]);
         return;
     }
-
-    [_clientDelegate onConnect:self];
-
+    // Show up if SSL handsake is done
+    if (!_tls) {
+        [_clientDelegate onConnect:self];
+    }
     [sock readDataWithTimeout:-1 tag:_id.longValue];
 }
 
