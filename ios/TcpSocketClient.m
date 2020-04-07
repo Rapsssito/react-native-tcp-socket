@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2015-present, Peel Technologies, Inc.
- * All rights reserved.
- */
-
 #import <netinet/in.h>
 #import <arpa/inet.h>
 #import "TcpSocketClient.h"
@@ -15,6 +10,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 {
 @private
     BOOL _tls;
+    NSString *_certPath;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
     NSLock *_lock;
@@ -86,8 +82,18 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                                      error:error];
     }
     _tls = (options?[options[@"tls"] boolValue]:false);
-    if (_tls) {
-        [_tcpSocket startTLS:nil];
+    if (result && _tls){
+        NSMutableDictionary *settings = [NSMutableDictionary dictionary];
+        NSString *certResourcePath = (options?options[@"tlsCert"]:nil);
+        if (certResourcePath != nil) {
+            // Self-signed certificate
+            _certPath = certResourcePath;
+            [settings setObject:[NSNumber numberWithBool:YES] forKey:GCDAsyncSocketManuallyEvaluateTrust];
+        } else {
+            // Default certificates
+            [settings setObject:host forKey:(NSString *) kCFStreamSSLPeerName];
+        }
+        [_tcpSocket startTLS:settings];
     }
     return result;
 }
@@ -236,7 +242,58 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         RCTLogWarn(@"socketDidSecure with nil clientDelegate for %@", [sock userData]);
         return;
     }
+
     [_clientDelegate onConnect:self];
+}
+
+- (void)socket:(GCDAsyncSocket *)sock didReceiveTrust:(SecTrustRef)trust completionHandler:(void (^)(BOOL shouldTrustPeer))completionHandler {
+    // Server certificate
+    SecCertificateRef serverCertificate = SecTrustGetCertificateAtIndex(trust, 0);
+    CFDataRef serverCertificateData = SecCertificateCopyData(serverCertificate);
+    const UInt8* const serverData = CFDataGetBytePtr(serverCertificateData);
+    const CFIndex serverDataSize = CFDataGetLength(serverCertificateData);
+    NSData* cert1 = [NSData dataWithBytes:serverData length:(NSUInteger)serverDataSize];
+
+    // Local certificate
+    NSURL *certUrl = [[NSURL alloc] initWithString:_certPath];
+    NSString *pem = [[NSString alloc] initWithContentsOfURL:certUrl encoding:NSUTF8StringEncoding error:NULL];
+    
+    // Strip PEM header and footers. We don't support multi-certificate PEM.
+    NSMutableString *pemMutable = [pem stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet].mutableCopy;
+    
+    // Strip PEM header and footer
+    [pemMutable replaceOccurrencesOfString:@"-----BEGIN CERTIFICATE-----"
+                                withString:@""
+                                   options:(NSStringCompareOptions)(NSAnchoredSearch | NSLiteralSearch)
+                                     range:NSMakeRange(0, pemMutable.length)];
+    
+    [pemMutable replaceOccurrencesOfString:@"-----END CERTIFICATE-----"
+                                withString:@""
+                                   options:(NSStringCompareOptions)(NSAnchoredSearch | NSBackwardsSearch | NSLiteralSearch)
+                                     range:NSMakeRange(0, pemMutable.length)];
+    
+    NSData *pemData = [[NSData alloc] initWithBase64EncodedString:pemMutable options:NSDataBase64DecodingIgnoreUnknownCharacters];
+    SecCertificateRef localCertificate = SecCertificateCreateWithData(NULL, (CFDataRef)pemData);
+    if (!localCertificate)
+    {
+        [NSException raise:@"Configuration invalid" format:@"Failed to parse PEM certificate"];
+    }
+    
+    CFDataRef myCertData = SecCertificateCopyData(localCertificate);
+    const UInt8* const localData = CFDataGetBytePtr(myCertData);
+    const CFIndex localDataSize = CFDataGetLength(myCertData);
+    NSData* cert2 = [NSData dataWithBytes:localData length:(NSUInteger)localDataSize];
+    
+    if (cert1 == nil || cert2 == nil) {
+        RCTLogWarn(@"BAD SSL CERTIFICATE");
+        completionHandler(NO);
+        return;
+    }
+    if ([cert1 isEqualToData:cert2]) {
+        completionHandler(YES);
+    }else {
+        completionHandler(NO);
+    }
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
@@ -245,6 +302,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         RCTLogWarn(@"didConnectToHost with nil clientDelegate for %@", [sock userData]);
         return;
     }
+    
     // Show up if SSL handsake is done
     if (!_tls) {
         [_clientDelegate onConnect:self];

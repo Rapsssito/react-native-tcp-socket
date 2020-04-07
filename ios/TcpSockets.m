@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2015-present, Peel Technologies, Inc.
- * All rights reserved.
- */
-
 #import <React/RCTAssert.h>
 #import <React/RCTEventDispatcher.h>
 #import <React/RCTConvert.h>

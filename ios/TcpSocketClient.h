@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2015-present, Peel Technologies, Inc.
- * All rights reserved.
- */
-
 #import <React/RCTBridgeModule.h>
 #import "CocoaAsyncSocket/GCDAsyncSocket.h"
 
