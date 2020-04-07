@@ -198,7 +198,7 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
 | `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
 | `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
 | `tls`| `<boolean>` | ✅  |   ✅  | Enable/disable SSL/TLS socket creation. **Default**: `false`. |
-| `tlsCheckValidity`| `<boolean>` | ❌  |   ✅  | Enable/disable SSL/TLS certificate validity check. **Default**: `true`. |
+| `tlsCheckValidity`| `<boolean>` | ✅  |   ✅  | Enable/disable SSL/TLS certificate validity check. **Default**: `true`. |
 | `tlsCert`| `<any>` | ✅  |   ✅  | CA file (.pem format) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _See [example](#ssl-client) for more info_. **Default**: `null`. |
 
 **Note**: The platforms marked as ❌ use the default value.

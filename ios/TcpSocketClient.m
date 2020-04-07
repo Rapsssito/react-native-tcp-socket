@@ -10,6 +10,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 {
 @private
     BOOL _tls;
+    BOOL _checkValidity;
     NSString *_certPath;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
@@ -64,8 +65,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     BOOL result = false;
 
-    NSString *localAddress = (options?options[@"localAddress"]:nil);
-    NSNumber *localPort = (options?options[@"localPort"]:nil);
+    NSString *localAddress = options[@"localAddress"];
+    NSNumber *localPort = options[@"localPort"];
 
     if (!localAddress && !localPort) {
         result = [_tcpSocket connectToHost:host onPort:port error:error];
@@ -81,11 +82,16 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                                withTimeout:-1
                                      error:error];
     }
-    _tls = (options?[options[@"tls"] boolValue]:false);
+    _tls = (options[@"tls"]?[options[@"tls"] boolValue]:false);
     if (result && _tls){
         NSMutableDictionary *settings = [NSMutableDictionary dictionary];
-        NSString *certResourcePath = (options?options[@"tlsCert"]:nil);
-        if (certResourcePath != nil) {
+        NSString *certResourcePath = options[@"tlsCert"];
+        BOOL checkValidity = (options[@"tlsCheckValidity"]?[options[@"tlsCheckValidity"] boolValue]:true);
+        if (!checkValidity) {
+            // Do not validate
+            _checkValidity = false;
+            [settings setObject:[NSNumber numberWithBool:YES] forKey:GCDAsyncSocketManuallyEvaluateTrust];
+        } else if (certResourcePath != nil) {
             // Self-signed certificate
             _certPath = certResourcePath;
             [settings setObject:[NSNumber numberWithBool:YES] forKey:GCDAsyncSocketManuallyEvaluateTrust];
@@ -247,6 +253,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didReceiveTrust:(SecTrustRef)trust completionHandler:(void (^)(BOOL shouldTrustPeer))completionHandler {
+    // Check if we should check the validity
+    if (!_checkValidity) {
+        completionHandler(YES);
+        return;
+    }
+    
     // Server certificate
     SecCertificateRef serverCertificate = SecTrustGetCertificateAtIndex(trust, 0);
     CFDataRef serverCertificateData = SecCertificateCopyData(serverCertificate);
