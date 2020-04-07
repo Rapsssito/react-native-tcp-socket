@@ -2,7 +2,7 @@
 ![](https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg)
 
 
-React Native TCP socket API for Android & iOS. It allows you to create TCP clients and servers sockets, simulating node's [net](https://nodejs.org/api/net.html) API.
+React Native TCP socket API for Android & iOS with SSL/TLS support. It allows you to create TCP clients and servers sockets, simulating node's [net](https://nodejs.org/api/net.html) API.
 
 ## Table of Contents
 
@@ -48,11 +48,23 @@ Linking the package manually is not required anymore with [Autolinking](https://
     }
   ```
 
-  Modify your **`android/app/src/main/AndroidManifest.xml`** and add the following:
-  ```
-    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-  ```
-  
+#### Self-Signed SSL (only available for React Native > 0.60)
+You will need a [metro.config.js](https://facebook.github.io/metro/docs/en/configuration.html) file in order to use a self-signed SSL certificate library. You should already have this file in your root project directory, but if you don't, create it.
+Inside a `module.exports` object, create a key called `resolver` with another object called `assetExts`. The value of `assetExts` should be an array of the resource file extensions you want to support.
+
+For example, if you want to support `.pem` files (plus all the already supported files), your `metro.config.js` would like like this:
+```javascript
+const {getDefaultConfig} = require('metro-config');
+const defaultConfig = getDefaultConfig.getDefaultValues(__dirname);
+
+module.exports = {
+  resolver: {
+    assetExts: [...defaultConfig.resolver.assetExts, 'pem'],
+  },
+  // ...
+};
+```
+
   
 #### Using React Native < 0.60
 
@@ -125,6 +137,7 @@ client.write('Hello server!');
 // Close socket
 client.destroy();
 ```
+
 ### Server
 ```javascript
 var server = TcpSocket.createServer(function(socket) {
@@ -150,6 +163,17 @@ server.on('close', () => {
 });
 ```
 
+### SSL Client
+```javascript
+var client = TcpSocket.createConnection({
+    port: 8443,
+    host: "example.com",
+    tls: true,
+    tlsCert: require('./test.pem') // Self-signed certificate
+});
+```
+_Note: In order to use self-signed certificates make sure to [update your metro.config.js configuration]()._
+
 ## API
 ### Client
 * **Methods:**
@@ -168,8 +192,9 @@ server.on('close', () => {
 | `host` | `<string>` | ✅  |   ✅  | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
 | `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
-| `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
 | `tls`| `<boolean>` | ❌  |   ✅  | Enable/disable SSL/TLS socket creation. **Default**: `false`. |
+| `tlsCert`| `<any>` | ❌  |   ✅  | Resource file to a CA (in .crt or .cer format, for instance) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _See [example](#SSL_Client)_. **Default**: `null`. |
+| `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
 | `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
 
 **Note**: The platforms marked as ❌ use the default value.

@@ -83,7 +83,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     selectNetwork(iface, localAddress);
                     client = new TcpSocketClient(TcpSocketModule.this, cId, null);
                     socketClients.put(cId, client);
-                    client.connect(host, port, options, currentNetwork.getNetwork());
+                    client.connect(mReactContext, host, port, options, currentNetwork.getNetwork());
                     onConnect(cId, host, port);
                 } catch (Exception e) {
                     onError(cId, e.getMessage());
@@ -288,7 +288,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         sendEvent("connection", eventParams);
     }
 
-    private class CurrentNetwork {
+    private static class CurrentNetwork {
         @Nullable
         Network network = null;
 

@@ -1,5 +1,6 @@
 package com.asterinet.react.tcpsocket;
 
+import android.content.Context;
 import android.net.Network;
 import android.os.AsyncTask;
 import android.util.Pair;
@@ -12,6 +13,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -45,11 +47,13 @@ class TcpSocketClient {
         return socket;
     }
 
-    public void connect(@NonNull final String address, @NonNull final Integer port, @NonNull final ReadableMap options, @Nullable final Network network) throws IOException {
+    public void connect(@NonNull final Context context, @NonNull final String address, @NonNull final Integer port, @NonNull final ReadableMap options, @Nullable final Network network) throws IOException {
         if (socket != null) throw new IOException("Already connected");
         final boolean isTls = options.hasKey("tls") && options.getBoolean("tls");
         if (isTls) {
-            final SSLSocket sslSocket = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
+            final String customTlsCert = options.hasKey("tlsCert") ? options.getString("tlsCert") : null;
+            final SocketFactory sf = customTlsCert != null ? SSLCertificateHelper.create(context, customTlsCert) : SSLSocketFactory.getDefault();
+            final SSLSocket sslSocket = (SSLSocket) sf.createSocket();
             sslSocket.setUseClientMode(true);
             socket = sslSocket;
         } else {
@@ -77,6 +81,7 @@ class TcpSocketClient {
         startListening();
     }
 
+    @SuppressWarnings("WeakerAccess")
     public void startListening() {
         //noinspection unchecked
         receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, mReceiverListener));
