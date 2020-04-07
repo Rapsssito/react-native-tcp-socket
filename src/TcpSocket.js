@@ -38,10 +38,11 @@ class RemovableListener {
  * timeout?: number;
  * localAddress?: string,
  * localPort?: number,
- * tls?: boolean,
- * tlsCert?: any,
  * interface?: 'wifi' | 'cellular' | 'ethernet',
- * reuseAddress?: boolean
+ * reuseAddress?: boolean,
+ * tls?: boolean,
+ * tlsCheckValidity?: boolean,
+ * tlsCert?: any,
  * }} ConnectionOptions
  */
 export default class TcpSocket {

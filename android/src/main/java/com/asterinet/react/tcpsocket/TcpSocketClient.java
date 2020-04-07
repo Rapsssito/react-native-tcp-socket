@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -21,11 +22,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 class TcpSocketClient {
+    private final int id;
     private TcpReceiverTask receiverTask;
     private Socket socket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
-
-    private final int id;
 
     TcpSocketClient(final int id) {
         this.id = id;
@@ -47,12 +47,17 @@ class TcpSocketClient {
         return socket;
     }
 
-    public void connect(@NonNull final Context context, @NonNull final String address, @NonNull final Integer port, @NonNull final ReadableMap options, @Nullable final Network network) throws IOException {
+    public void connect(@NonNull final Context context, @NonNull final String address, @NonNull final Integer port, @NonNull final ReadableMap options, @Nullable final Network network) throws IOException, GeneralSecurityException {
         if (socket != null) throw new IOException("Already connected");
         final boolean isTls = options.hasKey("tls") && options.getBoolean("tls");
         if (isTls) {
-            final String customTlsCert = options.hasKey("tlsCert") ? options.getString("tlsCert") : null;
-            final SocketFactory sf = customTlsCert != null ? SSLCertificateHelper.create(context, customTlsCert) : SSLSocketFactory.getDefault();
+            SocketFactory sf;
+            if (options.hasKey("tlsCheckValidity") && !options.getBoolean("tlsCheckValidity")){
+                sf = SSLCertificateHelper.createBlindSocketFactory();
+            } else {
+                final String customTlsCert = options.hasKey("tlsCert") ? options.getString("tlsCert") : null;
+                sf = customTlsCert != null ? SSLCertificateHelper.createCustomTrustedSocketFactory(context, customTlsCert) : SSLSocketFactory.getDefault();
+            }
             final SSLSocket sslSocket = (SSLSocket) sf.createSocket();
             sslSocket.setUseClientMode(true);
             socket = sslSocket;
