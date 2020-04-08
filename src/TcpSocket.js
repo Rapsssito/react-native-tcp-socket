@@ -1,6 +1,6 @@
 'use strict';
 
-import { NativeModules } from 'react-native';
+import { NativeModules, Image } from 'react-native';
 const Buffer = (global.Buffer = global.Buffer || require('buffer').Buffer);
 const Sockets = NativeModules.TcpSockets;
 
@@ -32,7 +32,18 @@ class RemovableListener {
 }
 
 /**
- * @typedef {{ port: number; host?: string; timeout?: number; localAddress?: string, localPort?: number, interface?: 'wifi' | 'cellular' | 'ethernet', reuseAddress?: boolean}} ConnectionOptions
+ * @typedef {{
+ * port: number;
+ * host?: string;
+ * timeout?: number;
+ * localAddress?: string,
+ * localPort?: number,
+ * interface?: 'wifi' | 'cellular' | 'ethernet',
+ * reuseAddress?: boolean,
+ * tls?: boolean,
+ * tlsCheckValidity?: boolean,
+ * tlsCert?: any,
+ * }} ConnectionOptions
  */
 export default class TcpSocket {
     /**
@@ -121,18 +132,25 @@ export default class TcpSocket {
      */
     connect(options, callback) {
         this._registerEvents();
+        const customOptions = { ...options };
         // Normalize args
-        options.host = options.host || 'localhost';
-        options.port = Number(options.port) || 0;
+        customOptions.host = customOptions.host || 'localhost';
+        customOptions.port = Number(customOptions.port) || 0;
         const connectListener = this.on('connect', (ev) => {
             connectListener.remove();
             if (callback) callback(ev.address);
         });
-        if (options.timeout) this.setTimeout(options.timeout);
+        // Timeout
+        if (customOptions.timeout) this.setTimeout(customOptions.timeout);
         else if (this._timeout) this._activeTimer(this._timeout.msecs);
+        // TLS Cert
+        if (customOptions.tlsCert) {
+            customOptions.tlsCert = Image.resolveAssetSource(customOptions.tlsCert).uri;
+        }
+        // console.log(getAndroidResourceIdentifier(customOptions.tlsCert));
         this._state = STATE.CONNECTING;
         this._destroyed = false;
-        Sockets.connect(this._id, options.host, options.port, options);
+        Sockets.connect(this._id, customOptions.host, customOptions.port, customOptions);
         return this;
     }
 
@@ -293,13 +311,17 @@ export default class TcpSocket {
      * @param {BufferEncoding} [encoding]
      */
     _generateSendBuffer(buffer, encoding) {
-        if (typeof buffer === 'string') return Buffer.from(buffer, encoding);
-        else if (Buffer.isBuffer(buffer)) return buffer;
-        else if (buffer instanceof Uint8Array || Array.isArray(buffer)) return Buffer.from(buffer);
-        else
+        if (typeof buffer === 'string') {
+            return Buffer.from(buffer, encoding);
+        } else if (Buffer.isBuffer(buffer)) {
+            return buffer;
+        } else if (buffer instanceof Uint8Array || Array.isArray(buffer)) {
+            return Buffer.from(buffer);
+        } else {
             throw new TypeError(
                 `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
             );
+        }
     }
 
     /**

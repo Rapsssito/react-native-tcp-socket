@@ -233,7 +233,7 @@ PODS:
     - React-cxxreact (= 0.62.1)
     - React-jsi (= 0.62.1)
   - React-jsinspector (0.62.1)
-  - react-native-tcp-socket (3.4.1):
+  - react-native-tcp-socket (3.4.2):
     - CocoaAsyncSocket
     - React
   - React-RCTActionSheet (0.62.1):
@@ -430,7 +430,7 @@ SPEC CHECKSUMS:
   React-jsi: 600d8e42510c3254fd2abd702f4b9d3f598d8f52
   React-jsiexecutor: e9698dee4fd43ceb44832baf15d5745f455b0157
   React-jsinspector: f74a62727e5604119abd4a1eda52c0a12144bcd5
-  react-native-tcp-socket: 8399fdf6128c294e52654d50f45649df1fde6cfb
+  react-native-tcp-socket: a100fffbe7c96f92f457fa7fad6a29ec24bb8187
   React-RCTActionSheet: af8f28dd82fec89b8fe29637b8c779829e016a88
   React-RCTAnimation: 0d21fff7c20fb8ee41de5f2ebb63221127febd96
   React-RCTBlob: 9496bd93130b22069bfbc5d35e98653dae7c35c6

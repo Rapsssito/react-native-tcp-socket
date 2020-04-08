@@ -23,7 +23,7 @@
                 "ignoreReadBeforeAssign": false
             }
         ],
-        "curly": ["error", "multi", "consistent"],
+        "curly": ["error", "multi-line", "consistent"],
         "no-var": "error",
         "prefer-template": 2,
         "require-atomic-updates": "off",
