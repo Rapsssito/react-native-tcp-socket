@@ -66,7 +66,8 @@ class App extends React.Component {
             localAddress: "127.0.0.1",
             reuseAddress: true,
             // localPort: 20000,
-            // interface: "wifi"
+            // interface: "wifi",
+            // tls: true
         }, (address) => {
             this.updateChatter('opened client on ' + JSON.stringify(address));
             client.write('Hello, server! Love, Client.');

@@ -14,7 +14,7 @@
   "dependencies": {
     "react": "16.11.0",
     "react-native": "0.62.1",
-    "react-native-tcp-socket": "https://github.com/Rapsssito/react-native-tcp-socket#tls"
+    "react-native-tcp-socket": "^3.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.7.2",
