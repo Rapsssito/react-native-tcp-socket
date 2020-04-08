@@ -2,7 +2,7 @@
 ![](https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg)
 
 
-React Native TCP socket API for Android & iOS with **SSL/TLS support**. It allows you to create TCP clients and servers sockets, simulating node's [net](https://nodejs.org/api/net.html) API.
+React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating some of node's [net](https://nodejs.org/api/net.html) API functionalities.
 
 ## Table of Contents
 
@@ -50,10 +50,10 @@ Linking the package manually is not required anymore with [Autolinking](https://
   ```
 
 #### Self-Signed SSL (only available for React Native > 0.60)
-You will need a [metro.config.js](https://facebook.github.io/metro/docs/en/configuration.html) file in order to use a self-signed SSL certificate library. You should already have this file in your root project directory, but if you don't, create it.
+You will need a [metro.config.js](https://facebook.github.io/metro/docs/en/configuration.html) file in order to use a self-signed SSL certificate. You should already have this file in your root project directory, but if you don't, create it.
 Inside a `module.exports` object, create a key called `resolver` with another object called `assetExts`. The value of `assetExts` should be an array of the resource file extensions you want to support.
 
-For example, if you want to support `.pem` files (plus all the already supported files), your `metro.config.js` would like like this:
+If you want to support `.pem` files (plus all the already supported files), your `metro.config.js` would like like this:
 ```javascript
 const {getDefaultConfig} = require('metro-config');
 const defaultConfig = getDefaultConfig.getDefaultValues(__dirname);
@@ -232,7 +232,6 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
 **Note**: The platforms marked as ❌ use the default value.
 
 ## Maintainers
-Looking for maintainers!
 
 * [Rapsssito](https://github.com/rapsssito)
 
