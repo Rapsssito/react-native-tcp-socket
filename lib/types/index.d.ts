@@ -21,6 +21,9 @@ declare class TCPSockets {
         localPort?: number | undefined;
         interface?: "wifi" | "cellular" | "ethernet" | undefined;
         reuseAddress?: boolean | undefined;
+        tls?: boolean | undefined;
+        tlsCheckValidity?: boolean | undefined;
+        tlsCert?: any;
     }, callback: (address: string) => void): Socket;
 }
 import Socket from "./TcpSocket";

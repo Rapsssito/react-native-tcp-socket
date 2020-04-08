@@ -1,5 +1,16 @@
 /**
- * @typedef {{ port: number; host?: string; timeout?: number; localAddress?: string, localPort?: number, interface?: 'wifi' | 'cellular' | 'ethernet', reuseAddress?: boolean}} ConnectionOptions
+ * @typedef {{
+ * port: number;
+ * host?: string;
+ * timeout?: number;
+ * localAddress?: string,
+ * localPort?: number,
+ * interface?: 'wifi' | 'cellular' | 'ethernet',
+ * reuseAddress?: boolean,
+ * tls?: boolean,
+ * tlsCheckValidity?: boolean,
+ * tlsCert?: any,
+ * }} ConnectionOptions
  */
 export default class TcpSocket {
     /**
@@ -49,6 +60,9 @@ export default class TcpSocket {
         localPort?: number | undefined;
         interface?: "wifi" | "cellular" | "ethernet" | undefined;
         reuseAddress?: boolean | undefined;
+        tls?: boolean | undefined;
+        tlsCheckValidity?: boolean | undefined;
+        tlsCert?: any;
     }, callback?: ((address: string) => void) | undefined): TcpSocket;
     _destroyed: boolean | undefined;
     /**
@@ -139,6 +153,9 @@ export type ConnectionOptions = {
     localPort?: number | undefined;
     interface?: "wifi" | "cellular" | "ethernet" | undefined;
     reuseAddress?: boolean | undefined;
+    tls?: boolean | undefined;
+    tlsCheckValidity?: boolean | undefined;
+    tlsCert?: any;
 };
 declare class RemovableListener {
     /**

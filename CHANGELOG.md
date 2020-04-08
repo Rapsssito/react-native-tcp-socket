@@ -1,3 +1,10 @@
+# [3.5.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.4.2...v3.5.0) (2020-04-08)
+
+
+### Features
+
+* SSL/TLS support ([#40](https://github.com/Rapsssito/react-native-tcp-socket/issues/40)) ([b617483](https://github.com/Rapsssito/react-native-tcp-socket/commit/b6174833e9c14bee1e5e823f95dc4397ab5db18a))
+
 ## [3.4.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.4.1...v3.4.2) (2020-04-06)
 
 
