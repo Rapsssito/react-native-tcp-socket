@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 public final class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
@@ -76,7 +77,7 @@ public final class TcpSocketServer extends TcpSocketClient {
 
     private void listen() {
         //noinspection unchecked
-        listening.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        listening.executeOnExecutor(getExecutorService());
     }
 
     @Override
@@ -90,6 +91,7 @@ public final class TcpSocketServer extends TcpSocketClient {
             if (!listening.isCancelled()) {
                 // stop the receiving task
                 listening.cancel(true);
+                getExecutorService().shutdown();
             }
 
             // close the socket

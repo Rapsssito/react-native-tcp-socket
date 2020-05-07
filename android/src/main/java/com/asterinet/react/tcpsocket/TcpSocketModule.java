@@ -6,7 +6,6 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
-import android.os.AsyncTask;
 import android.util.Base64;
 import android.net.Network;
 
@@ -26,6 +25,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -34,10 +35,12 @@ import androidx.annotation.Nullable;
 
 public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpReceiverTask.OnDataReceivedListener {
     private static final String TAG = "TcpSockets";
+    private static final int N_THREADS = 2;
     private final ReactApplicationContext mReactContext;
     private final ConcurrentHashMap<Integer, TcpSocketClient> socketClients = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Network> mNetworkMap = new ConcurrentHashMap<>();
     private final CurrentNetwork currentNetwork = new CurrentNetwork();
+    private final ExecutorService executorService = Executors.newFixedThreadPool(N_THREADS);
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -89,7 +92,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, e.getMessage());
                 }
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }.executeOnExecutor(executorService);
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -115,7 +118,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, e.toString());
                 }
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }.executeOnExecutor(executorService);
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -132,7 +135,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 socketClient.close();
                 socketClients.remove(cId);
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }.executeOnExecutor(executorService);
     }
 
     @SuppressWarnings("unused")
@@ -158,7 +161,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, uhe.getMessage());
                 }
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }.executeOnExecutor(executorService);
     }
 
     private void requestNetwork(final int transportType) throws InterruptedException {

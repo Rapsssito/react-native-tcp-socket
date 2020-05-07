@@ -2,17 +2,18 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
-import android.os.AsyncTask;
 import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -23,12 +24,14 @@ import androidx.annotation.Nullable;
 
 class TcpSocketClient {
     private final int id;
+    private final ExecutorService executorService;
     private TcpReceiverTask receiverTask;
     private Socket socket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
     TcpSocketClient(final int id) {
         this.id = id;
+        this.executorService = Executors.newFixedThreadPool(1);
     }
 
     TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
@@ -38,6 +41,9 @@ class TcpSocketClient {
         mReceiverListener = receiverListener;
     }
 
+    ExecutorService getExecutorService() {
+        return this.executorService;
+    }
 
     public int getId() {
         return id;
@@ -52,7 +58,7 @@ class TcpSocketClient {
         final boolean isTls = options.hasKey("tls") && options.getBoolean("tls");
         if (isTls) {
             SocketFactory sf;
-            if (options.hasKey("tlsCheckValidity") && !options.getBoolean("tlsCheckValidity")){
+            if (options.hasKey("tlsCheckValidity") && !options.getBoolean("tlsCheckValidity")) {
                 sf = SSLCertificateHelper.createBlindSocketFactory();
             } else {
                 final String customTlsCert = options.hasKey("tlsCert") ? options.getString("tlsCert") : null;
@@ -89,7 +95,7 @@ class TcpSocketClient {
     @SuppressWarnings("WeakerAccess")
     public void startListening() {
         //noinspection unchecked
-        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, mReceiverListener));
+        receiverTask.executeOnExecutor(getExecutorService(), new Pair<>(this, mReceiverListener));
     }
 
     /**
@@ -113,6 +119,7 @@ class TcpSocketClient {
             if (receiverTask != null && !receiverTask.isCancelled()) {
                 // stop the receiving task
                 receiverTask.cancel(true);
+                getExecutorService().shutdown();
             }
             // close the socket
             if (socket != null && !socket.isClosed()) {
