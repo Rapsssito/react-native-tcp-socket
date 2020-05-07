@@ -14,7 +14,7 @@ import java.net.Socket;
  * notifies it's listener when data is received.  This is not threadsafe, the listener
  * should handle synchronicity.
  */
-public class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiverTask.OnDataReceivedListener>, Void, Void> {
+class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiverTask.OnDataReceivedListener>, Void, Void> {
     /**
      * An infinite loop to block and read data from the socket.
      */

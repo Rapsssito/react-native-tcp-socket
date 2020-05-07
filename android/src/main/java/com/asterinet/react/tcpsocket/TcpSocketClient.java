@@ -2,7 +2,6 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
-import android.os.AsyncTask;
 import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
@@ -13,6 +12,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
+import java.util.concurrent.ExecutorService;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -23,16 +23,18 @@ import androidx.annotation.Nullable;
 
 class TcpSocketClient {
     private final int id;
+    private final ExecutorService executorService;
     private TcpReceiverTask receiverTask;
     private Socket socket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
-    TcpSocketClient(final int id) {
+    TcpSocketClient(final int id, final ExecutorService executorService) {
         this.id = id;
+        this.executorService = executorService;
     }
 
-    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
-        this(id);
+    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @NonNull final ExecutorService executorService, @Nullable final Socket socket) {
+        this(id, executorService);
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
         mReceiverListener = receiverListener;
@@ -52,7 +54,7 @@ class TcpSocketClient {
         final boolean isTls = options.hasKey("tls") && options.getBoolean("tls");
         if (isTls) {
             SocketFactory sf;
-            if (options.hasKey("tlsCheckValidity") && !options.getBoolean("tlsCheckValidity")){
+            if (options.hasKey("tlsCheckValidity") && !options.getBoolean("tlsCheckValidity")) {
                 sf = SSLCertificateHelper.createBlindSocketFactory();
             } else {
                 final String customTlsCert = options.hasKey("tlsCert") ? options.getString("tlsCert") : null;
@@ -86,10 +88,14 @@ class TcpSocketClient {
         startListening();
     }
 
+    ExecutorService getExecutorService() {
+        return this.executorService;
+    }
+
     @SuppressWarnings("WeakerAccess")
     public void startListening() {
         //noinspection unchecked
-        receiverTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Pair<>(this, mReceiverListener));
+        receiverTask.executeOnExecutor(getExecutorService(), new Pair<>(this, mReceiverListener));
     }
 
     /**

@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 public final class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
@@ -26,7 +27,7 @@ public final class TcpSocketServer extends TcpSocketClient {
                 while (!isCancelled() && !serverSocket.isClosed()) {
                     Socket socket = serverSocket.accept();
                     int clientId = getClientId();
-                    TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
+                    TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, getExecutorService(), socket);
                     socketClients.put(clientId, socketClient);
                     socketClient.startListening();
                     mReceiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
@@ -41,9 +42,9 @@ public final class TcpSocketServer extends TcpSocketClient {
     };
 
 
-    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
+    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final ExecutorService executorService,
                            final ReadableMap options) throws IOException {
-        super(id);
+        super(id, executorService);
         // Get data from options
         int port = options.getInt("port");
         String address = options.getString("host");
@@ -76,7 +77,7 @@ public final class TcpSocketServer extends TcpSocketClient {
 
     private void listen() {
         //noinspection unchecked
-        listening.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        listening.executeOnExecutor(getExecutorService());
     }
 
     @Override
