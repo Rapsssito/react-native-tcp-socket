@@ -1,3 +1,10 @@
+## [3.5.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.5.0...v3.5.1) (2020-05-07)
+
+
+### Bug Fixes
+
+* **Android:** Remove use of AsyncTask.THREAD_POOL_EXECUTOR ([#46](https://github.com/Rapsssito/react-native-tcp-socket/issues/46)) ([6372a8e](https://github.com/Rapsssito/react-native-tcp-socket/commit/6372a8e7ea567b9606c72ff4d93bebb471bbe602))
+
 # [3.5.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.4.2...v3.5.0) (2020-04-08)
 
 
