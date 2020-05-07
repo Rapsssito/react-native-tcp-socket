@@ -27,7 +27,7 @@ public final class TcpSocketServer extends TcpSocketClient {
                 while (!isCancelled() && !serverSocket.isClosed()) {
                     Socket socket = serverSocket.accept();
                     int clientId = getClientId();
-                    TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, getExecutorService(), socket);
+                    TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
                     socketClients.put(clientId, socketClient);
                     socketClient.startListening();
                     mReceiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
@@ -42,9 +42,9 @@ public final class TcpSocketServer extends TcpSocketClient {
     };
 
 
-    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id, final ExecutorService executorService,
+    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
                            final ReadableMap options) throws IOException {
-        super(id, executorService);
+        super(id);
         // Get data from options
         int port = options.getInt("port");
         String address = options.getString("host");
@@ -91,6 +91,7 @@ public final class TcpSocketServer extends TcpSocketClient {
             if (!listening.isCancelled()) {
                 // stop the receiving task
                 listening.cancel(true);
+                getExecutorService().shutdown();
             }
 
             // close the socket

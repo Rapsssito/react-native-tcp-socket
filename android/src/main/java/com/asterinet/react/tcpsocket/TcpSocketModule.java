@@ -84,7 +84,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : null;
                     final String iface = options.hasKey("interface") ? options.getString("interface") : null;
                     selectNetwork(iface, localAddress);
-                    client = new TcpSocketClient(TcpSocketModule.this, cId, executorService, null);
+                    client = new TcpSocketClient(TcpSocketModule.this, cId, null);
                     socketClients.put(cId, client);
                     client.connect(mReactContext, host, port, options, currentNetwork.getNetwork());
                     onConnect(cId, host, port);

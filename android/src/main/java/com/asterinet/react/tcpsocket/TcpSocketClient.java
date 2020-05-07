@@ -6,13 +6,14 @@ import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -28,18 +29,21 @@ class TcpSocketClient {
     private Socket socket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
-    TcpSocketClient(final int id, final ExecutorService executorService) {
+    TcpSocketClient(final int id) {
         this.id = id;
-        this.executorService = executorService;
+        this.executorService = Executors.newFixedThreadPool(1);
     }
 
-    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @NonNull final ExecutorService executorService, @Nullable final Socket socket) {
-        this(id, executorService);
+    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
+        this(id);
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
         mReceiverListener = receiverListener;
     }
 
+    ExecutorService getExecutorService() {
+        return this.executorService;
+    }
 
     public int getId() {
         return id;
@@ -88,10 +92,6 @@ class TcpSocketClient {
         startListening();
     }
 
-    ExecutorService getExecutorService() {
-        return this.executorService;
-    }
-
     @SuppressWarnings("WeakerAccess")
     public void startListening() {
         //noinspection unchecked
@@ -119,6 +119,7 @@ class TcpSocketClient {
             if (receiverTask != null && !receiverTask.isCancelled()) {
                 // stop the receiving task
                 receiverTask.cancel(true);
+                getExecutorService().shutdown();
             }
             // close the socket
             if (socket != null && !socket.isClosed()) {
