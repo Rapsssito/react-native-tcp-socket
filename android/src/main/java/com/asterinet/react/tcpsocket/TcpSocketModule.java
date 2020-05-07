@@ -152,7 +152,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
             @Override
             protected void doInBackgroundGuarded(Void... params) {
                 try {
-                    TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, executorService, options);
+                    TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, options);
                     socketClients.put(cId, server);
                     int port = options.getInt("port");
                     String host = options.getString("host");
