@@ -1,3 +1,10 @@
+# [3.6.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.5.1...v3.6.0) (2020-05-13)
+
+
+### Features
+
+* Add macOS support ([#47](https://github.com/Rapsssito/react-native-tcp-socket/issues/47)) ([30736c7](https://github.com/Rapsssito/react-native-tcp-socket/commit/30736c765811d474201588399992e207780376af))
+
 ## [3.5.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.5.0...v3.5.1) (2020-05-07)
 
 
