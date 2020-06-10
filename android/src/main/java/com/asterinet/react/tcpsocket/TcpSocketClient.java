@@ -108,6 +108,9 @@ class TcpSocketClient {
             throw new IOException("Socket is not connected.");
         }
         OutputStream output = socket.getOutputStream();
+        if (output == null ){
+            throw new IOException("OutputStream is null.");
+        }
         output.write(data);
     }
 
