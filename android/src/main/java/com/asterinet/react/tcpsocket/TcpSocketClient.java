@@ -131,4 +131,14 @@ class TcpSocketClient {
             mReceiverListener.onClose(getId(), e.getMessage());
         }
     }
+
+    /**
+     * @param noDelay `true` will disable Nagle's algorithm for the socket (enable TCP_NODELAY)
+     */
+    public void setNoDelay(final boolean noDelay) throws IOException {
+        if (socket == null) {
+            throw new IOException("Socket is not connected.");
+        }
+        socket.setTcpNoDelay(noDelay);
+    }
 }

@@ -164,6 +164,20 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.executeOnExecutor(executorService);
     }
 
+    @ReactMethod
+    public void setNoDelay(@NonNull final Integer cId, final boolean noDelay) {
+        final TcpSocketClient client = socketClients.get(cId);
+        if (client == null) {
+            onError(cId, TAG + "socket not found.");
+            return;
+        }
+        try {
+            client.setNoDelay(noDelay);
+        } catch (IOException e) {
+            onError(cId, e.getMessage());
+        }
+    }
+
     private void requestNetwork(final int transportType) throws InterruptedException {
         final NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
         requestBuilder.addTransportType(transportType);
