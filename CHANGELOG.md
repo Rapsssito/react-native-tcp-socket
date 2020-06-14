@@ -1,3 +1,10 @@
+# [3.7.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.6.0...v3.7.0) (2020-06-14)
+
+
+### Features
+
+* Add setNoDelay() method ([#52](https://github.com/Rapsssito/react-native-tcp-socket/issues/52)) ([634aa6d](https://github.com/Rapsssito/react-native-tcp-socket/commit/634aa6d7cd7263883b0892786d786998fd4ca80f))
+
 # [3.6.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.5.1...v3.6.0) (2020-05-13)
 
 
