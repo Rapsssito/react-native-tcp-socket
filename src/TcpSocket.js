@@ -227,9 +227,15 @@ export default class TcpSocket {
      */
     end(data, encoding) {
         if (this._destroyed) return;
-        if (data) this.write(data, encoding);
-        this._destroyed = true;
-        Sockets.end(this._id);
+        if (data) {
+            this.write(data, encoding, () => {
+                this._destroyed = true;
+                Sockets.end(this._id);
+            });
+        } else {
+            this._destroyed = true;
+            Sockets.end(this._id);
+        }
     }
 
     destroy() {
