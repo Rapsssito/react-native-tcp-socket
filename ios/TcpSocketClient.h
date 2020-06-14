@@ -92,5 +92,6 @@ typedef enum RCTTCPError RCTTCPError;
  */
 - (void)destroy;
 
+- (void)setNoDelay:(bool)noDelay;
 
 @end
