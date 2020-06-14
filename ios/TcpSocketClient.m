@@ -1,4 +1,5 @@
 #import <netinet/in.h>
+#import <netinet/tcp.h>
 #import <arpa/inet.h>
 #import "TcpSocketClient.h"
 
@@ -122,6 +123,18 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return @{ @"port": @(0),
               @"address": @"unknown",
               @"family": @"unkown" };
+}
+
+- (void)setNoDelay:(BOOL)noDelay
+{
+    [_tcpSocket performBlock:^{
+        int fd = [self->_tcpSocket socketFD];
+        int on = noDelay ? 1 : 0;
+        if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&on, sizeof(on)) == -1) {
+            /* TODO: handle error */
+            RCTLogWarn(@"setNoDelay caused an unexpected error");
+        }
+    }];
 }
 
 - (BOOL)listen:(NSDictionary *)options error:(NSError **)error

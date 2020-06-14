@@ -184,6 +184,7 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
   * [`createConnection(options[, callback])`](#createconnection)
   * [`write(data[, encoding][, callback])`](#write)
   * [`destroy()`](#destroy)
+  * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
 
 #### `createConnection()`
 `createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).

@@ -116,6 +116,13 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
     }
 }
 
+RCT_EXPORT_METHOD(setNoDelay:(nonnull NSNumber*)cId noDelay:(BOOL)noDelay) {
+    TcpSocketClient* client = [self findClient:cId];
+    if (!client) return;
+    
+    [client setNoDelay:noDelay];
+}
+
 - (void)onConnect:(TcpSocketClient*) client
 {
     [self sendEventWithName:@"connect"
