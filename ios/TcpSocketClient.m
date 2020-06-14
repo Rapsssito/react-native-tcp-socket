@@ -125,11 +125,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
               @"family": @"unkown" };
 }
 
-- (void)setNoDelay:(bool)noDelay
+- (void)setNoDelay:(BOOL)noDelay
 {
     [_tcpSocket performBlock:^{
         int fd = [self->_tcpSocket socketFD];
-        int on = noDelay;
+        int on = noDelay ? 1 : 0;
         if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&on, sizeof(on)) == -1) {
             /* TODO: handle error */
             RCTLogWarn(@"setNoDelay caused an unexpected error");
