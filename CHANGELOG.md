@@ -1,3 +1,10 @@
+## [3.7.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.7.0...v3.7.1) (2020-06-14)
+
+
+### Bug Fixes
+
+* Fix end() method on async write() ([a1a0771](https://github.com/Rapsssito/react-native-tcp-socket/commit/a1a0771efd7a5d25e5c035ed0437ba3886128cb1))
+
 # [3.7.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.6.0...v3.7.0) (2020-06-14)
 
 
