@@ -75,6 +75,7 @@
     "typescript": "^3.8.2"
   },
   "dependencies": {
-    "buffer": "^5.4.3"
+    "buffer": "^5.4.3",
+    "events": "^3.1.0"
   }
 }
