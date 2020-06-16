@@ -50,4 +50,3 @@ buck-out/
 
 # Tests
 coverage
-!coverage/coverage-final.json

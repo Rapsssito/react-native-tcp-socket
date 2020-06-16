@@ -1,6 +1,7 @@
 'use strict';
 
 import { NativeModules, Image } from 'react-native';
+import { EventEmitter } from 'events';
 const Buffer = (global.Buffer = global.Buffer || require('buffer').Buffer);
 const Sockets = NativeModules.TcpSockets;
 
@@ -9,27 +10,6 @@ const STATE = {
     CONNECTING: 1,
     CONNECTED: 2,
 };
-
-class RemovableListener {
-    /**
-     * @param {import("react-native").EmitterSubscription} listener
-     * @param {import("react-native").NativeEventEmitter} eventEmitter
-     */
-    constructor(listener, eventEmitter) {
-        this._listener = listener;
-        this._eventEmitter = eventEmitter;
-        this._removed = false;
-    }
-
-    isRemoved() {
-        return this._removed;
-    }
-
-    remove() {
-        this._eventEmitter.removeSubscription(this._listener);
-        this._removed = true;
-    }
-}
 
 /**
  * @typedef {{
@@ -45,85 +25,59 @@ class RemovableListener {
  * tlsCert?: any,
  * }} ConnectionOptions
  */
-export default class TcpSocket {
+export default class TcpSocket extends EventEmitter {
     /**
      * Initialices a TcpSocket.
      *
      * @param {number} id
      * @param {import('react-native').NativeEventEmitter} eventEmitter
+     * @param {string} [address]
      */
-    constructor(id, eventEmitter) {
+    constructor(id, eventEmitter, address) {
+        super();
         this._id = id;
         this._eventEmitter = eventEmitter;
         /** @type {number} */
         this._state = STATE.DISCONNECTED;
-        /** @type {RemovableListener[]} */
-        this._listeners = [];
+        this._registerEvents();
+        if (address != undefined) this._setConnected(address);
     }
 
     /**
-     * Adds a listener to be invoked when events of the specified type are emitted by the `TcpSocket`.
-     * An optional calling `context` may be provided.
-     * The data arguments emitted will be passed to the listener callback.
-     *
-     * @param {string} event  Name of the event to listen to
-     * @param {(arg0: any) => void} callback Function to invoke when the specified event is emitted
-     * @param {any} [context] Optional context object to use when invoking the listener
-     * @returns {RemovableListener}
+     * @protected
      */
-    on(event, callback, context) {
-        const newListener = this._selectListener(event, callback, context);
-        const removableListener = new RemovableListener(newListener, this._eventEmitter);
-        this._listeners.push(removableListener);
-        return removableListener;
+    _registerEvents() {
+        this._unregisterEvents();
+        this._dataListener = this._eventEmitter.addListener('data', (evt) => {
+            if (evt.id !== this._id) return;
+            const bufferTest = Buffer.from(evt.data, 'base64');
+            this.emit('data', bufferTest);
+        });
+        this._errorListener = this._eventEmitter.addListener('error', (evt) => {
+            if (evt.id !== this._id) return;
+            this._onError();
+            this.emit('error', evt.error);
+        });
+        this._closeListener = this._eventEmitter.addListener('close', (evt) => {
+            if (evt.id !== this._id) return;
+            this._onClose();
+            this.emit('close', evt.error);
+        });
+        this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
+            if (evt.id !== this._id) return;
+            this._onConnect(evt.address);
+            this.emit('connect', evt.address);
+        });
     }
 
     /**
-     * @private
-     * @param {string} event
-     * @param {function(any):void} callback
-     * @param {any} [context]
+     * @protected
      */
-    _selectListener(event, callback, context) {
-        switch (event) {
-            case 'data':
-                return this._eventEmitter.addListener(
-                    'data',
-                    (evt) => {
-                        if (evt.id !== this._id) return;
-                        const bufferTest = Buffer.from(evt.data, 'base64');
-                        callback(bufferTest);
-                    },
-                    context
-                );
-            case 'error':
-                return this._eventEmitter.addListener(
-                    'error',
-                    (evt) => {
-                        if (evt.id !== this._id) return;
-                        callback(evt.error);
-                    },
-                    context
-                );
-            default:
-                return this._eventEmitter.addListener(
-                    event,
-                    (evt) => {
-                        if (evt.id !== this._id) return;
-                        callback(evt);
-                    },
-                    context
-                );
-        }
-    }
-
-    /**
-     * @deprecated
-     */
-    off() {
-        console.warn(
-            'TCPSocket.off() is deprecated and produces no effect, please use the listener remove() method instead.'
-        );
+    _unregisterEvents() {
+        this._dataListener?.remove();
+        this._errorListener?.remove();
+        this._closeListener?.remove();
+        this._connectListener?.remove();
     }
 
     /**
@@ -131,13 +85,11 @@ export default class TcpSocket {
      * @param {(address: string) => void} [callback]
      */
     connect(options, callback) {
-        this._registerEvents();
         const customOptions = { ...options };
         // Normalize args
         customOptions.host = customOptions.host || 'localhost';
         customOptions.port = Number(customOptions.port) || 0;
-        const connectListener = this.on('connect', (ev) => {
-            connectListener.remove();
+        this.once('connect', (ev) => {
             if (callback) callback(ev.address);
         });
         // Timeout
@@ -247,35 +199,18 @@ export default class TcpSocket {
     }
 
     /**
-     * @protected
-     */
-    _registerEvents() {
-        this.on('connect', (ev) => this._onConnect(ev.address));
-        this.on('close', () => this._onClose());
-        this.on('error', () => this._onError());
-    }
-
-    /**
-     * @private
-     */
-    _unregisterEvents() {
-        this._listeners.forEach((listener) => (listener.isRemoved() ? listener.remove() : null));
-        this._listeners = [];
-    }
-
-    /**
      * @private
      * @param {string} address
      */
     _onConnect(address) {
-        this.setConnected(address);
+        this._setConnected(address);
     }
 
     /**
      * @private
      */
     _onClose() {
-        this.setDisconnected();
+        this._setDisconnected();
     }
 
     /**
@@ -317,14 +252,6 @@ export default class TcpSocket {
     }
 
     /**
-     * @param {string} address
-     */
-    setAsAlreadyConnected(address) {
-        this._registerEvents();
-        this.setConnected(address);
-    }
-
-    /**
      * @private
      * @param {string | Buffer | Uint8Array} buffer
      * @param {BufferEncoding} [encoding]
@@ -347,7 +274,7 @@ export default class TcpSocket {
      * @private
      * @param {string} address
      */
-    setConnected(address) {
+    _setConnected(address) {
         this._state = STATE.CONNECTED;
         this._address = address;
     }
@@ -355,7 +282,7 @@ export default class TcpSocket {
     /**
      * @private
      */
-    setDisconnected() {
+    _setDisconnected() {
         if (this._state === STATE.DISCONNECTED) return;
         this._unregisterEvents();
         this._state = STATE.DISCONNECTED;

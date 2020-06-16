@@ -1,4 +1,5 @@
 {
+    "parser": "babel-eslint",
     "plugins": ["prettier", "jest", "jsdoc"],
     "env": {
         "es6": true,
