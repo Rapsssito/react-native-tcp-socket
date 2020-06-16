@@ -39,7 +39,7 @@ export default class TcpServer extends TcpSocket {
     }
 
     /**
-     * @param {{ port: number; host: string; }} options
+     * @param {{ port: number; host: string; reuseAddress?: boolean}} options
      * @param {(arg0: any) => void} [callback]
      * @returns {TcpServer}
      */
