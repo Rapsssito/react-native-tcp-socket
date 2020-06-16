@@ -15,7 +15,6 @@ const STATE = {
  * @typedef {{
  * port: number;
  * host?: string;
- * timeout?: number;
  * localAddress?: string,
  * localPort?: number,
  * interface?: 'wifi' | 'cellular' | 'ethernet',
@@ -37,6 +36,9 @@ export default class TcpSocket extends EventEmitter {
         super();
         this._id = id;
         this._eventEmitter = eventEmitter;
+        /** @type {number} */
+        this._timeoutMsecs = 0;
+        this._timeout = undefined;
         /** @type {number} */
         this._state = STATE.DISCONNECTED;
         this._registerEvents();
@@ -93,8 +95,7 @@ export default class TcpSocket extends EventEmitter {
             if (callback) callback(ev.address);
         });
         // Timeout
-        if (customOptions.timeout) this.setTimeout(customOptions.timeout);
-        else if (this._timeout) this._activeTimer(this._timeout.msecs);
+        if (this._timeout) this._activateTimer();
         // TLS Cert
         if (customOptions.tlsCert) {
             customOptions.tlsCert = Image.resolveAssetSource(customOptions.tlsCert).uri;
@@ -107,53 +108,49 @@ export default class TcpSocket extends EventEmitter {
     }
 
     /**
-     * @private
-     * @param {number} msecs
-     * @param {() => void} [wrapper]
+     * Sets the socket to timeout after `timeout` milliseconds of inactivity on the socket. By default `TcpSocket` do not have a timeout.
+     *
+     * When an idle timeout is triggered the socket will receive a `'timeout'` event but the connection will not be severed.
+     * The user must manually call `socket.end()` or `socket.destroy()` to end the connection.
+     *
+     * If `timeout` is 0, then the existing idle timeout is disabled.
+     *
+     * The optional `callback` parameter will be added as a one-time listener for the `'timeout'` event.
+     *
+     * @param {number} timeout
+     * @param {() => void} [callback]
      */
-    _activeTimer(msecs, wrapper) {
-        if (this._timeout && this._timeout.handle) clearTimeout(this._timeout.handle);
-
-        if (!wrapper) {
-            const self = this;
-            wrapper = function() {
-                self._timeout = null;
-                self._eventEmitter.emit('timeout');
-            };
+    setTimeout(timeout, callback) {
+        if (timeout === 0) {
+            this._clearTimeout();
+        } else {
+            this._activateTimer(timeout);
         }
+        if (callback) this.once('timeout', callback);
+        return this;
+    }
 
-        this._timeout = {
-            handle: setTimeout(wrapper, msecs),
-            wrapper: wrapper,
-            msecs: msecs,
-        };
+    /**
+     * @private
+     * @param {number} [timeout]
+     */
+    _activateTimer(timeout) {
+        if (timeout !== undefined) this._timeoutMsecs = timeout;
+        this._clearTimeout();
+        this._timeout = setTimeout(() => {
+            this._clearTimeout();
+            this.emit('timeout');
+        }, this._timeoutMsecs);
     }
 
     /**
      * @private
      */
     _clearTimeout() {
-        if (this._timeout) {
-            clearTimeout(this._timeout.handle);
-            this._timeout = null;
+        if (this._timeout !== undefined) {
+            clearTimeout(this._timeout);
+            this._timeout = undefined;
         }
-    }
-
-    /**
-     * @deprecated
-     * @param {number} msecs
-     * @param {(...args: any[]) => void } [callback]
-     */
-    setTimeout(msecs, callback) {
-        if (msecs === 0) {
-            this._clearTimeout();
-            if (callback) this._eventEmitter.removeListener('timeout', callback);
-        } else {
-            if (callback) this._eventEmitter.once('timeout', callback, this);
-
-            this._activeTimer(msecs);
-        }
-        return this;
     }
 
     /**
@@ -186,6 +183,7 @@ export default class TcpSocket extends EventEmitter {
             });
         } else {
             this._destroyed = true;
+            this._clearTimeout();
             Sockets.end(this._id);
         }
     }
@@ -242,7 +240,7 @@ export default class TcpSocket extends EventEmitter {
              * @param {string} err
              */
             function(err) {
-                if (self._timeout) self._activeTimer(self._timeout.msecs);
+                if (self._timeout) self._activateTimer();
                 if (callback) {
                     if (err) return callback(err);
                     callback(null);
