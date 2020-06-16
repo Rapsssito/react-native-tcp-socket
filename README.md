@@ -185,6 +185,7 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
   * [`write(data[, encoding][, callback])`](#write)
   * [`destroy()`](#destroy)
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
+  * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
 
 #### `createConnection()`
 `createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
@@ -195,6 +196,7 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
 | --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
 | **`port`** | `<number>` | ✅  |   ✅   | **Required**. Port the socket should connect to. |
 | `host` | `<string>` | ✅  |   ✅  | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
+| `timeout` | `<number>` | ✅  |   ✅  | If set, will be used to call [`setTimeout(timeout)`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback) after the socket is created, but before it starts the connection. |
 | `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
 | `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |

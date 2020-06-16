@@ -15,6 +15,7 @@ const STATE = {
  * @typedef {{
  * port: number;
  * host?: string;
+ * timeout?: number,
  * localAddress?: string,
  * localPort?: number,
  * interface?: 'wifi' | 'cellular' | 'ethernet',
@@ -95,7 +96,8 @@ export default class TcpSocket extends EventEmitter {
             if (callback) callback(ev.address);
         });
         // Timeout
-        if (this._timeout) this._activateTimer();
+        if (customOptions.timeout) this._activateTimer(customOptions.timeout);
+        else if (this._timeout) this._activateTimer();
         // TLS Cert
         if (customOptions.tlsCert) {
             customOptions.tlsCert = Image.resolveAssetSource(customOptions.tlsCert).uri;
