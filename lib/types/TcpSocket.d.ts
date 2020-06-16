@@ -12,42 +12,31 @@
  * tlsCert?: any,
  * }} ConnectionOptions
  */
-export default class TcpSocket {
+export default class TcpSocket extends EventEmitter {
     /**
      * Initialices a TcpSocket.
      *
      * @param {number} id
      * @param {import('react-native').NativeEventEmitter} eventEmitter
+     * @param {string} [address]
      */
-    constructor(id: number, eventEmitter: import("react-native").NativeEventEmitter);
+    constructor(id: number, eventEmitter: import("react-native").NativeEventEmitter, address?: string | undefined);
     _id: number;
     _eventEmitter: import("react-native").NativeEventEmitter;
     /** @type {number} */
     _state: number;
-    /** @type {RemovableListener[]} */
-    _listeners: RemovableListener[];
     /**
-     * Adds a listener to be invoked when events of the specified type are emitted by the `TcpSocket`.
-     * An optional calling `context` may be provided.
-     * The data arguments emitted will be passed to the listener callback.
-     *
-     * @param {string} event  Name of the event to listen to
-     * @param {(arg0: any) => void} callback Function to invoke when the specified event is emitted
-     * @param {any} [context] Optional context object to use when invoking the listener
-     * @returns {RemovableListener}
+     * @protected
      */
-    on(event: string, callback: (arg0: any) => void, context?: any): RemovableListener;
+    protected _registerEvents(): void;
+    _dataListener: import("react-native").EmitterSubscription | undefined;
+    _errorListener: import("react-native").EmitterSubscription | undefined;
+    _closeListener: import("react-native").EmitterSubscription | undefined;
+    _connectListener: import("react-native").EmitterSubscription | undefined;
     /**
-     * @private
-     * @param {string} event
-     * @param {function(any):void} callback
-     * @param {any} [context]
+     * @protected
      */
-    private _selectListener;
-    /**
-     * @deprecated
-     */
-    off(): void;
+    protected _unregisterEvents(): void;
     /**
      * @param {ConnectionOptions} options
      * @param {(address: string) => void} [callback]
@@ -104,14 +93,6 @@ export default class TcpSocket {
     end(data: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined): void;
     destroy(): void;
     /**
-     * @protected
-     */
-    protected _registerEvents(): void;
-    /**
-     * @private
-     */
-    private _unregisterEvents;
-    /**
      * @private
      * @param {string} address
      */
@@ -135,10 +116,6 @@ export default class TcpSocket {
      */
     write(buffer: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined, callback?: ((error: string | null) => void) | undefined): void;
     /**
-     * @param {string} address
-     */
-    setAsAlreadyConnected(address: string): void;
-    /**
      * @private
      * @param {string | Buffer | Uint8Array} buffer
      * @param {BufferEncoding} [encoding]
@@ -148,12 +125,21 @@ export default class TcpSocket {
      * @private
      * @param {string} address
      */
-    private setConnected;
+    private _setConnected;
     _address: string | undefined;
     /**
      * @private
      */
-    private setDisconnected;
+    private _setDisconnected;
+    addListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
+    on(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
+    once(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
+    removeListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
+    off(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
+    removeAllListeners(event?: string | symbol | undefined): TcpSocket;
+    setMaxListeners(n: number): TcpSocket;
+    prependListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
+    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
 }
 export type ConnectionOptions = {
     port: number;
@@ -167,16 +153,4 @@ export type ConnectionOptions = {
     tlsCheckValidity?: boolean | undefined;
     tlsCert?: any;
 };
-declare class RemovableListener {
-    /**
-     * @param {import("react-native").EmitterSubscription} listener
-     * @param {import("react-native").NativeEventEmitter} eventEmitter
-     */
-    constructor(listener: import("react-native").EmitterSubscription, eventEmitter: import("react-native").NativeEventEmitter);
-    _listener: import("react-native").EmitterSubscription;
-    _eventEmitter: import("react-native").NativeEventEmitter;
-    _removed: boolean;
-    isRemoved(): boolean;
-    remove(): void;
-}
-export {};
+import { EventEmitter } from "node/events";

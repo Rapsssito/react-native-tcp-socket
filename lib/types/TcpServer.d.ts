@@ -8,20 +8,22 @@ export default class TcpServer extends TcpSocket {
     connectionCallback: (socket: TcpSocket) => void;
     /** @type {TcpSocket[]} */
     _connections: TcpSocket[];
-    close(): void;
+    _connectionsListener: import("react-native").EmitterSubscription | undefined;
     /**
-     * @param {(arg0: number) => void} callback
-     */
-    getConnections(callback: (arg0: number) => void): void;
-    /**
-     * @param {{ port: number; host: any; }} options
-     * @param {(arg0: any) => void} callback
+     * @param {{ port: number; host: string; reuseAddress?: boolean}} options
+     * @param {(arg0: any) => void} [callback]
      * @returns {TcpServer}
      */
     listen(options: {
         port: number;
-        host: any;
-    }, callback: (arg0: any) => void, ...args: any[]): TcpServer;
+        host: string;
+        reuseAddress?: boolean | undefined;
+    }, callback?: ((arg0: any) => void) | undefined): TcpServer;
+    /**
+     * @param {(arg0: number) => void} callback
+     */
+    getConnections(callback: (arg0: number) => void): void;
+    close(): void;
     /**
      * @private
      * @param {{ id: number; address: string; }} info
@@ -32,11 +34,7 @@ export default class TcpServer extends TcpSocket {
         host?: string | undefined;
         timeout?: number | undefined;
         localAddress?: string | undefined;
-        localPort?: number | undefined; /**
-         * @param {{ port: number; host: any; }} options
-         * @param {(arg0: any) => void} callback
-         * @returns {TcpServer}
-         */
+        localPort?: number | undefined;
         interface?: "wifi" | "cellular" | "ethernet" | undefined;
         reuseAddress?: boolean | undefined;
         tls?: boolean | undefined;
@@ -44,5 +42,14 @@ export default class TcpServer extends TcpSocket {
         tlsCert?: any;
     }, callback?: ((address: string) => void) | undefined): TcpServer;
     setTimeout(msecs: number, callback?: ((...args: any[]) => void) | undefined): TcpServer;
+    addListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
+    on(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
+    once(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
+    removeListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
+    off(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
+    removeAllListeners(event?: string | symbol | undefined): TcpServer;
+    setMaxListeners(n: number): TcpServer;
+    prependListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
+    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
 }
 import TcpSocket from "./TcpSocket";

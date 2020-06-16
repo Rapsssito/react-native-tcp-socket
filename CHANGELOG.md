@@ -1,3 +1,15 @@
+# [4.0.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.7.1...v4.0.0) (2020-06-16)
+
+
+### Features
+
+* Switch to NodeJS's EventEmitter as parent class ([#55](https://github.com/Rapsssito/react-native-tcp-socket/issues/55)) ([d21bb0b](https://github.com/Rapsssito/react-native-tcp-socket/commit/d21bb0b8d0ce0705c10bcde773088624a3bb95ec)), closes [#41](https://github.com/Rapsssito/react-native-tcp-socket/issues/41)
+
+
+### BREAKING CHANGES
+
+* Sockets will no longer return RemovableListeners when calling their addListener() method. Now they inherit all the event methods from Node's EventEmitter class.
+
 ## [3.7.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.7.0...v3.7.1) (2020-06-14)
 
 
