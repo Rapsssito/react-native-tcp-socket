@@ -96,7 +96,7 @@ export default class TcpSocket extends EventEmitter {
             if (callback) callback(ev.address);
         });
         // Timeout
-        if (customOptions.timeout) this._activateTimer(customOptions.timeout);
+        if (customOptions.timeout) this.setTimeout(customOptions.timeout);
         else if (this._timeout) this._activateTimer();
         // TLS Cert
         if (customOptions.tlsCert) {
