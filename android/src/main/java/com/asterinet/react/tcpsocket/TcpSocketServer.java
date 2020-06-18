@@ -11,7 +11,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 public final class TcpSocketServer extends TcpSocketClient {
     private ServerSocket serverSocket;
@@ -29,8 +28,8 @@ public final class TcpSocketServer extends TcpSocketClient {
                     int clientId = getClientId();
                     TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
                     socketClients.put(clientId, socketClient);
-                    socketClient.startListening();
                     mReceiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
+                    socketClient.startListening();
                 }
             } catch (IOException e) {
                 if (!serverSocket.isClosed()) {
