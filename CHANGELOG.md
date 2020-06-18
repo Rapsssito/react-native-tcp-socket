@@ -1,3 +1,15 @@
+# [4.1.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.0.0...v4.1.0) (2020-06-18)
+
+
+### Bug Fixes
+
+* **Android:** Fix server socket events not being delivered ([50e9b79](https://github.com/Rapsssito/react-native-tcp-socket/commit/50e9b793603bf84c74174c1c3b048746e6c26d90)), closes [#54](https://github.com/Rapsssito/react-native-tcp-socket/issues/54)
+
+
+### Features
+
+* Add setTimeout() method ([#56](https://github.com/Rapsssito/react-native-tcp-socket/issues/56)) ([e642e1a](https://github.com/Rapsssito/react-native-tcp-socket/commit/e642e1a1e2c89f51731d60c0776639e8bddef54b))
+
 # [4.0.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v3.7.1...v4.0.0) (2020-06-16)
 
 

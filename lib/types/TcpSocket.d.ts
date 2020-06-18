@@ -2,7 +2,7 @@
  * @typedef {{
  * port: number;
  * host?: string;
- * timeout?: number;
+ * timeout?: number,
  * localAddress?: string,
  * localPort?: number,
  * interface?: 'wifi' | 'cellular' | 'ethernet',
@@ -23,6 +23,9 @@ export default class TcpSocket extends EventEmitter {
     constructor(id: number, eventEmitter: import("react-native").NativeEventEmitter, address?: string | undefined);
     _id: number;
     _eventEmitter: import("react-native").NativeEventEmitter;
+    /** @type {number} */
+    _timeoutMsecs: number;
+    _timeout: NodeJS.Timeout | undefined;
     /** @type {number} */
     _state: number;
     /**
@@ -55,26 +58,28 @@ export default class TcpSocket extends EventEmitter {
     }, callback?: ((address: string) => void) | undefined): TcpSocket;
     _destroyed: boolean | undefined;
     /**
-     * @private
-     * @param {number} msecs
-     * @param {() => void} [wrapper]
+     * Sets the socket to timeout after `timeout` milliseconds of inactivity on the socket. By default `TcpSocket` do not have a timeout.
+     *
+     * When an idle timeout is triggered the socket will receive a `'timeout'` event but the connection will not be severed.
+     * The user must manually call `socket.end()` or `socket.destroy()` to end the connection.
+     *
+     * If `timeout` is 0, then the existing idle timeout is disabled.
+     *
+     * The optional `callback` parameter will be added as a one-time listener for the `'timeout'` event.
+     *
+     * @param {number} timeout
+     * @param {() => void} [callback]
      */
-    private _activeTimer;
-    _timeout: {
-        handle: NodeJS.Timeout;
-        wrapper: () => void;
-        msecs: number;
-    } | null | undefined;
+    setTimeout(timeout: number, callback?: (() => void) | undefined): TcpSocket;
+    /**
+     * @private
+     * @param {number} [timeout]
+     */
+    private _activateTimer;
     /**
      * @private
      */
     private _clearTimeout;
-    /**
-     * @deprecated
-     * @param {number} msecs
-     * @param {(...args: any[]) => void } [callback]
-     */
-    setTimeout(msecs: number, callback?: ((...args: any[]) => void) | undefined): TcpSocket;
     /**
      * Enable/disable the use of Nagle's algorithm. When a TCP connection is created, it will have Nagle's algorithm enabled.
      *

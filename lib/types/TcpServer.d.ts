@@ -41,7 +41,7 @@ export default class TcpServer extends TcpSocket {
         tlsCheckValidity?: boolean | undefined;
         tlsCert?: any;
     }, callback?: ((address: string) => void) | undefined): TcpServer;
-    setTimeout(msecs: number, callback?: ((...args: any[]) => void) | undefined): TcpServer;
+    setTimeout(timeout: number, callback?: (() => void) | undefined): TcpServer;
     addListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
     on(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
     once(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
