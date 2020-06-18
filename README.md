@@ -2,7 +2,7 @@
 ![](https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg)
 
 
-React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating some of node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
+React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating some of Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
 ## Table of Contents
 
@@ -11,8 +11,8 @@ React Native TCP socket API for Android & iOS with **client SSL/TLS support**. I
 - [Compatibility](#react-native-compatibility)
 - [Usage](#usage)
 - [API](#api)
-  - [Client](#client)
-  - [Server](#server)
+  - [TcpSocket](#tcpsocket)
+  - [TcpServer](#tcpserver)
 - [Maintainers](#maintainers)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
@@ -113,7 +113,7 @@ To use this library you need to ensure you are using the correct version of Reac
 Import the library:
 ```javascript
 import TcpSocket from 'react-native-tcp-socket';
-// var net = require('react-native-tcp-socket');
+// const net = require('react-native-tcp-socket');
 ```
 ### Client
 ```javascript
@@ -179,12 +179,15 @@ const client = TcpSocket.createConnection({
 _Note: In order to use self-signed certificates make sure to [update your metro.config.js configuration](#self-signed-ssl-only-available-for-react-native--060)._
 
 ## API
-### Client
+Here are listed all methods implemented in `react-native-tcp-socket`, their functionalities are equivalent to those provided by Node's [net](https://nodejs.org/api/net.html) (more info on [#41](https://github.com/Rapsssito/react-native-tcp-socket/issues/41)). However, the **methods whose interface differs from Node are shown in bold**.
+
+### TcpSocket
 * **Methods:**
-  * [`createConnection(options[, callback])`](#createconnection)
-  * [`write(data[, encoding][, callback])`](#write)
-  * [`destroy()`](#destroy)
+  * **[`TcpSocket.createConnection(options[, callback])`](#createconnection)**
+  * [`write(data[, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback)
+  * [`destroy([error])`](https://nodejs.org/api/net.html#net_socket_destroy_error)
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
+  * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
 
 #### `createConnection()`
 `createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
@@ -195,6 +198,7 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
 | --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
 | **`port`** | `<number>` | ✅  |   ✅   | **Required**. Port the socket should connect to. |
 | `host` | `<string>` | ✅  |   ✅  | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
+| `timeout` | `<number>` | ✅  |   ✅  | If set, will be used to call [`setTimeout(timeout)`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback) after the socket is created, but before it starts the connection. |
 | `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
 | `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
@@ -205,18 +209,11 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
 
 **Note**: The platforms marked as ❌ use the default value.
 
-#### `write()`
-* `data`: `<string> | <Buffer> | <Uint8Array>`
-* `encoding`: `<string>`. Only used when `data` is `string`. Default: `utf8`.
-* `callback `: `<Function>`
-
-`write(data[, encoding][, callback])` sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
-
-### Server
+### TcpServer
 * **Methods:**
-  * [`createServer(callback)`](#createserver)
-  * [`listen(options[, callback])`](#listen)
-  * [`close()`](#close)
+  * [`TcpSocket.createServer(connectionListener)`](https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener)
+  * **[`listen(options[, callback])`](#listen)**
+  * [`close([callback])`](https://nodejs.org/api/net.html#net_server_close_callback)
 
 #### `listen()`
 `listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).
