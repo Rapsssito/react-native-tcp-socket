@@ -150,7 +150,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         }
         if (enableKA == -1 || delayKA == -1) {
             /* TODO: handle error */
-            RCTLogWarn(@"setNoDelay caused an unexpected error");
+            RCTLogWarn(@"setKeepAlive caused an unexpected error");
         }
     }];
 }
