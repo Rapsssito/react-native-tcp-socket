@@ -137,6 +137,24 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }];
 }
 
+- (void)setKeepAlive:(BOOL)enable delay:(int)delay
+{
+    [_tcpSocket performBlock:^{
+        int fd = [self->_tcpSocket socketFD];
+        int on = enable ? 1 : 0;
+        int enableKA = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
+        int delayKA = 0;
+        if (delay != 0) {
+            // Only change the delay when delay != 0
+            delayKA = setsockopt(fd, IPPROTO_TCP, TCP_KEEPALIVE, &delay, sizeof(delay));
+        }
+        if (enableKA == -1 || delayKA == -1) {
+            /* TODO: handle error */
+            RCTLogWarn(@"setNoDelay caused an unexpected error");
+        }
+    }];
+}
+
 - (BOOL)listen:(NSDictionary *)options error:(NSError **)error
 {
     if (_tcpSocket) {

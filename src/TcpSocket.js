@@ -174,10 +174,13 @@ export default class TcpSocket extends EventEmitter {
     }
 
     /**
-     * Enable/disable keep-alive functionality. **`initialDelay` is ignored!**
+     * Enable/disable keep-alive functionality, and optionally set the initial delay before the first keepalive probe is sent on an idle socket.
+     *
+     * Set `initialDelay` (in milliseconds) to set the delay between the last data packet received and the first keepalive probe.
+     * Setting `0` for initialDelay will leave the value unchanged from the default (or previous) setting.
      *
      * @param {boolean} enable Default: `false`
-     * @param {number} initialDelay ***IGNORED**
+     * @param {number} initialDelay Default: `0`
      */
     setKeepAlive(enable = false, initialDelay = 0) {
         if (this._state != STATE.CONNECTED) {
@@ -185,13 +188,7 @@ export default class TcpSocket extends EventEmitter {
             return this;
         }
 
-        if (initialDelay !== 0) {
-            console.warn(
-                'WARNING: socket.setKeepAlive(enable, initialDelay) `initialDelay` param is ignored'
-            );
-        }
-
-        Sockets.setKeepAlive(this._id, enable);
+        Sockets.setKeepAlive(this._id, enable, Math.floor(initialDelay));
         return this;
     }
 
