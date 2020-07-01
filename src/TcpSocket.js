@@ -183,7 +183,7 @@ export default class TcpSocket extends EventEmitter {
             return this;
         }
 
-        Sockets.setKeepAlive(enable, initialDelay);
+        Sockets.setKeepAlive(this._id, enable);
         return this;
     }
 

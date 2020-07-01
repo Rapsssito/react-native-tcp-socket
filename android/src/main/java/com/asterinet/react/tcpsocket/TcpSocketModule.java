@@ -164,6 +164,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }.executeOnExecutor(executorService);
     }
 
+    @SuppressWarnings("unused")
     @ReactMethod
     public void setNoDelay(@NonNull final Integer cId, final boolean noDelay) {
         final TcpSocketClient client = socketClients.get(cId);
@@ -173,6 +174,21 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         }
         try {
             client.setNoDelay(noDelay);
+        } catch (IOException e) {
+            onError(cId, e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void setKeepAlive(@NonNull final Integer cId, final boolean enable) {
+        final TcpSocketClient client = socketClients.get(cId);
+        if (client == null) {
+            onError(cId, TAG + "socket not found.");
+            return;
+        }
+        try {
+            client.setKeepAlive(enable);
         } catch (IOException e) {
             onError(cId, e.getMessage());
         }
