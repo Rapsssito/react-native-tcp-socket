@@ -2,7 +2,6 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
-import android.util.Log;
 import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
