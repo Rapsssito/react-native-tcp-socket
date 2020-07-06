@@ -17,6 +17,11 @@ Steps to reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
+Or code:
+```js
+// Your code
+```
+
 ## Current behavior
 A clear and concise description of what happened.
 
