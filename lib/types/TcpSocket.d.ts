@@ -87,9 +87,18 @@ export default class TcpSocket extends EventEmitter {
      *
      * Passing `true` for `noDelay` or not passing an argument will disable Nagle's algorithm for the socket. Passing false for noDelay will enable Nagle's algorithm.
      *
-     * @param {boolean} noDelay
+     * @param {boolean} noDelay Default: `true`
      */
-    setNoDelay(noDelay?: boolean): void;
+    setNoDelay(noDelay?: boolean): TcpSocket;
+    /**
+     * Enable/disable keep-alive functionality, and optionally set the initial delay before the first keepalive probe is sent on an idle socket.
+     *
+     * `initialDelay` is ignored.
+     *
+     * @param {boolean} enable Default: `false`
+     * @param {number} initialDelay ***IGNORED**. Default: `0`
+     */
+    setKeepAlive(enable?: boolean, initialDelay?: number): TcpSocket;
     address(): string | undefined;
     /**
      * @param {string | Buffer | Uint8Array} data

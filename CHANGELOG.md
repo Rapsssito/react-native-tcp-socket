@@ -1,3 +1,10 @@
+# [4.2.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.1.0...v4.2.0) (2020-07-06)
+
+
+### Features
+
+* Add setKeepAlive() method ([#62](https://github.com/Rapsssito/react-native-tcp-socket/issues/62)) ([35cea93](https://github.com/Rapsssito/react-native-tcp-socket/commit/35cea93d53f9d9bad9e28cf1a1657b8722335010))
+
 # [4.1.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.0.0...v4.1.0) (2020-06-18)
 
 
