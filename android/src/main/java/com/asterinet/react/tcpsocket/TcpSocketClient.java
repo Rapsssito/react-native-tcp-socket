@@ -141,4 +141,15 @@ class TcpSocketClient {
         }
         socket.setTcpNoDelay(noDelay);
     }
+
+    /**
+     * @param enable `true` to enable keep-alive functionality
+     */
+    public void setKeepAlive(final boolean enable, final int initialDelay) throws IOException {
+        if (socket == null) {
+            throw new IOException("Socket is not connected.");
+        }
+        // `initialDelay` is ignored
+        socket.setKeepAlive(enable);
+    }
 }

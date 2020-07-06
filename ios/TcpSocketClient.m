@@ -132,7 +132,21 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         int on = noDelay ? 1 : 0;
         if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&on, sizeof(on)) == -1) {
             /* TODO: handle error */
-            RCTLogWarn(@"setNoDelay caused an unexpected error");
+            RCTLogWarn(@"react-native-tcp-socket: setNoDelay() caused an unexpected error");
+        }
+    }];
+}
+
+- (void)setKeepAlive:(BOOL)enable initialDelay:(int)initialDelay
+{
+    [_tcpSocket performBlock:^{
+        int fd = [self->_tcpSocket socketFD];
+        int on = enable ? 1 : 0;
+        int enableKA = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
+        // `initialDelay` is ignored
+        if (enableKA == -1) {
+            /* TODO: handle error */
+            RCTLogWarn(@"react-native-tcp-socket: setKeepAlive() caused an unexpected error");
         }
     }];
 }

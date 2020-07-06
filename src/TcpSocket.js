@@ -162,10 +162,39 @@ export default class TcpSocket extends EventEmitter {
      *
      * Passing `true` for `noDelay` or not passing an argument will disable Nagle's algorithm for the socket. Passing false for noDelay will enable Nagle's algorithm.
      *
-     * @param {boolean} noDelay
+     * @param {boolean} noDelay Default: `true`
      */
     setNoDelay(noDelay = true) {
+        if (this._state != STATE.CONNECTED) {
+            this.once('connect', () => this.setNoDelay(noDelay));
+            return this;
+        }
         Sockets.setNoDelay(this._id, noDelay);
+        return this;
+    }
+
+    /**
+     * Enable/disable keep-alive functionality, and optionally set the initial delay before the first keepalive probe is sent on an idle socket.
+     *
+     * `initialDelay` is ignored.
+     *
+     * @param {boolean} enable Default: `false`
+     * @param {number} initialDelay ***IGNORED**. Default: `0`
+     */
+    setKeepAlive(enable = false, initialDelay = 0) {
+        if (this._state != STATE.CONNECTED) {
+            this.once('connect', () => this.setKeepAlive(enable, initialDelay));
+            return this;
+        }
+
+        if (initialDelay !== 0) {
+            console.warn(
+                'react-native-tcp-socket: initialDelay param in socket.setKeepAlive() is ignored'
+            );
+        }
+
+        Sockets.setKeepAlive(this._id, enable, Math.floor(initialDelay));
+        return this;
     }
 
     address() {
