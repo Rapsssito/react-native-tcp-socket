@@ -106,7 +106,7 @@ To use this library you need to ensure you are using the correct version of Reac
 
 | `react-native-tcp-socket` version         | Required React Native Version                                                     |
 | ----------------------------------------- | --------------------------------------------------------------------------------- |
-| ``4.X.X`, `3.X.X`                                   | `>= 0.61`                                                                         |
+| `4.X.X`, `3.X.X`                                   | `>= 0.61`                                                                         |
 | `1.2.2`                                   | `>= 0.??`                                                                         |
 
 ## Usage
@@ -187,7 +187,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`address()`](https://nodejs.org/api/net.html#net_socket_address)
   * [`destroy([error])`](https://nodejs.org/api/net.html#net_socket_destroy_error)
   * [`end([data][, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_end_data_encoding_callback)
-  * [`setKeepAlive([enable][, initialDelay])`](https://nodejs.org/api/net.html#net_socket_setkeepalive_enable_initialdelay)
+  * [`setKeepAlive([enable][, initialDelay])`](https://nodejs.org/api/net.html#net_socket_setkeepalive_enable_initialdelay) - _`initialDelay` is ignored_
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
   * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
   * [`write(data[, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback)
