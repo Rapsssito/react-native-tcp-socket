@@ -181,14 +181,14 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
     @SuppressWarnings("unused")
     @ReactMethod
-    public void setKeepAlive(@NonNull final Integer cId, final boolean enable, final int delay) {
+    public void setKeepAlive(@NonNull final Integer cId, final boolean enable, final int initialDelay) {
         final TcpSocketClient client = socketClients.get(cId);
         if (client == null) {
             onError(cId, TAG + "socket not found.");
             return;
         }
         try {
-            client.setKeepAlive(enable, delay);
+            client.setKeepAlive(enable, initialDelay);
         } catch (IOException e) {
             onError(cId, e.getMessage());
         }

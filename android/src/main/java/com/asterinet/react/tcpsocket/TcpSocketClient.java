@@ -146,13 +146,11 @@ class TcpSocketClient {
     /**
      * @param enable `true` to enable keep-alive functionality
      */
-    public void setKeepAlive(final boolean enable, final int delay) throws IOException {
+    public void setKeepAlive(final boolean enable, final int initialDelay) throws IOException {
         if (socket == null) {
             throw new IOException("Socket is not connected.");
         }
-        if (delay != 0) {
-            Log.w("ReactNativeJS", "setKeepAlive() delay is ignored on Android");
-        }
+        // `initialDelay` is ignored
         socket.setKeepAlive(enable);
     }
 }
