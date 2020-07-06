@@ -132,25 +132,21 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         int on = noDelay ? 1 : 0;
         if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&on, sizeof(on)) == -1) {
             /* TODO: handle error */
-            RCTLogWarn(@"setNoDelay caused an unexpected error");
+            RCTLogWarn(@"react-native-tcp-socket: setNoDelay() caused an unexpected error");
         }
     }];
 }
 
-- (void)setKeepAlive:(BOOL)enable delay:(int)delay
+- (void)setKeepAlive:(BOOL)enable initialDelay:(int)initialDelay
 {
     [_tcpSocket performBlock:^{
         int fd = [self->_tcpSocket socketFD];
         int on = enable ? 1 : 0;
         int enableKA = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
-        int delayKA = 0;
-        if (delay != 0) {
-            // Only change the delay when delay != 0
-            delayKA = setsockopt(fd, IPPROTO_TCP, TCP_KEEPALIVE, &delay, sizeof(delay));
-        }
-        if (enableKA == -1 || delayKA == -1) {
+        // `initialDelay` is ignored
+        if (enableKA == -1) {
             /* TODO: handle error */
-            RCTLogWarn(@"setKeepAlive caused an unexpected error");
+            RCTLogWarn(@"react-native-tcp-socket: setKeepAlive() caused an unexpected error");
         }
     }];
 }

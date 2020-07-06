@@ -123,11 +123,11 @@ RCT_EXPORT_METHOD(setNoDelay:(nonnull NSNumber*)cId noDelay:(BOOL)noDelay) {
     [client setNoDelay:noDelay];
 }
 
-RCT_EXPORT_METHOD(setKeepAlive:(nonnull NSNumber*)cId enable:(BOOL)enable delay:(int)delay) {
+RCT_EXPORT_METHOD(setKeepAlive:(nonnull NSNumber*)cId enable:(BOOL)enable initialDelay:(int)initialDelay) {
     TcpSocketClient* client = [self findClient:cId];
     if (!client) return;
     
-    [client setKeepAlive:enable delay:delay];
+    [client setKeepAlive:enable initialDelay:initialDelay];
 }
 
 - (void)onConnect:(TcpSocketClient*) client
