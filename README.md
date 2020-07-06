@@ -118,7 +118,13 @@ import TcpSocket from 'react-native-tcp-socket';
 ### Client
 ```javascript
 // Create socket
-const client = TcpSocket.createConnection(options);
+const client = TcpSocket.createConnection(options, () => {
+  // Write on the socket
+  client.write('Hello server!');
+
+  // Close socket
+  client.destroy();
+});
 
 client.on('data', function(data) {
   console.log('message was received', data);
@@ -131,12 +137,6 @@ client.on('error', function(error) {
 client.on('close', function(){
   console.log('Connection closed!');
 });
-
-// Write on the socket
-client.write('Hello server!');
-
-// Close socket
-client.destroy();
 ```
 
 ### Server
