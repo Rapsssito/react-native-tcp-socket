@@ -42,6 +42,7 @@ export default class TcpSocket extends EventEmitter {
         this._timeout = undefined;
         /** @type {number} */
         this._state = STATE.DISCONNECTED;
+        this._encoding = undefined;
         this._registerEvents();
         if (address != undefined) this._setConnected(address);
     }
@@ -54,7 +55,8 @@ export default class TcpSocket extends EventEmitter {
         this._dataListener = this._eventEmitter.addListener('data', (evt) => {
             if (evt.id !== this._id) return;
             const bufferTest = Buffer.from(evt.data, 'base64');
-            this.emit('data', bufferTest);
+            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
+            this.emit('data', finalData);
         });
         this._errorListener = this._eventEmitter.addListener('error', (evt) => {
             if (evt.id !== this._id) return;
@@ -153,6 +155,20 @@ export default class TcpSocket extends EventEmitter {
             clearTimeout(this._timeout);
             this._timeout = undefined;
         }
+    }
+
+    /**
+     * Set the encoding for the socket as a Readable Stream. By default, no encoding is assigned and stream data will be returned as `Buffer` objects.
+     * Setting an encoding causes the stream data to be returned as strings of the specified encoding rather than as Buffer objects.
+     *
+     * For instance, calling `socket.setEncoding('utf8')` will cause the output data to be interpreted as UTF-8 data, and passed as strings.
+     * Calling `socket.setEncoding('hex')` will cause the data to be encoded in hexadecimal string format.
+     *
+     * @param {BufferEncoding} [encoding]
+     */
+    setEncoding(encoding) {
+        this._encoding = encoding;
+        return this;
     }
 
     /**
