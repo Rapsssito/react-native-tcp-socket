@@ -179,7 +179,7 @@ const client = TcpSocket.createConnection({
 _Note: In order to use self-signed certificates make sure to [update your metro.config.js configuration](#self-signed-ssl-only-available-for-react-native--060)._
 
 ## API
-Here are listed all methods implemented in `react-native-tcp-socket`, their functionalities are equivalent to those provided by Node's [net](https://nodejs.org/api/net.html) (more info on [#41](https://github.com/Rapsssito/react-native-tcp-socket/issues/41)). However, the **methods whose interface differs from Node are shown in bold**.
+Here are listed all methods implemented in `react-native-tcp-socket`, their functionalities are equivalent to those provided by Node's [net](https://nodejs.org/api/net.html) (more info on [#41](https://github.com/Rapsssito/react-native-tcp-socket/issues/41)). However, the **methods whose interface differs from Node are marked in bold**.
 
 ### TcpSocket
 * **Methods:**
@@ -187,10 +187,16 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`address()`](https://nodejs.org/api/net.html#net_socket_address)
   * [`destroy([error])`](https://nodejs.org/api/net.html#net_socket_destroy_error)
   * [`end([data][, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_end_data_encoding_callback)
+  * [`setEncoding([encoding])`](https://nodejs.org/api/net.html#net_socket_setencoding_encoding)
   * [`setKeepAlive([enable][, initialDelay])`](https://nodejs.org/api/net.html#net_socket_setkeepalive_enable_initialdelay) - _`initialDelay` is ignored_
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
   * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
   * [`write(data[, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback)
+* **Events:**
+  * [`'close'`](https://nodejs.org/api/net.html#net_event_close_1)
+  * [`'connect'`](https://nodejs.org/api/net.html#net_event_connect)
+  * [`'data'`](https://nodejs.org/api/net.html#net_event_data)
+  * [`'error'`](https://nodejs.org/api/net.html#net_event_error_1)
 
 #### `createConnection()`
 `createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
