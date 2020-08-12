@@ -28,6 +28,7 @@ export default class TcpSocket extends EventEmitter {
     _timeout: NodeJS.Timeout | undefined;
     /** @type {number} */
     _state: number;
+    _encoding: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined;
     /**
      * @protected
      */
@@ -80,6 +81,16 @@ export default class TcpSocket extends EventEmitter {
      * @private
      */
     private _clearTimeout;
+    /**
+     * Set the encoding for the socket as a Readable Stream. By default, no encoding is assigned and stream data will be returned as `Buffer` objects.
+     * Setting an encoding causes the stream data to be returned as strings of the specified encoding rather than as Buffer objects.
+     *
+     * For instance, calling `socket.setEncoding('utf8')` will cause the output data to be interpreted as UTF-8 data, and passed as strings.
+     * Calling `socket.setEncoding('hex')` will cause the data to be encoded in hexadecimal string format.
+     *
+     * @param {BufferEncoding} [encoding]
+     */
+    setEncoding(encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined): TcpSocket;
     /**
      * Enable/disable the use of Nagle's algorithm. When a TCP connection is created, it will have Nagle's algorithm enabled.
      *

@@ -1,3 +1,10 @@
+# [4.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.2.0...v4.3.0) (2020-08-12)
+
+
+### Features
+
+* Add socket.setEncoding() method ([#74](https://github.com/Rapsssito/react-native-tcp-socket/issues/74)) ([bfa80ea](https://github.com/Rapsssito/react-native-tcp-socket/commit/bfa80ea3b690f8a486882b4921397633957f4686))
+
 # [4.2.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.1.0...v4.2.0) (2020-07-06)
 
 
