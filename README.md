@@ -187,6 +187,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`address()`](https://nodejs.org/api/net.html#net_socket_address)
   * [`destroy([error])`](https://nodejs.org/api/net.html#net_socket_destroy_error)
   * [`end([data][, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_end_data_encoding_callback)
+  * [`setEncoding([encoding])`](https://nodejs.org/api/net.html#net_socket_setencoding_encoding)
   * [`setKeepAlive([enable][, initialDelay])`](https://nodejs.org/api/net.html#net_socket_setkeepalive_enable_initialdelay) - _`initialDelay` is ignored_
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
   * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
