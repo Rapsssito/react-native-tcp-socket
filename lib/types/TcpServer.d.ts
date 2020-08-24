@@ -42,6 +42,7 @@ export default class TcpServer extends TcpSocket {
         tlsCert?: any;
     }, callback?: ((address: string) => void) | undefined): TcpServer;
     setTimeout(timeout: number, callback?: (() => void) | undefined): TcpServer;
+    setEncoding(encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined): TcpServer;
     setNoDelay(noDelay?: boolean): TcpServer;
     setKeepAlive(enable?: boolean, initialDelay?: number): TcpServer;
     addListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
