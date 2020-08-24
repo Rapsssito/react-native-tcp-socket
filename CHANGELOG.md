@@ -1,3 +1,10 @@
+## [4.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.3.0...v4.3.1) (2020-08-24)
+
+
+### Bug Fixes
+
+* **Android:** Bump API to 29 ([edc8518](https://github.com/Rapsssito/react-native-tcp-socket/commit/edc851893ebcbadf748d25b0a03e81130e08ce97))
+
 # [4.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.2.0...v4.3.0) (2020-08-12)
 
 
