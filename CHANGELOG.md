@@ -1,3 +1,10 @@
+# [4.4.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.3.1...v4.4.0) (2020-08-30)
+
+
+### Features
+
+* Extend compatibility to RN 0.60.0 ([#75](https://github.com/Rapsssito/react-native-tcp-socket/issues/75)) ([5c1cd79](https://github.com/Rapsssito/react-native-tcp-socket/commit/5c1cd79ad1dcc5115f5a0042f0ec6dc4107e66f7))
+
 ## [4.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.3.0...v4.3.1) (2020-08-24)
 
 
