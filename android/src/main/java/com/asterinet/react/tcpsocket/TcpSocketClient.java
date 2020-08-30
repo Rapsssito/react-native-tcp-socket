@@ -2,6 +2,8 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
@@ -18,9 +20,6 @@ import java.util.concurrent.Executors;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 class TcpSocketClient {
     private final int id;
