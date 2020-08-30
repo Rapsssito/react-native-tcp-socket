@@ -15,7 +15,6 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.GuardedAsyncTask;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
@@ -71,9 +70,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     @SuppressWarnings("unused")
     @ReactMethod
     public void connect(@NonNull final Integer cId, @NonNull final String host, @NonNull final Integer port, @NonNull final ReadableMap options) {
-        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
+        executorService.execute(new Thread(new Runnable() {
             @Override
-            protected void doInBackgroundGuarded(Void... params) {
+            public void run() {
                 TcpSocketClient client = socketClients.get(cId);
                 if (client != null) {
                     onError(cId, TAG + "createSocket called twice with the same id.");
@@ -92,16 +91,16 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, e.getMessage());
                 }
             }
-        }.executeOnExecutor(executorService);
+        }));
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void write(@NonNull final Integer cId, @NonNull final String base64String, @Nullable final Callback callback) {
-        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
+        executorService.execute(new Thread(new Runnable() {
             @Override
-            protected void doInBackgroundGuarded(Void... params) {
+            public void run() {
                 TcpSocketClient socketClient = socketClients.get(cId);
                 if (socketClient == null) {
                     return;
@@ -118,16 +117,16 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, e.toString());
                 }
             }
-        }.executeOnExecutor(executorService);
+        }));
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void end(final Integer cId) {
-        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
+        executorService.execute(new Thread(new Runnable() {
             @Override
-            protected void doInBackgroundGuarded(Void... params) {
+            public void run() {
                 TcpSocketClient socketClient = socketClients.get(cId);
                 if (socketClient == null) {
                     return;
@@ -135,7 +134,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 socketClient.close();
                 socketClients.remove(cId);
             }
-        }.executeOnExecutor(executorService);
+        }));
     }
 
     @SuppressWarnings("unused")
@@ -148,9 +147,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     @SuppressWarnings("unused")
     @ReactMethod
     public void listen(final Integer cId, final ReadableMap options) {
-        new GuardedAsyncTask<Void, Void>(mReactContext.getExceptionHandler()) {
+        executorService.execute(new Thread(new Runnable() {
             @Override
-            protected void doInBackgroundGuarded(Void... params) {
+            public void run() {
                 try {
                     TcpSocketServer server = new TcpSocketServer(socketClients, TcpSocketModule.this, cId, options);
                     socketClients.put(cId, server);
@@ -161,7 +160,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     onError(cId, uhe.getMessage());
                 }
             }
-        }.executeOnExecutor(executorService);
+        }));
     }
 
     @SuppressWarnings("unused")
