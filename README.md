@@ -153,7 +153,7 @@ const server = TcpSocket.createServer(function(socket) {
   socket.on('close', (error) => {
     console.log('Closed connection with ', socket.address());
   });
-}).listen(12345, '0.0.0.0');
+}).listen({ port: 12345, host: '0.0.0.0' });
 
 server.on('error', (error) => {
   console.log('An error ocurred with the server', error);

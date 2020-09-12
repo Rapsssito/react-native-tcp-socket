@@ -41,6 +41,10 @@
     "tcp",
     "react-native-library"
   ],
+  "funding": {
+    "type" : "individual",
+    "url" : "https://github.com/sponsors/Rapsssito"
+  },
   "author": {
     "name": "Rapsssito",
     "email": "contact@rodrigomartin.dev"
