@@ -1,7 +1,7 @@
 {
   "name": "react-native-tcp-socket",
   "title": "React Native Tcp Socket",
-  "version": "4.5.0",
+  "version": "4.5.1",
   "description": "React Native TCP socket API for Android & iOS with SSL/TLS support",
   "main": "src/index.js",
   "types": "lib/types/index.d.ts",
@@ -42,8 +42,8 @@
     "react-native-library"
   ],
   "funding": {
-    "type" : "individual",
-    "url" : "https://github.com/sponsors/Rapsssito"
+    "type": "individual",
+    "url": "https://github.com/sponsors/Rapsssito"
   },
   "author": {
     "name": "Rapsssito",

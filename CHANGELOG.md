@@ -1,3 +1,10 @@
+## [4.5.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.0...v4.5.1) (2020-09-12)
+
+
+### Bug Fixes
+
+* Fix TCPServer documentation ([d0dcd5b](https://github.com/Rapsssito/react-native-tcp-socket/commit/d0dcd5b29d2aa382441d88be52e7b8f9d1c21d26)), closes [#79](https://github.com/Rapsssito/react-native-tcp-socket/issues/79) [#57](https://github.com/Rapsssito/react-native-tcp-socket/issues/57)
+
 # [4.5.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.4.0...v4.5.0) (2020-08-30)
 
 
