@@ -2,7 +2,11 @@ name: "Check stale issues"
 on:
   schedule:
   - cron: "0 0 */7 * *"
-
+  workflow_dispatch:
+    input:
+      tags:
+        description: 'Check stale issues manually'  
+  
 jobs:
   stale:
     runs-on: ubuntu-latest
