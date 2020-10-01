@@ -1,3 +1,10 @@
+## [4.5.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.1...v4.5.2) (2020-10-01)
+
+
+### Bug Fixes
+
+* Fix Xcode 12 compatibility ([f0f81f8](https://github.com/Rapsssito/react-native-tcp-socket/commit/f0f81f8cf3309d1a7fc46cc5f072c0de6d22a5a9)), closes [facebook/react-native#29633](https://github.com/facebook/react-native/issues/29633)
+
 ## [4.5.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.0...v4.5.1) (2020-09-12)
 
 
