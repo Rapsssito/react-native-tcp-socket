@@ -1,3 +1,10 @@
+## [4.5.3](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.2...v4.5.3) (2020-10-02)
+
+
+### Bug Fixes
+
+* **Android:** Report correct port, even when automatically allocated ([#82](https://github.com/Rapsssito/react-native-tcp-socket/issues/82)) ([6cae377](https://github.com/Rapsssito/react-native-tcp-socket/commit/6cae377eb25cd6539f479760e31e37363fb9c060))
+
 ## [4.5.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.1...v4.5.2) (2020-10-01)
 
 
