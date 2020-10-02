@@ -53,7 +53,7 @@
   "licenseFilename": "LICENSE",
   "readmeFilename": "README.md",
   "peerDependencies": {
-    "react-native": ">=0.61.0"
+    "react-native": ">=0.60.0"
   },
   "devDependencies": {
     "@babel/core": "^7.7.7",
