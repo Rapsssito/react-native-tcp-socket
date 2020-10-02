@@ -17,6 +17,7 @@ public final class TcpSocketServer extends TcpSocketClient {
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
     private int clientSocketIds;
     private final ConcurrentHashMap<Integer, TcpSocketClient> socketClients;
+    private int listeningPort = -1;
 
     @SuppressLint("StaticFieldLeak")
     private final AsyncTask listening = new AsyncTask() {
@@ -46,6 +47,7 @@ public final class TcpSocketServer extends TcpSocketClient {
         super(id);
         // Get data from options
         int port = options.getInt("port");
+        listeningPort = port;
         String address = options.getString("host");
         this.socketClients = socketClients;
         clientSocketIds = (1 + getId()) * 1000;
@@ -53,6 +55,8 @@ public final class TcpSocketServer extends TcpSocketClient {
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
         serverSocket = new ServerSocket(port, 50, localInetAddress);
+        listeningPort = serverSocket.getLocalPort();
+
         // setReuseAddress
         try {
             boolean reuseAddress = options.getBoolean("reuseAddress");
@@ -102,5 +106,9 @@ public final class TcpSocketServer extends TcpSocketClient {
         } catch (IOException e) {
             mReceiverListener.onClose(getId(), e.getMessage());
         }
+    }
+
+    public int getListeningPort() {
+        return listeningPort;
     }
 }
