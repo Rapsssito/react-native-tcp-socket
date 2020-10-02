@@ -53,6 +53,7 @@ public final class TcpSocketServer extends TcpSocketClient {
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
         serverSocket = new ServerSocket(port, 50, localInetAddress);
+
         // setReuseAddress
         try {
             boolean reuseAddress = options.getBoolean("reuseAddress");
@@ -102,5 +103,9 @@ public final class TcpSocketServer extends TcpSocketClient {
         } catch (IOException e) {
             mReceiverListener.onClose(getId(), e.getMessage());
         }
+    }
+
+    public int getListeningPort() {
+        return (serverSocket == null) ? -1 : serverSocket.getLocalPort();
     }
 }
