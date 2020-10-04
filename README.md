@@ -1,6 +1,9 @@
 # react-native-tcp-socket
-![](https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg)
-
+<p align="center">
+  <img src="https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg" />
+  <img src="https://img.shields.io/npm/dw/react-native-tcp-socket" />
+  <img src="https://img.shields.io/npm/v/react-native-tcp-socket?color=gr&label=npm%20version" />
+<p/>
 
 React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating some of Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
