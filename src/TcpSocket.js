@@ -332,4 +332,12 @@ export default class TcpSocket extends EventEmitter {
         this._unregisterEvents();
         this._state = STATE.DISCONNECTED;
     }
+
+    ref() {
+        console.warn('react-native-tcp-socket: TcpSocket.ref() method will have no effect.');
+    }
+
+    unref() {
+        console.warn('react-native-tcp-socket: TcpSocket.unref() method will have no effect.');
+    }
 }

@@ -74,4 +74,12 @@ export default class TcpServer extends TcpSocket {
         this._connections.push(socket);
         this.connectionCallback(socket);
     }
+
+    ref() {
+        console.warn('react-native-tcp-socket: TcpServer.ref() method will have no effect.');
+    }
+
+    unref() {
+        console.warn('react-native-tcp-socket: TcpServer.unref() method will have no effect.');
+    }
 }
