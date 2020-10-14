@@ -156,6 +156,8 @@ export default class TcpSocket extends EventEmitter {
      * @private
      */
     private _setDisconnected;
+    ref(): void;
+    unref(): void;
     addListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
     on(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
     once(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;

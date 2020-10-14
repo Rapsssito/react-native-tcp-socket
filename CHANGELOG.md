@@ -1,3 +1,10 @@
+## [4.5.4](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.3...v4.5.4) (2020-10-14)
+
+
+### Bug Fixes
+
+* Add ref() & unref() as empty methods ([#84](https://github.com/Rapsssito/react-native-tcp-socket/issues/84)) ([1ee98a4](https://github.com/Rapsssito/react-native-tcp-socket/commit/1ee98a482f2d12c9a26216eda02421ba225c109c))
+
 ## [4.5.3](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.2...v4.5.3) (2020-10-02)
 
 
