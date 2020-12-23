@@ -1,4 +1,8 @@
 /**
+ * @typedef {"ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex"} BufferEncoding
+ *
+ * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
+ *
  * @typedef {{
  * port: number;
  * host?: string;
@@ -17,18 +21,22 @@ export default class TcpSocket extends EventEmitter {
      * Initialices a TcpSocket.
      *
      * @param {number} id
-     * @param {import('react-native').NativeEventEmitter} eventEmitter
+     * @param {NativeEventEmitter} eventEmitter
      * @param {string} [address]
      */
-    constructor(id: number, eventEmitter: import("react-native").NativeEventEmitter, address?: string | undefined);
-    _id: number;
-    _eventEmitter: import("react-native").NativeEventEmitter;
-    /** @type {number} */
-    _timeoutMsecs: number;
-    _timeout: NodeJS.Timeout | undefined;
-    /** @type {number} */
-    _state: number;
-    _encoding: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined;
+    constructor(id: number, eventEmitter: NativeEventEmitter, address?: string | undefined);
+    /** @protected */
+    protected _id: number;
+    /** @protected */
+    protected _eventEmitter: import("react-native").NativeEventEmitter;
+    /** @type {number} @private */
+    private _timeoutMsecs;
+    /** @private */
+    private _timeout;
+    /** @type {number} @private */
+    private _state;
+    /** @private */
+    private _encoding;
     /**
      * @protected
      */
@@ -45,18 +53,7 @@ export default class TcpSocket extends EventEmitter {
      * @param {ConnectionOptions} options
      * @param {(address: string) => void} [callback]
      */
-    connect(options: {
-        port: number;
-        host?: string | undefined;
-        timeout?: number | undefined;
-        localAddress?: string | undefined;
-        localPort?: number | undefined;
-        interface?: "wifi" | "cellular" | "ethernet" | undefined;
-        reuseAddress?: boolean | undefined;
-        tls?: boolean | undefined;
-        tlsCheckValidity?: boolean | undefined;
-        tlsCert?: any;
-    }, callback?: ((address: string) => void) | undefined): TcpSocket;
+    connect(options: ConnectionOptions, callback?: ((address: string) => void) | undefined): TcpSocket;
     _destroyed: boolean | undefined;
     /**
      * Sets the socket to timeout after `timeout` milliseconds of inactivity on the socket. By default `TcpSocket` do not have a timeout.
@@ -158,16 +155,9 @@ export default class TcpSocket extends EventEmitter {
     private _setDisconnected;
     ref(): void;
     unref(): void;
-    addListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
-    on(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
-    once(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
-    removeListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
-    off(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
-    removeAllListeners(event?: string | symbol | undefined): TcpSocket;
-    setMaxListeners(n: number): TcpSocket;
-    prependListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
-    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): TcpSocket;
 }
+export type BufferEncoding = "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex";
+export type NativeEventEmitter = import("react-native").NativeEventEmitter;
 export type ConnectionOptions = {
     port: number;
     host?: string | undefined;
@@ -180,4 +170,5 @@ export type ConnectionOptions = {
     tlsCheckValidity?: boolean | undefined;
     tlsCert?: any;
 };
-import { EventEmitter } from "node/events";
+import { EventEmitter } from "events";
+import { Buffer } from "buffer";

@@ -1,3 +1,10 @@
+## [4.5.5](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.4...v4.5.5) (2020-12-23)
+
+
+### Bug Fixes
+
+* Update TypeScript declaration files ([b55a260](https://github.com/Rapsssito/react-native-tcp-socket/commit/b55a260119d3f74ed1aeb6448e2afea9452b4a29))
+
 ## [4.5.4](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.3...v4.5.4) (2020-10-14)
 
 

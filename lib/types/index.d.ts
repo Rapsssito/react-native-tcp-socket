@@ -13,18 +13,7 @@ declare class TCPSockets {
      * @param {(address: string) => void} callback
      * @returns {Socket}
      */
-    createConnection(options: {
-        port: number;
-        host?: string | undefined;
-        timeout?: number | undefined;
-        localAddress?: string | undefined;
-        localPort?: number | undefined;
-        interface?: "wifi" | "cellular" | "ethernet" | undefined;
-        reuseAddress?: boolean | undefined;
-        tls?: boolean | undefined;
-        tlsCheckValidity?: boolean | undefined;
-        tlsCert?: any;
-    }, callback: (address: string) => void): Socket;
+    createConnection(options: import('./TcpSocket').ConnectionOptions, callback: (address: string) => void): Socket;
 }
 import Socket from "./TcpSocket";
 import Server from "./TcpServer";

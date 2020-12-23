@@ -1,10 +1,13 @@
+/**
+ * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
+ */
 export default class TcpServer extends TcpSocket {
     /**
      * @param {number} id
-     * @param {import("react-native").NativeEventEmitter} eventEmitter
+     * @param {NativeEventEmitter} eventEmitter
      * @param {(socket: TcpSocket) => void} connectionCallback
      */
-    constructor(id: number, eventEmitter: import("react-native").NativeEventEmitter, connectionCallback: (socket: TcpSocket) => void);
+    constructor(id: number, eventEmitter: NativeEventEmitter, connectionCallback: (socket: TcpSocket) => void);
     connectionCallback: (socket: TcpSocket) => void;
     /** @type {TcpSocket[]} */
     _connections: TcpSocket[];
@@ -17,7 +20,7 @@ export default class TcpServer extends TcpSocket {
     listen(options: {
         port: number;
         host: string;
-        reuseAddress?: boolean | undefined;
+        reuseAddress?: boolean;
     }, callback?: ((arg0: any) => void) | undefined): TcpServer;
     /**
      * @param {(arg0: number) => void} callback
@@ -29,30 +32,6 @@ export default class TcpServer extends TcpSocket {
      * @param {{ id: number; address: string; }} info
      */
     private _onConnection;
-    connect(options: {
-        port: number;
-        host?: string | undefined;
-        timeout?: number | undefined;
-        localAddress?: string | undefined;
-        localPort?: number | undefined;
-        interface?: "wifi" | "cellular" | "ethernet" | undefined;
-        reuseAddress?: boolean | undefined;
-        tls?: boolean | undefined;
-        tlsCheckValidity?: boolean | undefined;
-        tlsCert?: any;
-    }, callback?: ((address: string) => void) | undefined): TcpServer;
-    setTimeout(timeout: number, callback?: (() => void) | undefined): TcpServer;
-    setEncoding(encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined): TcpServer;
-    setNoDelay(noDelay?: boolean): TcpServer;
-    setKeepAlive(enable?: boolean, initialDelay?: number): TcpServer;
-    addListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
-    on(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
-    once(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
-    removeListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
-    off(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
-    removeAllListeners(event?: string | symbol | undefined): TcpServer;
-    setMaxListeners(n: number): TcpServer;
-    prependListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
-    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): TcpServer;
 }
+export type NativeEventEmitter = import("react-native").NativeEventEmitter;
 import TcpSocket from "./TcpSocket";
