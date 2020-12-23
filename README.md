@@ -146,7 +146,7 @@ client.on('close', function(){
 ```javascript
 const server = TcpSocket.createServer(function(socket) {
   socket.on('data', (data) => {
-    socket.write('Echo server', data);
+    socket.write('Echo server ' + data);
   });
 
   socket.on('error', (error) => {

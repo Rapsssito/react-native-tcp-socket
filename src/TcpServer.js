@@ -4,10 +4,13 @@ import { NativeModules } from 'react-native';
 const Sockets = NativeModules.TcpSockets;
 import TcpSocket from './TcpSocket';
 
+/**
+ * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
+ */
 export default class TcpServer extends TcpSocket {
     /**
      * @param {number} id
-     * @param {import("react-native").NativeEventEmitter} eventEmitter
+     * @param {NativeEventEmitter} eventEmitter
      * @param {(socket: TcpSocket) => void} connectionCallback
      */
     constructor(id, eventEmitter, connectionCallback) {

@@ -2,7 +2,7 @@
 
 import { NativeModules, Image } from 'react-native';
 import { EventEmitter } from 'events';
-const Buffer = (global.Buffer = global.Buffer || require('buffer').Buffer);
+import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
 
 const STATE = {
@@ -12,6 +12,10 @@ const STATE = {
 };
 
 /**
+ * @typedef {"ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex"} BufferEncoding
+ *
+ * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
+ *
  * @typedef {{
  * port: number;
  * host?: string;
@@ -30,18 +34,22 @@ export default class TcpSocket extends EventEmitter {
      * Initialices a TcpSocket.
      *
      * @param {number} id
-     * @param {import('react-native').NativeEventEmitter} eventEmitter
+     * @param {NativeEventEmitter} eventEmitter
      * @param {string} [address]
      */
     constructor(id, eventEmitter, address) {
         super();
+        /** @protected */
         this._id = id;
+        /** @protected */
         this._eventEmitter = eventEmitter;
-        /** @type {number} */
+        /** @type {number} @private */
         this._timeoutMsecs = 0;
+        /** @private */
         this._timeout = undefined;
-        /** @type {number} */
+        /** @type {number} @private */
         this._state = STATE.DISCONNECTED;
+        /** @private */
         this._encoding = undefined;
         this._registerEvents();
         if (address != undefined) this._setConnected(address);

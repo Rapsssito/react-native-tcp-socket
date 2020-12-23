@@ -1,3 +1,4 @@
+import { expect, test } from '@jest/globals';
 import TcpSockets from '../src/index';
 import TcpServer from '../src/TcpServer';
 import TcpSocket from '../src/TcpSocket';
