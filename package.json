@@ -8,7 +8,7 @@
   "scripts": {
     "ci": "yarn install --frozen-lockfile && yarn lint && yarn declaration:build && yarn checkjs && yarn test",
     "lint": "eslint .",
-    "checkjs": "tsc",
+    "checkjs": "tsc && tsc -p ./__tests__/tsconfig.json",
     "test": "jest ./__tests__",
     "declaration:build": "tsc -p ./declaration.tsconfig.json",
     "prepublishOnly": "yarn declaration:build && yarn checkjs"

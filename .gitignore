@@ -49,4 +49,4 @@ buck-out/
 .vscode
 
 # Tests
-coverage
+coverage/

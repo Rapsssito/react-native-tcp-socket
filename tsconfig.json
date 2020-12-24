@@ -7,5 +7,5 @@
         "skipLibCheck": true,
         "typeRoots": ["@types/events"]
     },
-    "include": ["src/", "__tests__/", "__mocks__/"],
+    "include": ["src", "lib"]
 }
