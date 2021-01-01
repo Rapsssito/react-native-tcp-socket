@@ -16,6 +16,8 @@ const STATE = {
  *
  * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
  *
+ * @typedef {{family: 'IPv4' | 'IPv6', port: number, address: string}} Address
+ *
  * @typedef {{
  * port: number;
  * host?: string;
@@ -35,7 +37,7 @@ export default class TcpSocket extends EventEmitter {
      *
      * @param {number} id
      * @param {NativeEventEmitter} eventEmitter
-     * @param {string} [address]
+     * @param {Address} [address]
      */
     constructor(id, eventEmitter, address) {
         super();
@@ -253,7 +255,7 @@ export default class TcpSocket extends EventEmitter {
 
     /**
      * @private
-     * @param {string} address
+     * @param {Address} address
      */
     _onConnect(address) {
         this._setConnected(address);
@@ -325,7 +327,7 @@ export default class TcpSocket extends EventEmitter {
 
     /**
      * @private
-     * @param {string} address
+     * @param {Address} address
      */
     _setConnected(address) {
         this._state = STATE.CONNECTED;
