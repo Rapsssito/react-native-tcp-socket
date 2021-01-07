@@ -53,6 +53,8 @@ export default class TcpSocket extends EventEmitter {
         this._state = STATE.DISCONNECTED;
         /** @private */
         this._encoding = undefined;
+        /** @private */
+        this._address = null;
         this._registerEvents();
         if (address != undefined) this._setConnected(address);
     }
@@ -81,7 +83,7 @@ export default class TcpSocket extends EventEmitter {
         this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
             if (evt.id !== this._id) return;
             this._onConnect(evt.address);
-            this.emit('connect', evt.address);
+            this.emit('connect');
         });
     }
 
@@ -97,15 +99,15 @@ export default class TcpSocket extends EventEmitter {
 
     /**
      * @param {ConnectionOptions} options
-     * @param {(address: string) => void} [callback]
+     * @param {() => void} [callback]
      */
     connect(options, callback) {
         const customOptions = { ...options };
         // Normalize args
         customOptions.host = customOptions.host || 'localhost';
         customOptions.port = Number(customOptions.port) || 0;
-        this.once('connect', (ev) => {
-            if (callback) callback(ev.address);
+        this.once('connect', () => {
+            if (callback) callback();
         });
         // Timeout
         if (customOptions.timeout) this.setTimeout(customOptions.timeout);
@@ -223,6 +225,12 @@ export default class TcpSocket extends EventEmitter {
         return this;
     }
 
+    /**
+     * Returns the bound `address`, the address `family` name and `port` of the socket as reported
+     * by the operating system: `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
+     *
+     * @returns {Address | null}
+     */
     address() {
         return this._address;
     }
@@ -249,6 +257,7 @@ export default class TcpSocket extends EventEmitter {
         if (!this._destroyed) {
             this._destroyed = true;
             this._clearTimeout();
+            this._address = null;
             Sockets.destroy(this._id);
         }
     }

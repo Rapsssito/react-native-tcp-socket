@@ -9,16 +9,27 @@ React Native TCP socket API for Android & iOS with **client SSL/TLS support**. I
 
 ## Table of Contents
 
-- [Getting started](#getting-started)
-  - [Self-Signed SSL](#self-signed-ssl-only-available-for-react-native--060)
-- [Compatibility](#react-native-compatibility)
-- [Usage](#usage)
-- [API](#api)
-  - [TcpSocket](#tcpsocket)
-  - [TcpServer](#tcpserver)
-- [Maintainers](#maintainers)
-- [Acknowledgments](#acknowledgments)
-- [License](#license)
+- [react-native-tcp-socket](#react-native-tcp-socket)
+  - [Table of Contents](#table-of-contents)
+  - [Getting started](#getting-started)
+      - [Using React Native >= 0.60](#using-react-native--060)
+      - [Self-Signed SSL (only available for React Native > 0.60)](#self-signed-ssl-only-available-for-react-native--060)
+      - [Using React Native < 0.60](#using-react-native--060-1)
+  - [React Native Compatibility](#react-native-compatibility)
+  - [Usage](#usage)
+    - [Client](#client)
+    - [Server](#server)
+    - [SSL Client](#ssl-client)
+  - [API](#api)
+    - [TcpSocket](#tcpsocket)
+      - [`createConnection()`](#createconnection)
+        - [`createConnection: options`](#createconnection-options)
+    - [TcpServer](#tcpserver)
+      - [`listen()`](#listen)
+        - [`listen: options`](#listen-options)
+  - [Maintainers](#maintainers)
+  - [Acknowledgments](#acknowledgments)
+  - [License](#license)
 
 ## Getting started
 Install the library using either Yarn:
@@ -226,6 +237,11 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`TcpSocket.createServer(connectionListener)`](https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener)
   * **[`listen(options[, callback])`](#listen)**
   * [`close([callback])`](https://nodejs.org/api/net.html#net_server_close_callback)
+* **Events:**
+  * [`'close'`](https://nodejs.org/api/net.html#net_event_close)
+  * [`'connect'`](https://nodejs.org/api/net.html#net_event_connect)
+  * [`'data'`](https://nodejs.org/api/net.html#net_event_data)
+  * [`'error'`](https://nodejs.org/api/net.html#net_event_error_1)
 
 #### `listen()`
 `listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).

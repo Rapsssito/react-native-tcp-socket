@@ -70,10 +70,9 @@ export default class TcpServer extends TcpSocket {
 
     /**
      * @private
-     * @param {{ id: number; address: string; }} info
+     * @param {{ id: number; address: import('./TcpSocket').Address; }} info
      */
     _onConnection(info) {
-        console.log(info);
         const socket = new TcpSocket(info.id, this._eventEmitter, info.address);
         this._connections.push(socket);
         this.connectionCallback(socket);
