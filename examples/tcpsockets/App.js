@@ -48,7 +48,7 @@ class App extends React.Component {
             socket.on('close', (error) => {
                 this.updateChatter('server client closed ' + (error ? error : ''));
             });
-        }).listen({port: serverPort, host: serverHost, reuseAddress: true}, (address) => {
+        }).listen({port: serverPort, host: serverHost, reuseAddress: true}, () => {
             this.updateChatter('opened server on ' + JSON.stringify(server.address()));
         });
 
