@@ -239,9 +239,9 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`close([callback])`](https://nodejs.org/api/net.html#net_server_close_callback)
 * **Events:**
   * [`'close'`](https://nodejs.org/api/net.html#net_event_close)
-  * [`'connect'`](https://nodejs.org/api/net.html#net_event_connect)
-  * [`'data'`](https://nodejs.org/api/net.html#net_event_data)
-  * [`'error'`](https://nodejs.org/api/net.html#net_event_error_1)
+  * [`'connection'`](https://nodejs.org/api/net.html#net_event_connection)
+  * [`'error'`](https://nodejs.org/api/net.html#net_event_error)
+  * [`'listening'`](https://nodejs.org/api/net.html#net_event_listening)
 
 #### `listen()`
 `listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).
