@@ -1,4 +1,4 @@
-# react-native-tcp-socket
+# react-native-tcp-socket <!-- omit in toc -->
 <p align="center">
   <img src="https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg" />
   <img src="https://img.shields.io/npm/dw/react-native-tcp-socket" />
@@ -7,29 +7,25 @@
 
 React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating some of Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
-## Table of Contents
+## Table of Contents <!-- omit in toc -->
 
-- [react-native-tcp-socket](#react-native-tcp-socket)
-  - [Table of Contents](#table-of-contents)
-  - [Getting started](#getting-started)
-      - [Using React Native >= 0.60](#using-react-native--060)
-      - [Self-Signed SSL (only available for React Native > 0.60)](#self-signed-ssl-only-available-for-react-native--060)
-      - [Using React Native < 0.60](#using-react-native--060-1)
-  - [React Native Compatibility](#react-native-compatibility)
-  - [Usage](#usage)
-    - [Client](#client)
-    - [Server](#server)
-    - [SSL Client](#ssl-client)
-  - [API](#api)
-    - [TcpSocket](#tcpsocket)
-      - [`createConnection()`](#createconnection)
-        - [`createConnection: options`](#createconnection-options)
-    - [TcpServer](#tcpserver)
-      - [`listen()`](#listen)
-        - [`listen: options`](#listen-options)
-  - [Maintainers](#maintainers)
-  - [Acknowledgments](#acknowledgments)
-  - [License](#license)
+- [Getting started](#getting-started)
+    - [Using React Native >= 0.60](#using-react-native--060)
+    - [Self-Signed SSL (only available for React Native > 0.60)](#self-signed-ssl-only-available-for-react-native--060)
+    - [Using React Native < 0.60](#using-react-native--060-1)
+- [React Native Compatibility](#react-native-compatibility)
+- [Usage](#usage)
+  - [Client](#client)
+  - [Server](#server)
+  - [SSL Client](#ssl-client)
+- [API](#api)
+  - [TcpSocket](#tcpsocket)
+    - [`createConnection()`](#createconnection)
+  - [TcpServer](#tcpserver)
+    - [`listen()`](#listen)
+- [Maintainers](#maintainers)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
 
 ## Getting started
 Install the library using either Yarn:
@@ -214,7 +210,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 
 #### `createConnection()`
 `createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
-##### `createConnection: options`
+##### `createConnection: options` <!-- omit in toc -->
 **Required**. Available options for creating a socket. It must be an `object` with the following properties:
 
 | Property              | Type   | iOS  | Android |Description                                                                                        |
@@ -246,7 +242,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 #### `listen()`
 `listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).
 
-##### `listen: options`
+##### `listen: options` <!-- omit in toc -->
 **Required**. Available options for creating a server socket. It must be an `object` with the following properties:
 
 | Property              | Type   | iOS  | Android |Description                                                                                        |
