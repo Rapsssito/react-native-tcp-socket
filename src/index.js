@@ -22,7 +22,7 @@ class TCPSockets {
 
     /**
      * @param {import('./TcpSocket').ConnectionOptions} options
-     * @param {(address: string) => void} callback
+     * @param {() => void} callback
      * @returns {Socket}
      */
     createConnection(options, callback) {
