@@ -1,7 +1,7 @@
 'use strict';
 
 import { NativeModules, Image } from 'react-native';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
 
@@ -16,7 +16,9 @@ const STATE = {
  *
  * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
  *
- * @typedef {{family: 'IPv4' | 'IPv6', port: number, address: string}} Address
+ * @typedef {{address: string, family: string, port: number}} AddressInfo
+ *
+ * @typedef {{localAddress: string, localPort: number, remoteAddress: string, remotePort: number, remoteFamily: string}} NativeConnectionInfo
  *
  * @typedef {{
  * port: number;
@@ -37,9 +39,9 @@ export default class TcpSocket extends EventEmitter {
      *
      * @param {number} id
      * @param {NativeEventEmitter} eventEmitter
-     * @param {Address} [address]
+     * @param {NativeConnectionInfo} [connectionInfo]
      */
-    constructor(id, eventEmitter, address) {
+    constructor(id, eventEmitter, connectionInfo) {
         super();
         /** @protected */
         this._id = id;
@@ -53,10 +55,13 @@ export default class TcpSocket extends EventEmitter {
         this._state = STATE.DISCONNECTED;
         /** @private */
         this._encoding = undefined;
-        /** @private */
-        this._address = null;
+        this.localAddress = undefined;
+        this.localPort = undefined;
+        this.remoteAddress = undefined;
+        this.remotePort = undefined;
+        this.remoteFamily = undefined;
         this._registerEvents();
-        if (address != undefined) this._setConnected(address);
+        if (connectionInfo != undefined) this._setConnected(connectionInfo);
     }
 
     /**
@@ -82,7 +87,7 @@ export default class TcpSocket extends EventEmitter {
         });
         this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
             if (evt.id !== this._id) return;
-            this._onConnect(evt.address);
+            this._setConnected(evt.connection);
             this.emit('connect');
         });
     }
@@ -229,10 +234,11 @@ export default class TcpSocket extends EventEmitter {
      * Returns the bound `address`, the address `family` name and `port` of the socket as reported
      * by the operating system: `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
      *
-     * @returns {Address | null}
+     * @returns {AddressInfo | {}}
      */
     address() {
-        return this._address;
+        if (!this.localAddress) return {};
+        return { address: this.localAddress, family: this.remoteFamily, port: this.localPort };
     }
 
     /**
@@ -257,17 +263,8 @@ export default class TcpSocket extends EventEmitter {
         if (!this._destroyed) {
             this._destroyed = true;
             this._clearTimeout();
-            this._address = null;
             Sockets.destroy(this._id);
         }
-    }
-
-    /**
-     * @private
-     * @param {Address} address
-     */
-    _onConnect(address) {
-        this._setConnected(address);
     }
 
     /**
@@ -336,11 +333,15 @@ export default class TcpSocket extends EventEmitter {
 
     /**
      * @private
-     * @param {Address} address
+     * @param {NativeConnectionInfo} connectionInfo
      */
-    _setConnected(address) {
+    _setConnected(connectionInfo) {
         this._state = STATE.CONNECTED;
-        this._address = address;
+        this.localAddress = connectionInfo.localAddress;
+        this.localPort = connectionInfo.localPort;
+        this.remoteAddress = connectionInfo.remoteAddress;
+        this.remoteFamily = connectionInfo.remoteFamily;
+        this.remotePort = connectionInfo.remotePort;
     }
 
     /**

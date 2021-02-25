@@ -28,7 +28,7 @@ export default class TcpServer extends TcpSocket {
         super._registerEvents();
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
-            this._onConnection(evt.info);
+            this._onConnection(evt.connection);
             this.emit('connection', evt.info);
         });
     }
@@ -70,10 +70,10 @@ export default class TcpServer extends TcpSocket {
 
     /**
      * @private
-     * @param {{ id: number; address: import('./TcpSocket').Address; }} info
+     * @param {{ id: number; connection: import('./TcpSocket').NativeConnectionInfo; }} info
      */
     _onConnection(info) {
-        const socket = new TcpSocket(info.id, this._eventEmitter, info.address);
+        const socket = new TcpSocket(info.id, this._eventEmitter, info.connection);
         this._connections.push(socket);
         this.connectionCallback(socket);
     }
