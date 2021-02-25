@@ -11,12 +11,15 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public final class TcpSocketServer extends TcpSocketClient {
+public final class TcpSocketServer extends TcpSocket {
     private ServerSocket serverSocket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
     private int clientSocketIds;
-    private final ConcurrentHashMap<Integer, TcpSocketClient> socketClients;
+    private final ExecutorService executorService;
+    private final ConcurrentHashMap<Integer, TcpSocket> socketClients;
 
     @SuppressLint("StaticFieldLeak")
     private final AsyncTask listening = new AsyncTask() {
@@ -41,9 +44,10 @@ public final class TcpSocketServer extends TcpSocketClient {
     };
 
 
-    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocketClient> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
+    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
                            final ReadableMap options) throws IOException {
         super(id);
+        this.executorService = Executors.newFixedThreadPool(1);
         // Get data from options
         int port = options.getInt("port");
         String address = options.getString("host");
@@ -66,6 +70,10 @@ public final class TcpSocketServer extends TcpSocketClient {
         listen();
     }
 
+    public ServerSocket getServerSocket() {
+        return serverSocket;
+    }
+
     /**
      * Next ID for a client socket
      *
@@ -77,21 +85,15 @@ public final class TcpSocketServer extends TcpSocketClient {
 
     private void listen() {
         //noinspection unchecked
-        listening.executeOnExecutor(getExecutorService());
+        listening.executeOnExecutor(executorService);
     }
 
-    @Override
-    public void write(final byte[] data) {
-        mReceiverListener.onError(getId(), "SERVER CANNOT WRITE");
-    }
-
-    @Override
     public void close() {
         try {
             if (!listening.isCancelled()) {
                 // stop the receiving task
                 listening.cancel(true);
-                getExecutorService().shutdown();
+                executorService.shutdown();
             }
 
             // close the socket

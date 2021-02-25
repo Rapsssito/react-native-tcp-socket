@@ -43,9 +43,9 @@ export default class TcpSocket extends EventEmitter {
      */
     constructor(id, eventEmitter, connectionInfo) {
         super();
-        /** @protected */
+        /** @private */
         this._id = id;
-        /** @protected */
+        /** @private */
         this._eventEmitter = eventEmitter;
         /** @type {number} @private */
         this._timeoutMsecs = 0;
@@ -65,7 +65,7 @@ export default class TcpSocket extends EventEmitter {
     }
 
     /**
-     * @protected
+     * @private
      */
     _registerEvents() {
         this._unregisterEvents();
@@ -77,12 +77,12 @@ export default class TcpSocket extends EventEmitter {
         });
         this._errorListener = this._eventEmitter.addListener('error', (evt) => {
             if (evt.id !== this._id) return;
-            this._onError();
+            this.destroy();
             this.emit('error', evt.error);
         });
         this._closeListener = this._eventEmitter.addListener('close', (evt) => {
             if (evt.id !== this._id) return;
-            this._onClose();
+            this._setDisconnected();
             this.emit('close', evt.error);
         });
         this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
@@ -93,7 +93,7 @@ export default class TcpSocket extends EventEmitter {
     }
 
     /**
-     * @protected
+     * @private
      */
     _unregisterEvents() {
         this._dataListener?.remove();
@@ -265,20 +265,6 @@ export default class TcpSocket extends EventEmitter {
             this._clearTimeout();
             Sockets.destroy(this._id);
         }
-    }
-
-    /**
-     * @private
-     */
-    _onClose() {
-        this._setDisconnected();
-    }
-
-    /**
-     * @private
-     */
-    _onError() {
-        this.destroy();
     }
 
     /**

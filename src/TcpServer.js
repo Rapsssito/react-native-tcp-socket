@@ -1,31 +1,50 @@
 'use strict';
 
 import { NativeModules } from 'react-native';
+import { EventEmitter } from 'eventemitter3';
 const Sockets = NativeModules.TcpSockets;
 import TcpSocket from './TcpSocket';
 
 /**
  * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
  */
-export default class TcpServer extends TcpSocket {
+export default class TcpServer extends EventEmitter {
     /**
      * @param {number} id
      * @param {NativeEventEmitter} eventEmitter
      * @param {(socket: TcpSocket) => void} connectionCallback
      */
     constructor(id, eventEmitter, connectionCallback) {
-        super(id, eventEmitter);
+        super();
+        /** @private */
+        this._id = id;
+        /** @private */
+        this._eventEmitter = eventEmitter;
         this.connectionCallback = connectionCallback;
         /** @type {TcpSocket[]} */
         this._connections = [];
         this._eventEmitter = eventEmitter;
+        this._registerEvents();
     }
 
     /**
-     * @override
+     * @private
      */
     _registerEvents() {
-        super._registerEvents();
+        this._errorListener = this._eventEmitter.addListener('listening', (evt) => {
+            if (evt.id !== this._id) return;
+            this.emit('listening');
+        });
+        this._errorListener = this._eventEmitter.addListener('error', (evt) => {
+            if (evt.id !== this._id) return;
+            this.close();
+            this.emit('error', evt.error);
+        });
+        this._closeListener = this._eventEmitter.addListener('close', (evt) => {
+            if (evt.id !== this._id) return;
+            this._setDisconnected();
+            this.emit('close', evt.error);
+        });
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
             this._onConnection(evt.connection);
@@ -34,23 +53,31 @@ export default class TcpServer extends TcpSocket {
     }
 
     /**
-     * @override
+     * @private
      */
     _unregisterEvents() {
-        super._unregisterEvents();
+        this._errorListener?.remove();
+        this._closeListener?.remove();
         this._connectionsListener?.remove();
     }
 
     /**
+     * @private
+     */
+    _setDisconnected() {
+        this._unregisterEvents();
+    }
+
+    /**
      * @param {{ port: number; host: string; reuseAddress?: boolean}} options
-     * @param {(arg0: any) => void} [callback]
+     * @param {() => void} [callback]
      * @returns {TcpServer}
      */
     listen(options, callback) {
         const gotOptions = { ...options };
         gotOptions.host = gotOptions.host || '0.0.0.0';
-        this.once('connect', (ev) => {
-            if (callback) callback(ev.address);
+        this.once('listening', () => {
+            if (callback) callback();
         });
         Sockets.listen(this._id, gotOptions);
         return this;
@@ -64,7 +91,7 @@ export default class TcpServer extends TcpSocket {
     }
 
     close() {
-        this.destroy();
+        Sockets.close(this._id);
         this._connections.forEach((clientSocket) => clientSocket.destroy());
     }
 
