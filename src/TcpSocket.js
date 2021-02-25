@@ -65,44 +65,6 @@ export default class TcpSocket extends EventEmitter {
     }
 
     /**
-     * @private
-     */
-    _registerEvents() {
-        this._unregisterEvents();
-        this._dataListener = this._eventEmitter.addListener('data', (evt) => {
-            if (evt.id !== this._id) return;
-            const bufferTest = Buffer.from(evt.data, 'base64');
-            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
-            this.emit('data', finalData);
-        });
-        this._errorListener = this._eventEmitter.addListener('error', (evt) => {
-            if (evt.id !== this._id) return;
-            this.destroy();
-            this.emit('error', evt.error);
-        });
-        this._closeListener = this._eventEmitter.addListener('close', (evt) => {
-            if (evt.id !== this._id) return;
-            this._setDisconnected();
-            this.emit('close', evt.error);
-        });
-        this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
-            if (evt.id !== this._id) return;
-            this._setConnected(evt.connection);
-            this.emit('connect');
-        });
-    }
-
-    /**
-     * @private
-     */
-    _unregisterEvents() {
-        this._dataListener?.remove();
-        this._errorListener?.remove();
-        this._closeListener?.remove();
-        this._connectListener?.remove();
-    }
-
-    /**
      * @param {ConnectionOptions} options
      * @param {() => void} [callback]
      */
@@ -298,6 +260,52 @@ export default class TcpSocket extends EventEmitter {
         );
     }
 
+    ref() {
+        console.warn('react-native-tcp-socket: TcpSocket.ref() method will have no effect.');
+    }
+
+    unref() {
+        console.warn('react-native-tcp-socket: TcpSocket.unref() method will have no effect.');
+    }
+
+    /**
+     * @private
+     */
+    _registerEvents() {
+        this._unregisterEvents();
+        this._dataListener = this._eventEmitter.addListener('data', (evt) => {
+            if (evt.id !== this._id) return;
+            const bufferTest = Buffer.from(evt.data, 'base64');
+            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
+            this.emit('data', finalData);
+        });
+        this._errorListener = this._eventEmitter.addListener('error', (evt) => {
+            if (evt.id !== this._id) return;
+            this.destroy();
+            this.emit('error', evt.error);
+        });
+        this._closeListener = this._eventEmitter.addListener('close', (evt) => {
+            if (evt.id !== this._id) return;
+            this._setDisconnected();
+            this.emit('close', evt.error);
+        });
+        this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
+            if (evt.id !== this._id) return;
+            this._setConnected(evt.connection);
+            this.emit('connect');
+        });
+    }
+
+    /**
+     * @private
+     */
+    _unregisterEvents() {
+        this._dataListener?.remove();
+        this._errorListener?.remove();
+        this._closeListener?.remove();
+        this._connectListener?.remove();
+    }
+
     /**
      * @private
      * @param {string | Buffer | Uint8Array} buffer
@@ -337,13 +345,5 @@ export default class TcpSocket extends EventEmitter {
         if (this._state === STATE.DISCONNECTED) return;
         this._unregisterEvents();
         this._state = STATE.DISCONNECTED;
-    }
-
-    ref() {
-        console.warn('react-native-tcp-socket: TcpSocket.ref() method will have no effect.');
-    }
-
-    unref() {
-        console.warn('react-native-tcp-socket: TcpSocket.unref() method will have no effect.');
     }
 }

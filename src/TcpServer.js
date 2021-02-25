@@ -35,6 +35,49 @@ export default class TcpServer extends EventEmitter {
     }
 
     /**
+     * @param {{ port: number; host: string; reuseAddress?: boolean}} options
+     * @param {() => void} [callback]
+     * @returns {TcpServer}
+     */
+    listen(options, callback) {
+        const gotOptions = { ...options };
+        gotOptions.host = gotOptions.host || '0.0.0.0';
+        this.once('listening', () => {
+            if (callback) callback();
+        });
+        Sockets.listen(this._id, gotOptions);
+        return this;
+    }
+
+    /**
+     * @param {(arg0: number) => void} callback
+     */
+    getConnections(callback) {
+        callback(this._connections.length);
+    }
+
+    close() {
+        Sockets.close(this._id);
+        this._connections.forEach((clientSocket) => clientSocket.destroy());
+    }
+
+    /**
+     * @returns {import('./TcpSocket').AddressInfo | null}
+     */
+    address() {
+        if (!this._localAddress) return null;
+        return { address: this._localAddress, port: this._localPort, family: this._localFamily };
+    }
+
+    ref() {
+        console.warn('react-native-tcp-socket: TcpServer.ref() method will have no effect.');
+    }
+
+    unref() {
+        console.warn('react-native-tcp-socket: TcpServer.unref() method will have no effect.');
+    }
+
+    /**
      * @private
      */
     _registerEvents() {
@@ -79,41 +122,6 @@ export default class TcpServer extends EventEmitter {
     }
 
     /**
-     * @param {{ port: number; host: string; reuseAddress?: boolean}} options
-     * @param {() => void} [callback]
-     * @returns {TcpServer}
-     */
-    listen(options, callback) {
-        const gotOptions = { ...options };
-        gotOptions.host = gotOptions.host || '0.0.0.0';
-        this.once('listening', () => {
-            if (callback) callback();
-        });
-        Sockets.listen(this._id, gotOptions);
-        return this;
-    }
-
-    /**
-     * @param {(arg0: number) => void} callback
-     */
-    getConnections(callback) {
-        callback(this._connections.length);
-    }
-
-    close() {
-        Sockets.close(this._id);
-        this._connections.forEach((clientSocket) => clientSocket.destroy());
-    }
-
-    /**
-     * @returns {import('./TcpSocket').AddressInfo | null}
-     */
-    address() {
-        if (!this._localAddress) return null;
-        return { address: this._localAddress, port: this._localPort, family: this._localFamily };
-    }
-
-    /**
      * @private
      * @param {{ id: number; connection: import('./TcpSocket').NativeConnectionInfo; }} info
      */
@@ -121,13 +129,5 @@ export default class TcpServer extends EventEmitter {
         const socket = new TcpSocket(info.id, this._eventEmitter, info.connection);
         this._connections.push(socket);
         this.connectionCallback(socket);
-    }
-
-    ref() {
-        console.warn('react-native-tcp-socket: TcpServer.ref() method will have no effect.');
-    }
-
-    unref() {
-        console.warn('react-native-tcp-socket: TcpServer.unref() method will have no effect.');
     }
 }

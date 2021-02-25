@@ -202,6 +202,12 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
   * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
   * [`write(data[, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback)
+* **Properties:**
+  * [`'remoteAddress'`](https://nodejs.org/api/net.html#net_socket_remoteaddress)
+  * [`'remoteFamily'`](https://nodejs.org/api/net.html#net_socket_remotefamily)
+  * [`'remotePort'`](https://nodejs.org/api/net.html#net_socket_remoteport)
+  * [`'localAddress'`](https://nodejs.org/api/net.html#net_socket_localaddress)
+  * [`'localPort'`](https://nodejs.org/api/net.html#net_socket_localport)
 * **Events:**
   * [`'close'`](https://nodejs.org/api/net.html#net_event_close_1)
   * [`'connect'`](https://nodejs.org/api/net.html#net_event_connect)
