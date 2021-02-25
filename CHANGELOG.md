@@ -1,3 +1,10 @@
+## [4.5.6](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.5...v4.5.6) (2021-02-25)
+
+
+### Bug Fixes
+
+* Fix podspec version ([f808cfe](https://github.com/Rapsssito/react-native-tcp-socket/commit/f808cfe83a446382ea483f0892518f0b2e62f5ea)), closes [#97](https://github.com/Rapsssito/react-native-tcp-socket/issues/97)
+
 ## [4.5.5](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.4...v4.5.5) (2020-12-23)
 
 
