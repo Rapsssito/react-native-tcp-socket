@@ -23,7 +23,14 @@ export default class TcpServer extends EventEmitter {
         this.connectionCallback = connectionCallback;
         /** @type {TcpSocket[]} */
         this._connections = [];
+        /** @private */
         this._eventEmitter = eventEmitter;
+        /** @private */
+        this._localAddress = undefined;
+        /** @private */
+        this._localPort = undefined;
+        /** @private */
+        this._localFamily = undefined;
         this._registerEvents();
     }
 
@@ -33,6 +40,9 @@ export default class TcpServer extends EventEmitter {
     _registerEvents() {
         this._errorListener = this._eventEmitter.addListener('listening', (evt) => {
             if (evt.id !== this._id) return;
+            this._localAddress = evt.connection.localAddress;
+            this._localPort = evt.connection.localPort;
+            this._localFamily = evt.connection.localFamily;
             this.emit('listening');
         });
         this._errorListener = this._eventEmitter.addListener('error', (evt) => {
@@ -47,7 +57,7 @@ export default class TcpServer extends EventEmitter {
         });
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
-            this._onConnection(evt.connection);
+            this._onConnection(evt.info);
             this.emit('connection', evt.info);
         });
     }
@@ -93,6 +103,14 @@ export default class TcpServer extends EventEmitter {
     close() {
         Sockets.close(this._id);
         this._connections.forEach((clientSocket) => clientSocket.destroy());
+    }
+
+    /**
+     * @returns {import('./TcpSocket').AddressInfo | null}
+     */
+    address() {
+        if (!this._localAddress) return null;
+        return { address: this._localAddress, port: this._localPort, family: this._localFamily };
     }
 
     /**

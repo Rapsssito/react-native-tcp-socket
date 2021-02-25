@@ -280,9 +280,11 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         eventParams.putInt("id", id);
         WritableMap connectionParams = Arguments.createMap();
         final ServerSocket serverSocket = server.getServerSocket();
+        final InetAddress address = serverSocket.getInetAddress();
 
         connectionParams.putString("localAddress", serverSocket.getInetAddress().getHostAddress());
         connectionParams.putInt("localPort", serverSocket.getLocalPort());
+        connectionParams.putString("localFamily", address instanceof Inet6Address ? "IPv6" : "IPv4");
         eventParams.putMap("connection", connectionParams);
         sendEvent("listening", eventParams);
     }
@@ -318,21 +320,23 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     }
 
     @Override
-    public void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress) {
+    public void onConnection(Integer serverId, Integer clientId, Socket socket) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", serverId);
 
         WritableMap infoParams = Arguments.createMap();
         infoParams.putInt("id", clientId);
 
-        final InetAddress address = socketAddress.getAddress();
+        WritableMap connectionParams = Arguments.createMap();
+        final InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
 
-        WritableMap addressParams = Arguments.createMap();
-        addressParams.putString("address", address.getHostAddress());
-        addressParams.putInt("port", socketAddress.getPort());
-        addressParams.putString("family", address instanceof Inet6Address ? "IPv6" : "IPv4");
+        connectionParams.putString("localAddress", socket.getLocalAddress().getHostAddress());
+        connectionParams.putInt("localPort", socket.getLocalPort());
+        connectionParams.putString("remoteAddress", remoteAddress.getHostName());
+        connectionParams.putInt("remotePort", socket.getPort());
+        connectionParams.putString("remoteFamily", remoteAddress.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
 
-        infoParams.putMap("address", addressParams);
+        infoParams.putMap("connection", connectionParams);
         eventParams.putMap("info", infoParams);
 
         sendEvent("connection", eventParams);

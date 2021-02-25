@@ -31,7 +31,7 @@ public final class TcpSocketServer extends TcpSocket {
                     int clientId = getClientId();
                     TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
                     socketClients.put(clientId, socketClient);
-                    mReceiverListener.onConnection(getId(), clientId, new InetSocketAddress(socket.getInetAddress(), socket.getPort()));
+                    mReceiverListener.onConnection(getId(), clientId, socket);
                     socketClient.startListening();
                 }
             } catch (IOException e) {

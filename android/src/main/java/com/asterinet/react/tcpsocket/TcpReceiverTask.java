@@ -55,7 +55,7 @@ class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiverTask.On
      */
     @SuppressWarnings("WeakerAccess")
     public interface OnDataReceivedListener {
-        void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress);
+        void onConnection(Integer serverId, Integer clientId, Socket socket);
 
         void onConnect(Integer id, TcpSocketClient client);
 
