@@ -1,7 +1,7 @@
 'use strict';
 
 import { NativeModules, Image } from 'react-native';
-import { EventEmitter } from 'eventemitter3';
+import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
 
@@ -32,6 +32,8 @@ const STATE = {
  * tlsCheckValidity?: boolean,
  * tlsCert?: any,
  * }} ConnectionOptions
+ *
+ * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close', any>}
  */
 export default class TcpSocket extends EventEmitter {
     /**

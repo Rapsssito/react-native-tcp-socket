@@ -1,12 +1,14 @@
 'use strict';
 
 import { NativeModules } from 'react-native';
-import { EventEmitter } from 'eventemitter3';
+import EventEmitter from 'eventemitter3';
 const Sockets = NativeModules.TcpSockets;
 import TcpSocket from './TcpSocket';
 
 /**
  * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
+ *
+ * @extends {EventEmitter<'connection' | 'listening' | 'error' | 'close', any>}
  */
 export default class TcpServer extends EventEmitter {
     /**
@@ -119,6 +121,9 @@ export default class TcpServer extends EventEmitter {
      */
     _setDisconnected() {
         this._unregisterEvents();
+        this._localAddress = undefined;
+        this._localPort = undefined;
+        this._localFamily = undefined;
     }
 
     /**
