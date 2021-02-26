@@ -1,3 +1,10 @@
+## [4.5.7](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.6...v4.5.7) (2021-02-26)
+
+
+### Bug Fixes
+
+* Add 'homepage' to podspect ([0d631df](https://github.com/Rapsssito/react-native-tcp-socket/commit/0d631df784f736d6284d442db7c462a725826b59)), closes [#98](https://github.com/Rapsssito/react-native-tcp-socket/issues/98)
+
 ## [4.5.6](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.5...v4.5.6) (2021-02-25)
 
 
