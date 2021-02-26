@@ -1,3 +1,15 @@
+# [5.0.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.7...v5.0.0) (2021-02-26)
+
+
+### Features
+
+* Add socket address properties ([#94](https://github.com/Rapsssito/react-native-tcp-socket/issues/94)) ([1658831](https://github.com/Rapsssito/react-native-tcp-socket/commit/1658831bad5696c776577fc85572c04d300008f4))
+
+
+### BREAKING CHANGES
+
+* Events types and callbacks now match NodeJS official API.
+
 ## [4.5.7](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.6...v4.5.7) (2021-02-26)
 
 

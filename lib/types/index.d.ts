@@ -10,10 +10,10 @@ declare class TCPSockets {
     createServer(connectionListener: (socket: Socket) => void): Server;
     /**
      * @param {import('./TcpSocket').ConnectionOptions} options
-     * @param {(address: string) => void} callback
+     * @param {() => void} callback
      * @returns {Socket}
      */
-    createConnection(options: import('./TcpSocket').ConnectionOptions, callback: (address: string) => void): Socket;
+    createConnection(options: import('./TcpSocket').ConnectionOptions, callback: () => void): Socket;
 }
 import Socket from "./TcpSocket";
 import Server from "./TcpServer";
