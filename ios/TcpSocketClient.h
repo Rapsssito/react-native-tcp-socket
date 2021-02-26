@@ -35,6 +35,8 @@ typedef enum RCTTCPError RCTTCPError;
 @property (nonatomic, retain) NSNumber * id;
 @property (nonatomic, weak) id<SocketClientDelegate> clientDelegate;
 
+- (GCDAsyncSocket *) getSocket;
+
 ///---------------------------------------------------------------------------------------
 /// @name Class Methods
 ///---------------------------------------------------------------------------------------
