@@ -6,6 +6,7 @@ Pod::Spec.new do |s|
   s.name         = "react-native-tcp-socket"
   s.version      = package['version']
   s.summary      = package['description']
+  s.homepage     = package['repository']['url']
   s.license      = package['license']
   s.authors      = package['author']
   s.platforms    = { :ios => "9.0", :tvos => "10.0", :osx => "10.14" }
