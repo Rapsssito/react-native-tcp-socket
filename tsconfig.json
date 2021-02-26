@@ -5,7 +5,8 @@
         "noEmit": true,
         "strict": true,
         "skipLibCheck": true,
-        "typeRoots": ["@types/events"]
+        "esModuleInterop": true,
+        "typeRoots": ["@types/eventemitter3"]
     },
     "include": ["src", "lib"]
 }

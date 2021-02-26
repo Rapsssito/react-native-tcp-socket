@@ -38,7 +38,7 @@ class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiverTask.On
                 if (bufferCount > 0) {
                     receiverListener.onData(socketId, Arrays.copyOfRange(buffer, 0, bufferCount));
                 } else if (bufferCount == -1) {
-                    clientSocket.close();
+                    clientSocket.destroy();
                 }
             }
         } catch (IOException ioe) {
@@ -55,9 +55,11 @@ class TcpReceiverTask extends AsyncTask<Pair<TcpSocketClient, TcpReceiverTask.On
      */
     @SuppressWarnings("WeakerAccess")
     public interface OnDataReceivedListener {
-        void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress);
+        void onConnection(Integer serverId, Integer clientId, Socket socket);
 
-        void onConnect(Integer id, String host, int port);
+        void onConnect(Integer id, TcpSocketClient client);
+
+        void onListen(Integer id, TcpSocketServer server);
 
         void onData(Integer id, byte[] data);
 

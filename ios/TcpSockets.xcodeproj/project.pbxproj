@@ -10,7 +10,7 @@
 		13BE3DEE1AC21097009241FE /* TcpSockets.m in Sources */ = {isa = PBXBuildFile; fileRef = 13BE3DED1AC21097009241FE /* TcpSockets.m */; };
 		7350006B1AFF9AB600ED3C82 /* TcpSocketClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 7350006A1AFF9AB600ED3C82 /* TcpSocketClient.m */; };
 		73D9377D1AFF9EBE00450142 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73D9377C1AFF9EBE00450142 /* CFNetwork.framework */; };
-		A3BFD955B1256CDF4A661141 /* Pods_TcpSockets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 306C7081FE46E252ED0AA4EC /* Pods_TcpSockets.framework */; };
+		CC0460832375F0F720EAF9FA /* libPods-TcpSockets.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8083C2983F490E844575FE22 /* libPods-TcpSockets.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,11 +31,11 @@
 		13BE3DED1AC21097009241FE /* TcpSockets.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TcpSockets.m; sourceTree = "<group>"; };
 		187C1E19BAD8D55704A1DF42 /* Pods-TcpSockets.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TcpSockets.debug.xcconfig"; path = "Target Support Files/Pods-TcpSockets/Pods-TcpSockets.debug.xcconfig"; sourceTree = "<group>"; };
 		21FB648B23550434005D9173 /* React */ = {isa = PBXFileReference; lastKnownFileType = folder; name = React; path = "../node_modules/react-native/React"; sourceTree = "<group>"; };
-		306C7081FE46E252ED0AA4EC /* Pods_TcpSockets.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TcpSockets.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4290C7B94EC5D125995B2E0E /* Pods-TcpSockets.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TcpSockets.release.xcconfig"; path = "Target Support Files/Pods-TcpSockets/Pods-TcpSockets.release.xcconfig"; sourceTree = "<group>"; };
 		735000691AFF9AB600ED3C82 /* TcpSocketClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TcpSocketClient.h; sourceTree = "<group>"; };
 		7350006A1AFF9AB600ED3C82 /* TcpSocketClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TcpSocketClient.m; sourceTree = "<group>"; };
 		73D9377C1AFF9EBE00450142 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		8083C2983F490E844575FE22 /* libPods-TcpSockets.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TcpSockets.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,7 +44,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				73D9377D1AFF9EBE00450142 /* CFNetwork.framework in Frameworks */,
-				A3BFD955B1256CDF4A661141 /* Pods_TcpSockets.framework in Frameworks */,
+				CC0460832375F0F720EAF9FA /* libPods-TcpSockets.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -63,7 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				21FB648B23550434005D9173 /* React */,
-				306C7081FE46E252ED0AA4EC /* Pods_TcpSockets.framework */,
+				8083C2983F490E844575FE22 /* libPods-TcpSockets.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

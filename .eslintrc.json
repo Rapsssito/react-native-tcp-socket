@@ -1,6 +1,6 @@
 {
     "parser": "babel-eslint",
-    "plugins": ["prettier", "jest", "jsdoc"],
+    "plugins": ["prettier", "jest"],
     "env": {
         "es6": true,
         "node": true
@@ -13,8 +13,7 @@
         "eslint:recommended",
         "prettier",
         "plugin:jest/recommended",
-        "plugin:jest/style",
-        "plugin:jsdoc/recommended"
+        "plugin:jest/style"
     ],
     "rules": {
         "prefer-const": [
@@ -28,10 +27,6 @@
         "no-var": "error",
         "prefer-template": 2,
         "require-atomic-updates": "off",
-        "prettier/prettier": ["error"],
-        "jsdoc/require-returns-description": 0,
-        "jsdoc/require-param-description": 0,
-        "jsdoc/no-undefined-types": 0,
-        "jsdoc/require-returns": 0
+        "prettier/prettier": ["error"]
     }
 }

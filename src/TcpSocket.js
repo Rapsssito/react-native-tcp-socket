@@ -1,7 +1,7 @@
 'use strict';
 
 import { NativeModules, Image } from 'react-native';
-import { EventEmitter } from 'events';
+import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
 
@@ -16,6 +16,10 @@ const STATE = {
  *
  * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
  *
+ * @typedef {{address: string, family: string, port: number}} AddressInfo
+ *
+ * @typedef {{localAddress: string, localPort: number, remoteAddress: string, remotePort: number, remoteFamily: string}} NativeConnectionInfo
+ *
  * @typedef {{
  * port: number;
  * host?: string;
@@ -28,6 +32,8 @@ const STATE = {
  * tlsCheckValidity?: boolean,
  * tlsCert?: any,
  * }} ConnectionOptions
+ *
+ * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close', any>}
  */
 export default class TcpSocket extends EventEmitter {
     /**
@@ -35,13 +41,13 @@ export default class TcpSocket extends EventEmitter {
      *
      * @param {number} id
      * @param {NativeEventEmitter} eventEmitter
-     * @param {string} [address]
+     * @param {NativeConnectionInfo} [connectionInfo]
      */
-    constructor(id, eventEmitter, address) {
+    constructor(id, eventEmitter, connectionInfo) {
         super();
-        /** @protected */
+        /** @private */
         this._id = id;
-        /** @protected */
+        /** @private */
         this._eventEmitter = eventEmitter;
         /** @type {number} @private */
         this._timeoutMsecs = 0;
@@ -51,59 +57,26 @@ export default class TcpSocket extends EventEmitter {
         this._state = STATE.DISCONNECTED;
         /** @private */
         this._encoding = undefined;
+        this.localAddress = undefined;
+        this.localPort = undefined;
+        this.remoteAddress = undefined;
+        this.remotePort = undefined;
+        this.remoteFamily = undefined;
         this._registerEvents();
-        if (address != undefined) this._setConnected(address);
-    }
-
-    /**
-     * @protected
-     */
-    _registerEvents() {
-        this._unregisterEvents();
-        this._dataListener = this._eventEmitter.addListener('data', (evt) => {
-            if (evt.id !== this._id) return;
-            const bufferTest = Buffer.from(evt.data, 'base64');
-            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
-            this.emit('data', finalData);
-        });
-        this._errorListener = this._eventEmitter.addListener('error', (evt) => {
-            if (evt.id !== this._id) return;
-            this._onError();
-            this.emit('error', evt.error);
-        });
-        this._closeListener = this._eventEmitter.addListener('close', (evt) => {
-            if (evt.id !== this._id) return;
-            this._onClose();
-            this.emit('close', evt.error);
-        });
-        this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
-            if (evt.id !== this._id) return;
-            this._onConnect(evt.address);
-            this.emit('connect', evt.address);
-        });
-    }
-
-    /**
-     * @protected
-     */
-    _unregisterEvents() {
-        this._dataListener?.remove();
-        this._errorListener?.remove();
-        this._closeListener?.remove();
-        this._connectListener?.remove();
+        if (connectionInfo != undefined) this._setConnected(connectionInfo);
     }
 
     /**
      * @param {ConnectionOptions} options
-     * @param {(address: string) => void} [callback]
+     * @param {() => void} [callback]
      */
     connect(options, callback) {
         const customOptions = { ...options };
         // Normalize args
         customOptions.host = customOptions.host || 'localhost';
         customOptions.port = Number(customOptions.port) || 0;
-        this.once('connect', (ev) => {
-            if (callback) callback(ev.address);
+        this.once('connect', () => {
+            if (callback) callback();
         });
         // Timeout
         if (customOptions.timeout) this.setTimeout(customOptions.timeout);
@@ -221,8 +194,15 @@ export default class TcpSocket extends EventEmitter {
         return this;
     }
 
+    /**
+     * Returns the bound `address`, the address `family` name and `port` of the socket as reported
+     * by the operating system: `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
+     *
+     * @returns {AddressInfo | {}}
+     */
     address() {
-        return this._address;
+        if (!this.localAddress) return {};
+        return { address: this.localAddress, family: this.remoteFamily, port: this.localPort };
     }
 
     /**
@@ -249,28 +229,6 @@ export default class TcpSocket extends EventEmitter {
             this._clearTimeout();
             Sockets.destroy(this._id);
         }
-    }
-
-    /**
-     * @private
-     * @param {string} address
-     */
-    _onConnect(address) {
-        this._setConnected(address);
-    }
-
-    /**
-     * @private
-     */
-    _onClose() {
-        this._setDisconnected();
-    }
-
-    /**
-     * @private
-     */
-    _onError() {
-        this.destroy();
     }
 
     /**
@@ -304,6 +262,52 @@ export default class TcpSocket extends EventEmitter {
         );
     }
 
+    ref() {
+        console.warn('react-native-tcp-socket: TcpSocket.ref() method will have no effect.');
+    }
+
+    unref() {
+        console.warn('react-native-tcp-socket: TcpSocket.unref() method will have no effect.');
+    }
+
+    /**
+     * @private
+     */
+    _registerEvents() {
+        this._unregisterEvents();
+        this._dataListener = this._eventEmitter.addListener('data', (evt) => {
+            if (evt.id !== this._id) return;
+            const bufferTest = Buffer.from(evt.data, 'base64');
+            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
+            this.emit('data', finalData);
+        });
+        this._errorListener = this._eventEmitter.addListener('error', (evt) => {
+            if (evt.id !== this._id) return;
+            this.destroy();
+            this.emit('error', evt.error);
+        });
+        this._closeListener = this._eventEmitter.addListener('close', (evt) => {
+            if (evt.id !== this._id) return;
+            this._setDisconnected();
+            this.emit('close', evt.error);
+        });
+        this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
+            if (evt.id !== this._id) return;
+            this._setConnected(evt.connection);
+            this.emit('connect');
+        });
+    }
+
+    /**
+     * @private
+     */
+    _unregisterEvents() {
+        this._dataListener?.remove();
+        this._errorListener?.remove();
+        this._closeListener?.remove();
+        this._connectListener?.remove();
+    }
+
     /**
      * @private
      * @param {string | Buffer | Uint8Array} buffer
@@ -325,11 +329,15 @@ export default class TcpSocket extends EventEmitter {
 
     /**
      * @private
-     * @param {string} address
+     * @param {NativeConnectionInfo} connectionInfo
      */
-    _setConnected(address) {
+    _setConnected(connectionInfo) {
         this._state = STATE.CONNECTED;
-        this._address = address;
+        this.localAddress = connectionInfo.localAddress;
+        this.localPort = connectionInfo.localPort;
+        this.remoteAddress = connectionInfo.remoteAddress;
+        this.remoteFamily = connectionInfo.remoteFamily;
+        this.remotePort = connectionInfo.remotePort;
     }
 
     /**
@@ -339,13 +347,5 @@ export default class TcpSocket extends EventEmitter {
         if (this._state === STATE.DISCONNECTED) return;
         this._unregisterEvents();
         this._state = STATE.DISCONNECTED;
-    }
-
-    ref() {
-        console.warn('react-native-tcp-socket: TcpSocket.ref() method will have no effect.');
-    }
-
-    unref() {
-        console.warn('react-native-tcp-socket: TcpSocket.unref() method will have no effect.');
     }
 }

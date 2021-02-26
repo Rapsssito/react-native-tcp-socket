@@ -1,4 +1,4 @@
-# react-native-tcp-socket
+# react-native-tcp-socket <!-- omit in toc -->
 <p align="center">
   <img src="https://github.com/Rapsssito/react-native-tcp-socket/workflows/tests/badge.svg" />
   <img src="https://img.shields.io/npm/dw/react-native-tcp-socket" />
@@ -7,15 +7,22 @@
 
 React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating some of Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
-## Table of Contents
+## Table of Contents <!-- omit in toc -->
 
 - [Getting started](#getting-started)
-  - [Self-Signed SSL](#self-signed-ssl-only-available-for-react-native--060)
-- [Compatibility](#react-native-compatibility)
+    - [Using React Native >= 0.60](#using-react-native--060)
+    - [Self-Signed SSL (only available for React Native > 0.60)](#self-signed-ssl-only-available-for-react-native--060)
+    - [Using React Native < 0.60](#using-react-native--060-1)
+- [React Native Compatibility](#react-native-compatibility)
 - [Usage](#usage)
+  - [Client](#client)
+  - [Server](#server)
+  - [SSL Client](#ssl-client)
 - [API](#api)
   - [TcpSocket](#tcpsocket)
+    - [`createConnection()`](#createconnection)
   - [TcpServer](#tcpserver)
+    - [`listen()`](#listen)
 - [Maintainers](#maintainers)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
@@ -195,6 +202,12 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
   * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
   * [`write(data[, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback)
+* **Properties:**
+  * [`'remoteAddress'`](https://nodejs.org/api/net.html#net_socket_remoteaddress)
+  * [`'remoteFamily'`](https://nodejs.org/api/net.html#net_socket_remotefamily)
+  * [`'remotePort'`](https://nodejs.org/api/net.html#net_socket_remoteport)
+  * [`'localAddress'`](https://nodejs.org/api/net.html#net_socket_localaddress)
+  * [`'localPort'`](https://nodejs.org/api/net.html#net_socket_localport)
 * **Events:**
   * [`'close'`](https://nodejs.org/api/net.html#net_event_close_1)
   * [`'connect'`](https://nodejs.org/api/net.html#net_event_connect)
@@ -203,7 +216,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 
 #### `createConnection()`
 `createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
-##### `createConnection: options`
+##### `createConnection: options` <!-- omit in toc -->
 **Required**. Available options for creating a socket. It must be an `object` with the following properties:
 
 | Property              | Type   | iOS  | Android |Description                                                                                        |
@@ -226,11 +239,16 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`TcpSocket.createServer(connectionListener)`](https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener)
   * **[`listen(options[, callback])`](#listen)**
   * [`close([callback])`](https://nodejs.org/api/net.html#net_server_close_callback)
+* **Events:**
+  * [`'close'`](https://nodejs.org/api/net.html#net_event_close)
+  * [`'connection'`](https://nodejs.org/api/net.html#net_event_connection)
+  * [`'error'`](https://nodejs.org/api/net.html#net_event_error)
+  * [`'listening'`](https://nodejs.org/api/net.html#net_event_listening)
 
 #### `listen()`
 `listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).
 
-##### `listen: options`
+##### `listen: options` <!-- omit in toc -->
 **Required**. Available options for creating a server socket. It must be an `object` with the following properties:
 
 | Property              | Type   | iOS  | Android |Description                                                                                        |

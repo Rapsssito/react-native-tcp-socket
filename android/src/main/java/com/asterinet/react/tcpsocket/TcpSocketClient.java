@@ -22,20 +22,15 @@ import javax.net.ssl.SSLSocketFactory;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-class TcpSocketClient {
-    private final int id;
+class TcpSocketClient extends TcpSocket {
     private final ExecutorService executorService;
     private TcpReceiverTask receiverTask;
     private Socket socket;
     private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
-    TcpSocketClient(final int id) {
-        this.id = id;
-        this.executorService = Executors.newFixedThreadPool(1);
-    }
-
     TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
-        this(id);
+        super(id);
+        this.executorService = Executors.newFixedThreadPool(1);
         this.socket = socket;
         receiverTask = new TcpReceiverTask();
         mReceiverListener = receiverListener;
@@ -43,10 +38,6 @@ class TcpSocketClient {
 
     ExecutorService getExecutorService() {
         return this.executorService;
-    }
-
-    public int getId() {
-        return id;
     }
 
     public Socket getSocket() {
@@ -114,7 +105,7 @@ class TcpSocketClient {
     /**
      * Shuts down the receiver task, closing the socket.
      */
-    public void close() {
+    public void destroy() {
         try {
             if (receiverTask != null && !receiverTask.isCancelled()) {
                 // stop the receiving task

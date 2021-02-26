@@ -26,6 +26,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 @implementation TcpSocketClient
 
+- (GCDAsyncSocket *) getSocket
+{
+    return _tcpSocket;
+}
+
 + (id)socketClientWithId:(nonnull NSNumber *)clientID andConfig:(id<SocketClientDelegate>)delegate
 {
     return [[[self class] alloc] initWithClientId:clientID andConfig:delegate andSocket:nil];
@@ -144,7 +149,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         int on = enable ? 1 : 0;
         int enableKA = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
         // `initialDelay` is ignored
-        if (enableKA == -1) {
+            if (enableKA == -1) {
             /* TODO: handle error */
             RCTLogWarn(@"react-native-tcp-socket: setKeepAlive() caused an unexpected error");
         }
@@ -174,7 +179,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
     BOOL isListening = [_tcpSocket acceptOnInterface:host port:port error:error];
     if (isListening == YES) {
-        [_clientDelegate onConnect: self];
+        [_clientDelegate onListen: self];
         [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
     }
 
