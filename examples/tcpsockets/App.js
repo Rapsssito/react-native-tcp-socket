@@ -35,6 +35,14 @@ class App extends React.Component {
         let client;
         server = TcpSocket.createServer((socket) => {
             this.updateChatter('client connected to server on ' + JSON.stringify(socket.address()));
+            console.log(
+                'Server client',
+                socket.localAddress,
+                socket.localPort,
+                socket.remoteAddress,
+                socket.remotePort,
+                socket.remoteFamily
+            );
 
             socket.on('data', (data) => {
                 this.updateChatter('Server Received: ' + data);
@@ -74,6 +82,14 @@ class App extends React.Component {
         });
 
         client.on('data', (data) => {
+            console.log(
+                'Initial client',
+                client.localAddress,
+                client.localPort,
+                client.remoteAddress,
+                client.remotePort,
+                client.remoteFamily
+            );
             this.updateChatter('Client Received: ' + data);
             this.client.destroy(); // kill client after server's response
             this.server.close();

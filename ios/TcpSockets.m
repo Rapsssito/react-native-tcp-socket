@@ -101,6 +101,10 @@ RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId) {
     [self destroyClient:cId];
 }
 
+RCT_EXPORT_METHOD(close:(nonnull NSNumber*)cId) {
+    [self destroyClient:cId];
+}
+
 RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
                   withOptions:(nonnull NSDictionary *)options)
 {
