@@ -1,15 +1,13 @@
 'use strict';
 
-import { NativeEventEmitter, NativeModules } from 'react-native';
-const Sockets = NativeModules.TcpSockets;
-
+import nativeEventEmitter from './NativeEventEmitter';
 import Socket from './TcpSocket';
-import Server from './TcpServer';
+import Server from './Server';
 
 class TCPSockets {
     constructor() {
         this.instances = 0;
-        this._eventEmitter = new NativeEventEmitter(Sockets);
+        this._eventEmitter = nativeEventEmitter;
     }
 
     /**
@@ -17,7 +15,7 @@ class TCPSockets {
      * @returns {Server}
      */
     createServer(connectionListener) {
-        return new Server(this.instances++, this._eventEmitter, connectionListener);
+        return new Server(this.instances++, connectionListener);
     }
 
     /**

@@ -4,29 +4,25 @@ import { NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 const Sockets = NativeModules.TcpSockets;
 import TcpSocket from './TcpSocket';
+import nativeEventEmitter from './NativeEventEmitter';
 
 /**
- * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
- *
  * @extends {EventEmitter<'connection' | 'listening' | 'error' | 'close', any>}
  */
 export default class Server extends EventEmitter {
     /**
      * @param {number} id
-     * @param {NativeEventEmitter} eventEmitter
      * @param {(socket: TcpSocket) => void} connectionCallback
      */
-    constructor(id, eventEmitter, connectionCallback) {
+    constructor(id, connectionCallback) {
         super();
         /** @private */
         this._id = id;
         /** @private */
-        this._eventEmitter = eventEmitter;
+        this._eventEmitter = nativeEventEmitter;
         this.connectionCallback = connectionCallback;
         /** @private @type {TcpSocket[]} */
         this._connections = [];
-        /** @private */
-        this._eventEmitter = eventEmitter;
         /** @private */
         this._localAddress = undefined;
         /** @private */
@@ -38,11 +34,21 @@ export default class Server extends EventEmitter {
     }
 
     /**
+     * Start a server listening for connections.
+     *
+     * This function is asynchronous. When the server starts listening, the `'listening'` event will be emitted.
+     * The last parameter `callback` will be added as a listener for the `'listening'` event.
+     *
+     * The `server.listen()` method can be called again if and only if there was an error during the first
+     * `server.listen()` call or `server.close()` has been called. Otherwise, an `ERR_SERVER_ALREADY_LISTEN`
+     * error will be thrown.
+     *
      * @param {{ port: number; host: string; reuseAddress?: boolean}} options
      * @param {() => void} [callback]
      * @returns {Server}
      */
     listen(options, callback) {
+        if (this._localAddress !== undefined) throw new Error('ERR_SERVER_ALREADY_LISTEN');
         const gotOptions = { ...options };
         gotOptions.host = gotOptions.host || '0.0.0.0';
         this.once('listening', () => {
@@ -54,7 +60,11 @@ export default class Server extends EventEmitter {
     }
 
     /**
-     * @param {(error: Error | null, count: number) => void} callback
+     * Asynchronously get the number of concurrent connections on the server.
+     *
+     * Callback should take two arguments `err` and `count`.
+     *
+     * @param {(err: Error | null, count: number) => void} callback
      * @returns {Server}
      */
     getConnections(callback) {
@@ -62,12 +72,30 @@ export default class Server extends EventEmitter {
         return this;
     }
 
-    close() {
+    /**
+     * Stops the server from accepting new connections and keeps existing connections.
+     * This function is asynchronous, the server is finally closed when all connections are ended and the server emits a `'close'` event.
+     * The optional callback will be called once the `'close'` event occurs. Unlike that event, it will be called with an `Error` as its
+     * only argument if the server was not open when it was closed.
+     *
+     * @param {(err?: Error) => void} [callback]
+     * @returns {Server}
+     */
+    close(callback) {
+        if (!this._localAddress) {
+            callback?.(new Error('ERR_SERVER_NOT_RUNNING'));
+            return this;
+        }
+        if (callback) this.once('close', callback);
         Sockets.close(this._id);
-        this._connections.forEach((clientSocket) => clientSocket.destroy());
+        return this;
     }
 
     /**
+     * Returns the bound `address`, the address `family` name, and `port` of the server as reported by the operating system if listening
+     * on an IP socket (useful to find which port was assigned when getting an OS-assigned address):
+     * `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
+     *
      * @returns {import('./TcpSocket').AddressInfo | null}
      */
     address() {
@@ -76,11 +104,11 @@ export default class Server extends EventEmitter {
     }
 
     ref() {
-        console.warn('react-native-tcp-socket: TcpServer.ref() method will have no effect.');
+        console.warn('react-native-tcp-socket: Server.ref() method will have no effect.');
     }
 
     unref() {
-        console.warn('react-native-tcp-socket: TcpServer.unref() method will have no effect.');
+        console.warn('react-native-tcp-socket: Server.unref() method will have no effect.');
     }
 
     /**
@@ -102,7 +130,7 @@ export default class Server extends EventEmitter {
         this._closeListener = this._eventEmitter.addListener('close', (evt) => {
             if (evt.id !== this._id) return;
             this._setDisconnected();
-            this.emit('close', evt.error);
+            this.emit('close');
         });
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
