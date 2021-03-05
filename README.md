@@ -107,7 +107,7 @@ If you can't or don't want to use the CLI tool, you can also manually link the l
   	```
 3. Insert the following lines inside the dependencies block in `android/app/build.gradle`:
   	```
-      compile project(':react-native-tcp-socket')
+      implementation project(':react-native-tcp-socket')
   	```
 </details>
 
