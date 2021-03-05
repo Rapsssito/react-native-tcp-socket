@@ -10,7 +10,7 @@ import TcpSocket from './TcpSocket';
  *
  * @extends {EventEmitter<'connection' | 'listening' | 'error' | 'close', any>}
  */
-export default class TcpServer extends EventEmitter {
+export default class Server extends EventEmitter {
     /**
      * @param {number} id
      * @param {NativeEventEmitter} eventEmitter
@@ -23,7 +23,7 @@ export default class TcpServer extends EventEmitter {
         /** @private */
         this._eventEmitter = eventEmitter;
         this.connectionCallback = connectionCallback;
-        /** @type {TcpSocket[]} */
+        /** @private @type {TcpSocket[]} */
         this._connections = [];
         /** @private */
         this._eventEmitter = eventEmitter;
@@ -33,18 +33,20 @@ export default class TcpServer extends EventEmitter {
         this._localPort = undefined;
         /** @private */
         this._localFamily = undefined;
+        this.listening = false;
         this._registerEvents();
     }
 
     /**
      * @param {{ port: number; host: string; reuseAddress?: boolean}} options
      * @param {() => void} [callback]
-     * @returns {TcpServer}
+     * @returns {Server}
      */
     listen(options, callback) {
         const gotOptions = { ...options };
         gotOptions.host = gotOptions.host || '0.0.0.0';
         this.once('listening', () => {
+            this.listening = true;
             if (callback) callback();
         });
         Sockets.listen(this._id, gotOptions);
@@ -52,10 +54,12 @@ export default class TcpServer extends EventEmitter {
     }
 
     /**
-     * @param {(arg0: number) => void} callback
+     * @param {(error: Error | null, count: number) => void} callback
+     * @returns {Server}
      */
     getConnections(callback) {
-        callback(this._connections.length);
+        callback(null, this._connections.length);
+        return this;
     }
 
     close() {
@@ -124,6 +128,7 @@ export default class TcpServer extends EventEmitter {
         this._localAddress = undefined;
         this._localPort = undefined;
         this._localFamily = undefined;
+        this.listening = false;
     }
 
     /**

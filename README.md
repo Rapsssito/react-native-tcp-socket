@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/npm/v/react-native-tcp-socket?color=gr&label=npm%20version" />
 <p/>
 
-React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating some of Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
+React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -21,7 +21,7 @@ React Native TCP socket API for Android & iOS with **client SSL/TLS support**. I
 - [API](#api)
   - [TcpSocket](#tcpsocket)
     - [`createConnection()`](#createconnection)
-  - [TcpServer](#tcpserver)
+  - [Server](#server-1)
     - [`listen()`](#listen)
 - [Maintainers](#maintainers)
 - [Acknowledgments](#acknowledgments)
@@ -203,11 +203,11 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
   * [`write(data[, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback)
 * **Properties:**
-  * [`'remoteAddress'`](https://nodejs.org/api/net.html#net_socket_remoteaddress)
-  * [`'remoteFamily'`](https://nodejs.org/api/net.html#net_socket_remotefamily)
-  * [`'remotePort'`](https://nodejs.org/api/net.html#net_socket_remoteport)
-  * [`'localAddress'`](https://nodejs.org/api/net.html#net_socket_localaddress)
-  * [`'localPort'`](https://nodejs.org/api/net.html#net_socket_localport)
+  * [`remoteAddress`](https://nodejs.org/api/net.html#net_socket_remoteaddress)
+  * [`remoteFamily`](https://nodejs.org/api/net.html#net_socket_remotefamily)
+  * [`remotePort`](https://nodejs.org/api/net.html#net_socket_remoteport)
+  * [`localAddress`](https://nodejs.org/api/net.html#net_socket_localaddress)
+  * [`localPort`](https://nodejs.org/api/net.html#net_socket_localport)
 * **Events:**
   * [`'close'`](https://nodejs.org/api/net.html#net_event_close_1)
   * [`'connect'`](https://nodejs.org/api/net.html#net_event_connect)
@@ -234,11 +234,15 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 
 **Note**: The platforms marked as ❌ use the default value.
 
-### TcpServer
+### Server
 * **Methods:**
   * [`TcpSocket.createServer(connectionListener)`](https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener)
+  * [`address()`](https://nodejs.org/api/net.html#net_server_address)
   * **[`listen(options[, callback])`](#listen)**
   * [`close([callback])`](https://nodejs.org/api/net.html#net_server_close_callback)
+  * [`getConnections(callback)`](https://nodejs.org/api/net.html#net_server_getconnections_callback)
+* **Properties:**
+  * [`listening`](https://nodejs.org/api/net.html#net_server_listening)
 * **Events:**
   * [`'close'`](https://nodejs.org/api/net.html#net_event_close)
   * [`'connection'`](https://nodejs.org/api/net.html#net_event_connection)

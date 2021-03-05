@@ -4,7 +4,7 @@ import { NativeEventEmitter, NativeModules } from 'react-native';
 const Sockets = NativeModules.TcpSockets;
 
 import Socket from './TcpSocket';
-import Server from './TcpServer';
+import Server from './Server';
 
 class TCPSockets {
     constructor() {
