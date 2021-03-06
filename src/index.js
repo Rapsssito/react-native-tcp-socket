@@ -1,34 +1,25 @@
 'use strict';
 
-import nativeEventEmitter from './NativeEventEmitter';
+import { nativeEventEmitter, getInstanceNumber } from './Globals';
 import Socket from './TcpSocket';
 import Server from './Server';
 
-class TCPSockets {
-    constructor() {
-        this.instances = 0;
-        this._eventEmitter = nativeEventEmitter;
-    }
-
-    /**
-     * @param {(socket: Socket) => void} connectionListener
-     * @returns {Server}
-     */
-    createServer(connectionListener) {
-        return new Server(this.instances++, connectionListener);
-    }
-
-    /**
-     * @param {import('./TcpSocket').ConnectionOptions} options
-     * @param {() => void} callback
-     * @returns {Socket}
-     */
-    createConnection(options, callback) {
-        const tcpSocket = new Socket(this.instances++, this._eventEmitter);
-        return tcpSocket.connect(options, callback);
-    }
+/**
+ * @param {(socket: Socket) => void} connectionListener
+ * @returns {Server}
+ */
+function createServer(connectionListener) {
+    return new Server(connectionListener);
 }
 
-const tcpSockets = new TCPSockets();
+/**
+ * @param {import('./TcpSocket').ConnectionOptions} options
+ * @param {() => void} callback
+ * @returns {Socket}
+ */
+function createConnection(options, callback) {
+    const tcpSocket = new Socket(getInstanceNumber(), nativeEventEmitter);
+    return tcpSocket.connect(options, callback);
+}
 
-export default tcpSockets;
+export default { createServer, createConnection, Server };

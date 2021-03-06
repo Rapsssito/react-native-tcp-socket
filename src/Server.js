@@ -4,23 +4,21 @@ import { NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 const Sockets = NativeModules.TcpSockets;
 import TcpSocket from './TcpSocket';
-import nativeEventEmitter from './NativeEventEmitter';
+import { nativeEventEmitter, getInstanceNumber } from './Globals';
 
 /**
  * @extends {EventEmitter<'connection' | 'listening' | 'error' | 'close', any>}
  */
 export default class Server extends EventEmitter {
     /**
-     * @param {number} id
-     * @param {(socket: TcpSocket) => void} connectionCallback
+     * @param {(socket: TcpSocket) => void} [connectionCallback]
      */
-    constructor(id, connectionCallback) {
+    constructor(connectionCallback) {
         super();
         /** @private */
-        this._id = id;
+        this._id = getInstanceNumber();
         /** @private */
         this._eventEmitter = nativeEventEmitter;
-        this.connectionCallback = connectionCallback;
         /** @private @type {TcpSocket[]} */
         this._connections = [];
         /** @private */
@@ -31,6 +29,7 @@ export default class Server extends EventEmitter {
         this._localFamily = undefined;
         this.listening = false;
         this._registerEvents();
+        if (connectionCallback) this.on('connection', connectionCallback);
     }
 
     /**
@@ -134,8 +133,9 @@ export default class Server extends EventEmitter {
         });
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
-            this._onConnection(evt.info);
-            this.emit('connection', evt.info);
+            const newSocket = this._buildSocket(evt.info);
+            this._connections.push(newSocket);
+            this.emit('connection', newSocket);
         });
     }
 
@@ -163,9 +163,7 @@ export default class Server extends EventEmitter {
      * @private
      * @param {{ id: number; connection: import('./TcpSocket').NativeConnectionInfo; }} info
      */
-    _onConnection(info) {
-        const socket = new TcpSocket(info.id, this._eventEmitter, info.connection);
-        this._connections.push(socket);
-        this.connectionCallback(socket);
+    _buildSocket(info) {
+        return new TcpSocket(info.id, this._eventEmitter, info.connection);
     }
 }
