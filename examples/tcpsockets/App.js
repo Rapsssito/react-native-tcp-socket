@@ -5,12 +5,7 @@
  */
 
 import React from 'react';
-import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import TcpSocket from 'react-native-tcp-socket';
 
@@ -24,16 +19,15 @@ class App extends React.Component {
 
     updateChatter(msg) {
         this.setState({
-            chatter: this.state.chatter.concat([msg])
+            chatter: this.state.chatter.concat([msg]),
         });
     }
 
     componentDidMount() {
-        const serverPort = Number(9 + (Math.random()*999).toFixed(0));
-        const serverHost = "0.0.0.0";
-        let server;
+        const serverPort = Number(9 + (Math.random() * 999).toFixed(0));
+        const serverHost = '0.0.0.0';
         let client;
-        server = TcpSocket.createServer((socket) => {
+        const server = TcpSocket.createServer((socket) => {
             this.updateChatter('client connected to server on ' + JSON.stringify(socket.address()));
             console.log(
                 'Server client',
@@ -56,7 +50,34 @@ class App extends React.Component {
             socket.on('close', (error) => {
                 this.updateChatter('server client closed ' + (error ? error : ''));
             });
-        }).listen({port: serverPort, host: serverHost, reuseAddress: true}, () => {
+
+            server.close();
+            setTimeout(() => {
+                const client2 = TcpSocket.createConnection(
+                    {
+                        port: serverPort,
+                        host: serverHost,
+                        localAddress: '127.0.0.1',
+                        reuseAddress: true,
+                        // localPort: 20000,
+                        // interface: "wifi",
+                        // tls: true
+                    },
+                    () => {
+                        this.updateChatter('opened client on ' + JSON.stringify(client.address()));
+                        client.write('Hello, server! Love, Client.');
+                    }
+                );
+
+                client2.on('error', (error) => {
+                    this.updateChatter('NEW CLIENT error ' + error);
+                    socket.write('Hehehe', undefined, () => {
+                        console.log(server._connections.size);
+                        client.destroy();
+                    });
+                });
+            }, 1000);
+        }).listen({ port: serverPort, host: serverHost, reuseAddress: true }, () => {
             this.updateChatter('opened server on ' + JSON.stringify(server.address()));
         });
 
@@ -68,18 +89,21 @@ class App extends React.Component {
             this.updateChatter('server close');
         });
 
-        client = TcpSocket.createConnection({
-            port: serverPort,
-            host: serverHost,
-            localAddress: "127.0.0.1",
-            reuseAddress: true,
-            // localPort: 20000,
-            // interface: "wifi",
-            // tls: true
-        }, () => {
-            this.updateChatter('opened client on ' + JSON.stringify(client.address()));
-            client.write('Hello, server! Love, Client.');
-        });
+        client = TcpSocket.createConnection(
+            {
+                port: serverPort,
+                host: serverHost,
+                localAddress: '127.0.0.1',
+                reuseAddress: true,
+                // localPort: 20000,
+                // interface: "wifi",
+                // tls: true
+            },
+            () => {
+                this.updateChatter('opened client on ' + JSON.stringify(client.address()));
+                client.write('Hello, server! Love, Client.');
+            }
+        );
 
         client.on('data', (data) => {
             console.log(
@@ -91,8 +115,8 @@ class App extends React.Component {
                 client.remoteFamily
             );
             this.updateChatter('Client Received: ' + data);
-            this.client.destroy(); // kill client after server's response
-            this.server.close();
+            // client.destroy(); // kill client after server's response
+            // server.close();
         });
 
         client.on('error', (error) => {
@@ -102,14 +126,6 @@ class App extends React.Component {
         client.on('close', () => {
             this.updateChatter('client close');
         });
-
-        this.server = server;
-        this.client = client;
-    }
-
-    componentWillUnmount() {
-        this.server = null;
-        this.client = null;
     }
 
     render() {
@@ -127,7 +143,7 @@ class App extends React.Component {
             </View>
         );
     }
-};
+}
 
 const styles = StyleSheet.create({
     container: {

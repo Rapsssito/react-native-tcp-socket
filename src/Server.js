@@ -19,8 +19,8 @@ export default class Server extends EventEmitter {
         this._id = getInstanceNumber();
         /** @private */
         this._eventEmitter = nativeEventEmitter;
-        /** @private @type {TcpSocket[]} */
-        this._connections = [];
+        /** @private @type {Set<TcpSocket>} */
+        this._connections = new Set();
         /** @private */
         this._localAddress = undefined;
         /** @private */
@@ -30,6 +30,7 @@ export default class Server extends EventEmitter {
         this.listening = false;
         this._registerEvents();
         if (connectionCallback) this.on('connection', connectionCallback);
+        this.on('close', this._setDisconnected, this);
     }
 
     /**
@@ -67,7 +68,7 @@ export default class Server extends EventEmitter {
      * @returns {Server}
      */
     getConnections(callback) {
-        callback(null, this._connections.length);
+        callback(null, this._connections.size);
         return this;
     }
 
@@ -128,15 +129,15 @@ export default class Server extends EventEmitter {
             this.close();
             this.emit('error', evt.error);
         });
-        this._closeListener = this._eventEmitter.addListener('close', (evt) => {
-            if (evt.id !== this._id) return;
-            this._setDisconnected();
-            this.emit('close');
-        });
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
             const newSocket = this._buildSocket(evt.info);
-            this._connections.push(newSocket);
+            // Emit 'close' when all connection closed
+            newSocket.on('close', () => {
+                this._connections.delete(newSocket);
+                if (this._connections.size === 0) this.emit('close');
+            });
+            this._connections.add(newSocket);
             this.emit('connection', newSocket);
         });
     }
@@ -144,17 +145,7 @@ export default class Server extends EventEmitter {
     /**
      * @private
      */
-    _unregisterEvents() {
-        this._errorListener?.remove();
-        this._closeListener?.remove();
-        this._connectionsListener?.remove();
-    }
-
-    /**
-     * @private
-     */
     _setDisconnected() {
-        this._unregisterEvents();
         this._localAddress = undefined;
         this._localPort = undefined;
         this._localFamily = undefined;

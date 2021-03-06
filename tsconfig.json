@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "allowJs": true,
+        "lib": ["es2015"],
         "checkJs": true,
         "noEmit": true,
         "strict": true,
