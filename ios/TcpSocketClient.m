@@ -51,6 +51,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         _lock = [[NSLock alloc] init];
         _tcpSocket = tcpSocket;
         [_tcpSocket setUserData: clientID];
+        [_tcpSocket setDelegate: self];
+        [_tcpSocket setDelegateQueue: [self methodQueue]];
     }
 
     return self;
