@@ -11,7 +11,7 @@ import { nativeEventEmitter, getInstanceNumber } from './Globals';
  */
 export default class Server extends EventEmitter {
     /**
-     * @param {(socket: TcpSocket) => void} [connectionCallback]
+     * @param {(socket: TcpSocket) => void} [connectionCallback] Automatically set as a listener for the `'connection'` event.
      */
     constructor(connectionCallback) {
         super();
@@ -77,7 +77,7 @@ export default class Server extends EventEmitter {
      * The optional callback will be called once the `'close'` event occurs. Unlike that event, it will be called with an `Error` as its
      * only argument if the server was not open when it was closed.
      *
-     * @param {(err?: Error) => void} [callback]
+     * @param {(err?: Error) => void} [callback] Called when the server is closed.
      * @returns {Server}
      */
     close(callback) {
@@ -104,10 +104,12 @@ export default class Server extends EventEmitter {
 
     ref() {
         console.warn('react-native-tcp-socket: Server.ref() method will have no effect.');
+        return this;
     }
 
     unref() {
         console.warn('react-native-tcp-socket: Server.unref() method will have no effect.');
+        return this;
     }
 
     /**
