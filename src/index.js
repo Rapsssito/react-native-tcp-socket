@@ -1,36 +1,25 @@
 'use strict';
 
-import { NativeEventEmitter, NativeModules } from 'react-native';
-const Sockets = NativeModules.TcpSockets;
-
+import { nativeEventEmitter, getInstanceNumber } from './Globals';
 import Socket from './TcpSocket';
-import Server from './TcpServer';
+import Server from './Server';
 
-class TCPSockets {
-    constructor() {
-        this.instances = 0;
-        this._eventEmitter = new NativeEventEmitter(Sockets);
-    }
-
-    /**
-     * @param {(socket: Socket) => void} connectionListener
-     * @returns {Server}
-     */
-    createServer(connectionListener) {
-        return new Server(this.instances++, this._eventEmitter, connectionListener);
-    }
-
-    /**
-     * @param {import('./TcpSocket').ConnectionOptions} options
-     * @param {() => void} callback
-     * @returns {Socket}
-     */
-    createConnection(options, callback) {
-        const tcpSocket = new Socket(this.instances++, this._eventEmitter);
-        return tcpSocket.connect(options, callback);
-    }
+/**
+ * @param {(socket: Socket) => void} connectionListener
+ * @returns {Server}
+ */
+function createServer(connectionListener) {
+    return new Server(connectionListener);
 }
 
-const tcpSockets = new TCPSockets();
+/**
+ * @param {import('./TcpSocket').ConnectionOptions} options
+ * @param {() => void} callback
+ * @returns {Socket}
+ */
+function createConnection(options, callback) {
+    const tcpSocket = new Socket(getInstanceNumber(), nativeEventEmitter);
+    return tcpSocket.connect(options, callback);
+}
 
-export default tcpSockets;
+export default { createServer, createConnection, Server };
