@@ -1,3 +1,10 @@
+# [5.1.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.0.0...v5.1.0) (2021-03-06)
+
+
+### Features
+
+* Export Server class ([#101](https://github.com/Rapsssito/react-native-tcp-socket/issues/101)) ([a1e983b](https://github.com/Rapsssito/react-native-tcp-socket/commit/a1e983b62bdc9f1320809cfda623609a9cb8a8ec))
+
 # [5.0.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v4.5.7...v5.0.0) (2021-02-26)
 
 
