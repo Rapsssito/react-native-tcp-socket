@@ -3,10 +3,10 @@ const Sockets = NativeModules.TcpSockets;
 
 let instanceNumber = 0;
 
-function getInstanceNumber() {
+function getNextId() {
     return instanceNumber++;
 }
 
 const nativeEventEmitter = new NativeEventEmitter(Sockets);
 
-export { nativeEventEmitter, getInstanceNumber };
+export { nativeEventEmitter, getNextId };

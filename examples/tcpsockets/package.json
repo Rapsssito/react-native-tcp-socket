@@ -29,5 +29,8 @@
   },
   "jest": {
     "preset": "react-native"
+  },
+  "react-native": {
+    "net": "react-native-tcp-socket"
   }
 }

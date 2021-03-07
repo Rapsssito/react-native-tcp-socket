@@ -3,23 +3,23 @@
 import { NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 const Sockets = NativeModules.TcpSockets;
-import TcpSocket from './TcpSocket';
-import { nativeEventEmitter, getInstanceNumber } from './Globals';
+import Socket from './Socket';
+import { nativeEventEmitter, getNextId } from './Globals';
 
 /**
  * @extends {EventEmitter<'connection' | 'listening' | 'error' | 'close', any>}
  */
 export default class Server extends EventEmitter {
     /**
-     * @param {(socket: TcpSocket) => void} [connectionCallback] Automatically set as a listener for the `'connection'` event.
+     * @param {(socket: Socket) => void} [connectionCallback] Automatically set as a listener for the `'connection'` event.
      */
     constructor(connectionCallback) {
         super();
         /** @private */
-        this._id = getInstanceNumber();
+        this._id = getNextId();
         /** @private */
         this._eventEmitter = nativeEventEmitter;
-        /** @private @type {Set<TcpSocket>} */
+        /** @private @type {Set<Socket>} */
         this._connections = new Set();
         /** @private */
         this._localAddress = undefined;
@@ -87,6 +87,7 @@ export default class Server extends EventEmitter {
             return this;
         }
         if (callback) this.once('close', callback);
+        this.listening = false;
         Sockets.close(this._id);
         return this;
     }
@@ -96,7 +97,7 @@ export default class Server extends EventEmitter {
      * on an IP socket (useful to find which port was assigned when getting an OS-assigned address):
      * `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
      *
-     * @returns {import('./TcpSocket').AddressInfo | null}
+     * @returns {import('./Socket').AddressInfo | null}
      */
     address() {
         if (!this._localAddress) return null;
@@ -135,7 +136,7 @@ export default class Server extends EventEmitter {
             // Emit 'close' when all connection closed
             newSocket.on('close', () => {
                 this._connections.delete(newSocket);
-                if (this._connections.size === 0) this.emit('close');
+                if (!this.listening && this._connections.size === 0) this.emit('close');
             });
             this._connections.add(newSocket);
             this.emit('connection', newSocket);
@@ -149,14 +150,17 @@ export default class Server extends EventEmitter {
         this._localAddress = undefined;
         this._localPort = undefined;
         this._localFamily = undefined;
-        this.listening = false;
     }
 
     /**
      * @private
-     * @param {{ id: number; connection: import('./TcpSocket').NativeConnectionInfo; }} info
+     * @param {{ id: number; connection: import('./Socket').NativeConnectionInfo; }} info
+     * @returns {Socket}
      */
     _buildSocket(info) {
-        return new TcpSocket(info.id, this._eventEmitter, info.connection);
+        const newSocket = new Socket();
+        newSocket._setId(info.id);
+        newSocket._setConnected(info.connection);
+        return newSocket;
     }
 }
