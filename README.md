@@ -46,7 +46,6 @@ Since `react-native-tcp-socket` offers the same API as Node's net, in case you w
 
 ```json
 {
-  ...
   "react-native": {
     "net": "react-native-tcp-socket"
   }
