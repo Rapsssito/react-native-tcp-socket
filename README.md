@@ -46,6 +46,7 @@ Since `react-native-tcp-socket` offers the same API as Node's net, in case you w
 
 ```json
 {
+  ...
   "react-native": {
     "net": "react-native-tcp-socket"
   }
@@ -55,6 +56,7 @@ Since `react-native-tcp-socket` offers the same API as Node's net, in case you w
 In addition, in order to obtain the TS types (or autocompletion) provided by this module, you must also add the following to your custom declarations file.
 
 ```ts
+...
 declare module 'net' {
     import TcpSockets from 'react-native-tcp-socket';
     export = TcpSockets;
