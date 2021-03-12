@@ -1,7 +1,6 @@
 'use strict';
 
-import { nativeEventEmitter, getInstanceNumber } from './Globals';
-import Socket from './TcpSocket';
+import Socket from './Socket';
 import Server from './Server';
 
 /**
@@ -13,13 +12,16 @@ function createServer(connectionListener) {
 }
 
 /**
- * @param {import('./TcpSocket').ConnectionOptions} options
+ * @param {import('./Socket').ConnectionOptions} options
  * @param {() => void} callback
  * @returns {Socket}
  */
 function createConnection(options, callback) {
-    const tcpSocket = new Socket(getInstanceNumber(), nativeEventEmitter);
+    const tcpSocket = new Socket();
     return tcpSocket.connect(options, callback);
 }
 
-export default { createServer, createConnection, Server };
+export default { createServer, createConnection, Server, Socket };
+
+// @ts-ignore
+module.exports = { createServer, createConnection, Server, Socket };

@@ -161,8 +161,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                 try {
                     TcpSocketServer server = new TcpSocketServer(socketMap, TcpSocketModule.this, cId, options);
                     socketMap.put(cId, server);
-                    int port = server.getListeningPort();
-                    String host = options.getString("host");
                     onListen(cId, server);
                 } catch (Exception uhe) {
                     onError(cId, uhe.getMessage());

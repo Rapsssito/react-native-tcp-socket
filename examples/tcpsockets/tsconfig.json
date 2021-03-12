@@ -1,13 +1,17 @@
 {
     "compilerOptions": {
+        "jsx": "react",
         "allowJs": true,
-        "lib": ["es2015"],
+        "lib": [
+            "es2015"
+        ],
         "checkJs": true,
         "noEmit": true,
         "strict": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
-        "typeRoots": ["@types/eventemitter3"]
+        "baseUrl": ".",
+        "typeRoots": []
     },
-    "include": ["src", "lib"]
+    "include": ["declaration.d.ts", "App.js", "examples"],
 }

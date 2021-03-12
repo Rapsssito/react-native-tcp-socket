@@ -1,7 +1,5 @@
 import { expect, test } from '@jest/globals';
-import TcpSockets from '../src/index';
-import TcpServer from '../src/Server';
-import TcpSocket from '../src/TcpSocket';
+import net from '../src/index';
 
 test('create-client', () => {
     const options = {
@@ -13,11 +11,11 @@ test('create-client', () => {
         // interface: "wifi"
     };
 
-    const socket = TcpSockets.createConnection(options, () => {});
-    expect(socket).toBeInstanceOf(TcpSocket);
+    const socket = net.createConnection(options, () => {});
+    expect(socket).toBeInstanceOf(net.Socket);
 });
 
 test('create-server', () => {
-    const server = TcpSockets.createServer(() => {});
-    expect(server).toBeInstanceOf(TcpServer);
+    const server = net.createServer(() => {});
+    expect(server).toBeInstanceOf(net.Server);
 });

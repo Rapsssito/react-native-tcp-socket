@@ -4,6 +4,7 @@ import { NativeModules, Image } from 'react-native';
 import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
+import { nativeEventEmitter, getNextId } from './Globals';
 
 const STATE = {
     DISCONNECTED: 0,
@@ -35,20 +36,16 @@ const STATE = {
  *
  * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close', any>}
  */
-export default class TcpSocket extends EventEmitter {
+export default class Socket extends EventEmitter {
     /**
-     * Initialices a TcpSocket.
-     *
-     * @param {number} id
-     * @param {NativeEventEmitter} eventEmitter
-     * @param {NativeConnectionInfo} [connectionInfo]
+     * Creates a new socket object.
      */
-    constructor(id, eventEmitter, connectionInfo) {
+    constructor() {
         super();
         /** @private */
-        this._id = id;
+        this._id = undefined;
         /** @private */
-        this._eventEmitter = eventEmitter;
+        this._eventEmitter = nativeEventEmitter;
         /** @type {number} @private */
         this._timeoutMsecs = 0;
         /** @private */
@@ -63,7 +60,28 @@ export default class TcpSocket extends EventEmitter {
         this.remotePort = undefined;
         this.remoteFamily = undefined;
         this._registerEvents();
-        if (connectionInfo != undefined) this._setConnected(connectionInfo);
+    }
+
+    /**
+     * @package
+     * @param {number} id
+     */
+    _setId(id) {
+        this._id = id;
+        this._registerEvents();
+    }
+
+    /**
+     * @package
+     * @param {NativeConnectionInfo} connectionInfo
+     */
+    _setConnected(connectionInfo) {
+        this._state = STATE.CONNECTED;
+        this.localAddress = connectionInfo.localAddress;
+        this.localPort = connectionInfo.localPort;
+        this.remoteAddress = connectionInfo.remoteAddress;
+        this.remoteFamily = connectionInfo.remoteFamily;
+        this.remotePort = connectionInfo.remotePort;
     }
 
     /**
@@ -71,6 +89,8 @@ export default class TcpSocket extends EventEmitter {
      * @param {() => void} [callback]
      */
     connect(options, callback) {
+        if (this._id === undefined) this._setId(getNextId());
+
         const customOptions = { ...options };
         // Normalize args
         customOptions.host = customOptions.host || 'localhost';
@@ -325,19 +345,6 @@ export default class TcpSocket extends EventEmitter {
                 `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
             );
         }
-    }
-
-    /**
-     * @private
-     * @param {NativeConnectionInfo} connectionInfo
-     */
-    _setConnected(connectionInfo) {
-        this._state = STATE.CONNECTED;
-        this.localAddress = connectionInfo.localAddress;
-        this.localPort = connectionInfo.localPort;
-        this.remoteAddress = connectionInfo.remoteAddress;
-        this.remoteFamily = connectionInfo.remoteFamily;
-        this.remotePort = connectionInfo.remotePort;
     }
 
     /**
