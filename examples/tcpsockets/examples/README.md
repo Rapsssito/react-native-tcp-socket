@@ -2,7 +2,7 @@
 
 In this folder, you can find a variety of examples to help you get started in using `react-native-tcp-socket`. Every example has a specific purpose and **is compatible** with Node.js.
 
-In order to run an example, you may import the `init`, `server` and clients from the example file and run it either from React Native ([`App.js`](../App.js)) or Node.js ([`main`](main.js)).
+In order to run an example, you may import the `init`, `server` and clients from the example file and run it either from React Native ([`App.js`](../App.js)) or Node.js ([`main.js`](main.js)).
 
 Let us know if you find any issues. If you want to contribute or add a new example, feel free to submit a PR!
 
