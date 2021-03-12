@@ -193,7 +193,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 
 ### TcpSocket
 * **Methods:**
-  * **[`TcpSocket.createConnection(options[, callback])`](#createconnection)**
+  * **[`TcpSocket.createConnection(options[, success][, error])`](#createconnection)**
   * [`address()`](https://nodejs.org/api/net.html#net_socket_address)
   * [`destroy([error])`](https://nodejs.org/api/net.html#net_socket_destroy_error)
   * [`end([data][, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_end_data_encoding_callback)

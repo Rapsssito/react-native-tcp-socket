@@ -68,15 +68,19 @@ export default class TcpSocket extends EventEmitter {
 
     /**
      * @param {ConnectionOptions} options
-     * @param {() => void} [callback]
+     * @param {() => void} [success]
+     * @param {(e: Error) => void} [error]
      */
-    connect(options, callback) {
+    connect(options, success, error) {
         const customOptions = { ...options };
         // Normalize args
         customOptions.host = customOptions.host || 'localhost';
         customOptions.port = Number(customOptions.port) || 0;
         this.once('connect', () => {
-            if (callback) callback();
+            if (success) success();
+        });
+        this.once('error', (e) => {
+            if (error) error(e);
         });
         // Timeout
         if (customOptions.timeout) this.setTimeout(customOptions.timeout);

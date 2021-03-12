@@ -14,12 +14,13 @@ function createServer(connectionListener) {
 
 /**
  * @param {import('./TcpSocket').ConnectionOptions} options
- * @param {() => void} callback
+ * @param {() => void} success
+ * @param {(e: Error) => void} error
  * @returns {Socket}
  */
-function createConnection(options, callback) {
+function createConnection(options, success, error) {
     const tcpSocket = new Socket(getInstanceNumber(), nativeEventEmitter);
-    return tcpSocket.connect(options, callback);
+    return tcpSocket.connect(options, success, error);
 }
 
 export default { createServer, createConnection, Server };

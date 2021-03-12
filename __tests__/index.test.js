@@ -13,7 +13,11 @@ test('create-client', () => {
         // interface: "wifi"
     };
 
-    const socket = TcpSockets.createConnection(options, () => {});
+    const socket = TcpSockets.createConnection(
+        options,
+        () => {},
+        () => {}
+    );
     expect(socket).toBeInstanceOf(TcpSocket);
 });
 

@@ -50,9 +50,10 @@ export default class TcpSocket extends EventEmitter<"connect" | "timeout" | "dat
     remoteFamily: string | undefined;
     /**
      * @param {ConnectionOptions} options
-     * @param {() => void} [callback]
+     * @param {() => void} [success]
+     * @param {(e: Error) => void} [error]
      */
-    connect(options: ConnectionOptions, callback?: (() => void) | undefined): TcpSocket;
+    connect(options: ConnectionOptions, success?: (() => void) | undefined, error?: ((e: Error) => void) | undefined): TcpSocket;
     _destroyed: boolean | undefined;
     /**
      * Sets the socket to timeout after `timeout` milliseconds of inactivity on the socket. By default `TcpSocket` do not have a timeout.
