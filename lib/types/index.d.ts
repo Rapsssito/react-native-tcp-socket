@@ -2,6 +2,7 @@ declare namespace _default {
     export { createServer };
     export { createConnection };
     export { Server };
+    export { Socket };
 }
 export default _default;
 /**
@@ -10,10 +11,10 @@ export default _default;
  */
 declare function createServer(connectionListener: (socket: Socket) => void): Server;
 /**
- * @param {import('./TcpSocket').ConnectionOptions} options
+ * @param {import('./Socket').ConnectionOptions} options
  * @param {() => void} callback
  * @returns {Socket}
  */
-declare function createConnection(options: import('./TcpSocket').ConnectionOptions, callback: () => void): Socket;
+declare function createConnection(options: import('./Socket').ConnectionOptions, callback: () => void): Socket;
 import Server from "./Server";
-import Socket from "./TcpSocket";
+import Socket from "./Socket";

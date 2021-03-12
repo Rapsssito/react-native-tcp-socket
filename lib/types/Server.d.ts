@@ -3,14 +3,14 @@
  */
 export default class Server extends EventEmitter<"error" | "close" | "connection" | "listening", any> {
     /**
-     * @param {(socket: TcpSocket) => void} [connectionCallback] Automatically set as a listener for the `'connection'` event.
+     * @param {(socket: Socket) => void} [connectionCallback] Automatically set as a listener for the `'connection'` event.
      */
-    constructor(connectionCallback?: ((socket: TcpSocket) => void) | undefined);
+    constructor(connectionCallback?: ((socket: Socket) => void) | undefined);
     /** @private */
     private _id;
     /** @private */
     private _eventEmitter;
-    /** @private @type {TcpSocket[]} */
+    /** @private @type {Set<Socket>} */
     private _connections;
     /** @private */
     private _localAddress;
@@ -62,9 +62,9 @@ export default class Server extends EventEmitter<"error" | "close" | "connection
      * on an IP socket (useful to find which port was assigned when getting an OS-assigned address):
      * `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
      *
-     * @returns {import('./TcpSocket').AddressInfo | null}
+     * @returns {import('./Socket').AddressInfo | null}
      */
-    address(): import('./TcpSocket').AddressInfo | null;
+    address(): import('./Socket').AddressInfo | null;
     ref(): Server;
     unref(): Server;
     /**
@@ -72,21 +72,17 @@ export default class Server extends EventEmitter<"error" | "close" | "connection
      */
     private _registerEvents;
     _errorListener: import("react-native").EmitterSubscription | undefined;
-    _closeListener: import("react-native").EmitterSubscription | undefined;
     _connectionsListener: import("react-native").EmitterSubscription | undefined;
-    /**
-     * @private
-     */
-    private _unregisterEvents;
     /**
      * @private
      */
     private _setDisconnected;
     /**
      * @private
-     * @param {{ id: number; connection: import('./TcpSocket').NativeConnectionInfo; }} info
+     * @param {{ id: number; connection: import('./Socket').NativeConnectionInfo; }} info
+     * @returns {Socket}
      */
     private _buildSocket;
 }
 import EventEmitter from "eventemitter3";
-import TcpSocket from "./TcpSocket";
+import Socket from "./Socket";
