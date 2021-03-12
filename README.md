@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/npm/v/react-native-tcp-socket?color=gr&label=npm%20version" />
 <p/>
 
-React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP clients and servers sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
+React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP client and server sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
 ## Table of Contents <!-- omit in toc -->
 
