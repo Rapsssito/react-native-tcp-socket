@@ -10,6 +10,7 @@ React Native TCP socket API for Android & iOS with **client SSL/TLS support**. I
 ## Table of Contents <!-- omit in toc -->
 
 - [Getting started](#getting-started)
+    - [Overriding `net`](#overriding-net)
     - [Using React Native >= 0.60](#using-react-native--060)
     - [Self-Signed SSL (only available for React Native > 0.60)](#self-signed-ssl-only-available-for-react-native--060)
     - [Using React Native < 0.60](#using-react-native--060-1)
@@ -39,6 +40,31 @@ or npm:
 ```
 npm install --save react-native-tcp-socket
 ```
+
+#### Overriding `net`
+Since `react-native-tcp-socket` offers the same API as Node's net, in case you want to import this module as `net` or use `require('net')` in your JavaScript, you must add the following lines to your `package.json` file.
+
+```json
+{
+  "react-native": {
+    "net": "react-native-tcp-socket"
+  }
+}
+```
+
+In addition, in order to obtain the TS types (or autocompletion) provided by this module, you must also add the following to your custom declarations file.
+
+```ts
+declare module 'net' {
+    import TcpSockets from 'react-native-tcp-socket';
+    export = TcpSockets;
+}
+```
+
+If you want to avoid duplicated `net` types, make sure not to use the default `node_modules/@types` in your `tsconfig.json` `"typeRoots"` property.
+
+_Check the [example app](./examples/tcpsockets/) provided for a working example._
+
 
 #### Using React Native >= 0.60
 Linking the package manually is not required anymore with [Autolinking](https://github.com/react-native-community/cli/blob/master/docs/autolinking.md).

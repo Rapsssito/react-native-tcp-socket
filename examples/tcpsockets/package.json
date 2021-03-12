@@ -9,7 +9,8 @@
     "start": "react-native start",
     "test": "jest",
     "clean": "cd android && ./gradlew clean",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "checkjs": "tsc"
   },
   "dependencies": {
     "react": "16.13.1",
@@ -25,7 +26,8 @@
     "eslint": "^6.5.1",
     "jest": "^25.1.0",
     "metro-react-native-babel-preset": "^0.59.0",
-    "react-test-renderer": "16.13.1"
+    "react-test-renderer": "16.13.1",
+    "typescript": "^4.2.3"
   },
   "jest": {
     "preset": "react-native"

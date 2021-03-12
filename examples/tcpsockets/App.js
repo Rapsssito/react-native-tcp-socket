@@ -10,6 +10,9 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { init, server, client } from './examples/echo';
 
 class App extends React.Component {
+    /**
+     * @param {any} props
+     */
     constructor(props) {
         super(props);
 
@@ -17,8 +20,12 @@ class App extends React.Component {
         this.state = { chatter: [] };
     }
 
+    /**
+     * @param {string | Error} msg
+     */
     updateChatter(msg) {
         this.setState({
+            // @ts-ignore
             chatter: this.state.chatter.concat([msg]),
         });
     }
