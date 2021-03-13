@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/npm/v/react-native-tcp-socket?color=gr&label=npm%20version" />
 <p/>
 
-React Native TCP socket API for Android & iOS with **client SSL/TLS support**. It allows you to create TCP client and server sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
+React Native TCP socket API for Android, iOS & macOS with **client SSL/TLS support**. It allows you to create TCP client and server sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -246,7 +246,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 ##### `createConnection: options` <!-- omit in toc -->
 **Required**. Available options for creating a socket. It must be an `object` with the following properties:
 
-| Property              | Type   | iOS  | Android |Description                                                                                        |
+| Property              | Type   | iOS/macOS  | Android |Description                                                                                        |
 | --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
 | **`port`** | `<number>` | ✅  |   ✅   | **Required**. Port the socket should connect to. |
 | `host` | `<string>` | ✅  |   ✅  | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
@@ -282,7 +282,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 ##### `listen: options` <!-- omit in toc -->
 **Required**. Available options for creating a server socket. It must be an `object` with the following properties:
 
-| Property              | Type   | iOS  | Android |Description                                                                                        |
+| Property              | Type   | iOS/macOS  | Android |Description                                                                                        |
 | --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
 | **`port`** | `<number>`  | ✅  |   ✅    | **Required**. Port the socket should listen to. |
 | `host` | `<string>` | ✅  |   ✅    | Host the socket should listen to. IP address in IPv4 format or `'localhost'`. **Default**: `'0.0.0.0'`. |
