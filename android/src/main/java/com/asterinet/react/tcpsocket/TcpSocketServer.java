@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +29,11 @@ public final class TcpSocketServer extends TcpSocket {
             try {
                 while (!isCancelled() && !serverSocket.isClosed()) {
                     Socket socket = serverSocket.accept();
+                    try{
+                        socket.setReceiveBufferSize(1048576);
+                    }catch(SocketException e){
+                        // Do nothing.
+                    }
                     int clientId = getClientId();
                     TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
                     socketClients.put(clientId, socketClient);
