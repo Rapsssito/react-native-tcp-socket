@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,6 +80,14 @@ class TcpSocketClient extends TcpSocket {
         // bind
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
+
+        // Increase socket send buffer size.
+        try{
+            socket.setSendBufferSize(2097152);
+        }catch(SocketException e){
+            // Do nothing.
+        }
+        
         if (isTls) ((SSLSocket) socket).startHandshake();
         startListening();
     }
