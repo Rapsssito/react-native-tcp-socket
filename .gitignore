@@ -33,6 +33,7 @@ local.properties
 android/gradle/
 android/gradlew
 android/gradlew.bat
+android/.*
 
 # node.js
 #
@@ -50,3 +51,6 @@ buck-out/
 
 # Tests
 coverage/
+
+# Examples
+examples
