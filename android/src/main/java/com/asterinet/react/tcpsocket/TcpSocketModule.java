@@ -265,7 +265,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
         connectionParams.putString("localAddress", socket.getLocalAddress().getHostAddress());
         connectionParams.putInt("localPort", socket.getLocalPort());
-        connectionParams.putString("remoteAddress", remoteAddress.getHostName());
+        connectionParams.putString("remoteAddress", remoteAddress.getAddress().getHostAddress());
         connectionParams.putInt("remotePort", socket.getPort());
         connectionParams.putString("remoteFamily", remoteAddress.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
         eventParams.putMap("connection", connectionParams);
@@ -330,7 +330,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
 
         connectionParams.putString("localAddress", socket.getLocalAddress().getHostAddress());
         connectionParams.putInt("localPort", socket.getLocalPort());
-        connectionParams.putString("remoteAddress", remoteAddress.getHostName());
+        connectionParams.putString("remoteAddress", remoteAddress.getAddress().getHostAddress());
         connectionParams.putInt("remotePort", socket.getPort());
         connectionParams.putString("remoteFamily", remoteAddress.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
 
