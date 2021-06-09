@@ -1,3 +1,10 @@
+## [5.2.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.2.0...v5.2.1) (2021-06-09)
+
+
+### Bug Fixes
+
+* **Android:** Fix remoteAddress not returning IP ([#111](https://github.com/Rapsssito/react-native-tcp-socket/issues/111)) ([cd3759a](https://github.com/Rapsssito/react-native-tcp-socket/commit/cd3759a908e5c42b8e92dde97324a7b9c07bc90b))
+
 # [5.2.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.1.0...v5.2.0) (2021-03-12)
 
 
