@@ -7,7 +7,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { init, server, client } from './examples/echo';
+import { init, server, client } from './examples/drain-event';
 
 class App extends React.Component {
     /**
@@ -58,6 +58,10 @@ class App extends React.Component {
 
         client.on('connect', () => {
             this.updateChatter('Opened client on ' + JSON.stringify(client.address()));
+        });
+
+        client.on('drain', () => {
+            this.updateChatter('Client drained');
         });
 
         client.on('data', (data) => {

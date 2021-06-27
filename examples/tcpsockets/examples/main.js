@@ -1,11 +1,11 @@
 // Execute this file using NodeJS
-const { init, server, client } = require('./echo');
+const { init, server, client } = require('./drain-event');
 
 server.on('connection', (socket) => {
     console.log('Client connected to server on ' + JSON.stringify(socket.address()));
 
     socket.on('data', (data) => {
-        console.log('Server client received: ' + data);
+        // console.log('Server client received: ' + data);
     });
 
     socket.on('error', (error) => {
@@ -27,6 +27,10 @@ server.on('close', () => {
 
 client.on('connect', () => {
     console.log('Opened client on ' + JSON.stringify(client.address()));
+});
+
+client.on('drain', () => {
+    console.log('Client drained');
 });
 
 client.on('data', (data) => {

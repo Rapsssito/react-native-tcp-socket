@@ -280,6 +280,7 @@ export default class Socket extends EventEmitter {
                 }
             }
         );
+        return true;
     }
 
     ref() {
