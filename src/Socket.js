@@ -285,7 +285,7 @@ export default class Socket extends EventEmitter {
                     this._lastRcvMsgId = msgId;
                     if (self._timeout) self._activateTimer();
                     if (this.writableNeedDrain && this._lastSentMsgId == msgId) {
-                        this.writableNeedDrain = true;
+                        this.writableNeedDrain = false;
                         this.emit('drain');
                     }
                     if (callback) {
