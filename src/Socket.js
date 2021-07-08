@@ -34,7 +34,7 @@ const STATE = {
  * tlsCert?: any,
  * }} ConnectionOptions
  *
- * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close', any>}
+ * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close' | 'drain', any>}
  */
 export default class Socket extends EventEmitter {
     /**
@@ -56,6 +56,11 @@ export default class Socket extends EventEmitter {
         this._encoding = undefined;
         /** @private */
         this._msgId = 0;
+        /** @private */
+        this._lastRcvMsgId = Number.MAX_SAFE_INTEGER - 1;
+        /** @private */
+        this._lastSentMsgId = 0;
+        this.writableNeedDrain = false;
         this.localAddress = undefined;
         this.localPort = undefined;
         this.remoteAddress = undefined;
@@ -267,23 +272,36 @@ export default class Socket extends EventEmitter {
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
-        const currentMsgId = this._msgId++ % Number.MAX_SAFE_INTEGER;
-        // @ts-ignore
-        const writtenListener = this.on('written', (msgId) => {
-            // Callback equivalent
-            if (msgId === currentMsgId) {
-                if (self._timeout) self._activateTimer();
-                if (callback) {
-                    // TODO
-                    // if (evt.err) return callback(evt.err);
-                    callback(null);
+        const currentMsgId = this._msgId;
+        this._msgId = (this._msgId + 1) % Number.MAX_SAFE_INTEGER;
+        const writtenListener = this.on(
+            // @ts-ignore
+            'written',
+            (msgId) => {
+                // Callback equivalent
+                if (msgId === currentMsgId) {
+                    // @ts-ignore
+                    this.removeListener(writtenListener);
+                    this._lastRcvMsgId = msgId;
+                    if (self._timeout) self._activateTimer();
+                    if (this.writableNeedDrain && this._lastSentMsgId == msgId) {
+                        this.writableNeedDrain = true;
+                        this.emit('drain');
+                    }
+                    if (callback) {
+                        // TODO
+                        // if (evt.err) return callback(evt.err);
+                        callback(null);
+                    }
                 }
-                // @ts-ignore
-                this.removeListener(writtenListener);
-            }
-        });
+            },
+            this
+        );
+        const ok = (this._lastRcvMsgId + 1) % Number.MAX_SAFE_INTEGER == currentMsgId;
+        if (!ok) this.writableNeedDrain = true;
+        this._lastSentMsgId = currentMsgId;
         Sockets.write(this._id, generatedBuffer.toString('base64'), currentMsgId);
-        return true;
+        return ok;
     }
 
     ref() {

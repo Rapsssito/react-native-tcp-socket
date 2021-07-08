@@ -5,7 +5,7 @@ server.on('connection', (socket) => {
     console.log('Client connected to server on ' + JSON.stringify(socket.address()));
 
     socket.on('data', (data) => {
-        // console.log('Server client received: ' + data);
+        console.log('Server client received: ' + data);
     });
 
     socket.on('error', (error) => {
