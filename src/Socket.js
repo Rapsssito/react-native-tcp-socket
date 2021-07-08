@@ -54,6 +54,8 @@ export default class Socket extends EventEmitter {
         this._state = STATE.DISCONNECTED;
         /** @private */
         this._encoding = undefined;
+        /** @private */
+        this._msgId = 0;
         this.localAddress = undefined;
         this.localPort = undefined;
         this.remoteAddress = undefined;
@@ -264,22 +266,23 @@ export default class Socket extends EventEmitter {
         const self = this;
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
-        callback = callback || (() => {});
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
-        Sockets.write(
-            this._id,
-            generatedBuffer.toString('base64'),
-            /**
-             * @param {string} err
-             */
-            function(err) {
+        const currentMsgId = this._msgId++ % Number.MAX_SAFE_INTEGER;
+        // @ts-ignore
+        const writtenListener = this.on('written', (msgId) => {
+            // Callback equivalent
+            if (msgId === currentMsgId) {
                 if (self._timeout) self._activateTimer();
                 if (callback) {
-                    if (err) return callback(err);
+                    // TODO
+                    // if (evt.err) return callback(evt.err);
                     callback(null);
                 }
+                // @ts-ignore
+                this.removeListener(writtenListener);
             }
-        );
+        });
+        Sockets.write(this._id, generatedBuffer.toString('base64'), currentMsgId);
         return true;
     }
 
@@ -317,6 +320,11 @@ export default class Socket extends EventEmitter {
             this._setConnected(evt.connection);
             this.emit('connect');
         });
+        this._writtenListener = this._eventEmitter.addListener('written', (evt) => {
+            if (evt.id !== this._id) return;
+            // @ts-ignore
+            this.emit('written', evt.msgId);
+        });
     }
 
     /**
@@ -327,6 +335,7 @@ export default class Socket extends EventEmitter {
         this._errorListener?.remove();
         this._closeListener?.remove();
         this._connectListener?.remove();
+        this._writtenListener?.remove();
     }
 
     /**

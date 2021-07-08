@@ -27,6 +27,7 @@ typedef enum RCTTCPError RCTTCPError;
 - (void)onData:(NSNumber *)clientID data:(NSData *)data;
 - (void)onClose:(TcpSocketClient*)client withError:(NSError *)err;
 - (void)onError:(TcpSocketClient*)client withError:(NSError *)err;
+- (void)onWrittenData:(TcpSocketClient*)client msgId:(NSNumber *)msgId;
 - (NSNumber*)getNextId;
 
 @end
@@ -56,8 +57,7 @@ typedef enum RCTTCPError RCTTCPError;
 ///---------------------------------------------------------------------------------------
 /**
  * Connects to a host and port
- *
- * @param port
+ * @param port port
  * @param host ip address
  * @param options NSDictionary which can have @"localAddress" and @"localPort" to specify the local interface
  * @return true if connected, false if there was an error
@@ -83,7 +83,7 @@ typedef enum RCTTCPError RCTTCPError;
  * write data
  *
  */
-- (void)writeData:(NSData*) data callback:(RCTResponseSenderBlock) callback;
+- (void)writeData:(NSData*) data msgId:(NSNumber*)msgId;
 
 /**
  * end client

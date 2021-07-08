@@ -14,7 +14,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     BOOL _checkValidity;
     NSString *_certPath;
     GCDAsyncSocket *_tcpSocket;
-    NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
+    NSMutableDictionary<NSNumber *, NSNumber*> *_pendingSends;
     NSLock *_lock;
     long _sendTag;
 }
@@ -188,18 +188,18 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return isListening;
 }
 
-- (void)setPendingSend:(RCTResponseSenderBlock)callback forKey:(NSNumber *)key
+- (void)setPendingSend:(NSNumber *)msgId forKey:(NSNumber *)key
 {
     [_lock lock];
     @try {
-        [_pendingSends setObject:callback forKey:key];
+        [_pendingSends setObject:msgId forKey:key];
     }
     @finally {
         [_lock unlock];
     }
 }
 
-- (RCTResponseSenderBlock)getPendingSend:(NSNumber *)key
+- (NSNumber*)getPendingSend:(NSNumber *)key
 {
     [_lock lock];
     @try {
@@ -224,19 +224,16 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)socket:(GCDAsyncSocket *)sock didWriteDataWithTag:(long)msgTag
 {
     NSNumber* tagNum = [NSNumber numberWithLong:msgTag];
-    RCTResponseSenderBlock callback = [self getPendingSend:tagNum];
-    if (callback) {
-        callback(@[]);
+    NSNumber* msgId = [self getPendingSend:tagNum];
+    if (msgId) {
+        [_clientDelegate onWrittenData:self msgId:msgId];
         [self dropPendingSend:tagNum];
     }
 }
 
-- (void) writeData:(NSData *)data
-          callback:(RCTResponseSenderBlock)callback
+- (void) writeData:(NSData *)data msgId:(NSNumber*)msgId
 {
-    if (callback) {
-        [self setPendingSend:callback forKey:@(_sendTag)];
-    }
+    [self setPendingSend:msgId forKey:@(_sendTag)];
     [_tcpSocket writeData:data withTimeout:-1 tag:_sendTag];
 
     _sendTag++;

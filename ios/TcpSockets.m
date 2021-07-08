@@ -24,7 +24,8 @@ RCT_EXPORT_MODULE()
              @"connection",
              @"data",
              @"close",
-             @"error"];
+             @"error",
+             @"written"];
 }
 
 - (void)startObserving {
@@ -82,15 +83,15 @@ RCT_EXPORT_METHOD(connect:(nonnull NSNumber*)cId
 }
 
 RCT_EXPORT_METHOD(write:(nonnull NSNumber*)cId
-                  string:(NSString *)base64String
-                  callback:(RCTResponseSenderBlock)callback) {
+                  string:(nonnull NSString*)base64String
+                  callback:(nonnull NSNumber*)msgId) {
     TcpSocketClient* client = [self findClient:cId];
     if (!client) return;
     
     // iOS7+
     // TODO: use https://github.com/nicklockwood/Base64 for compatibility with earlier iOS versions
     NSData *data = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
-    [client writeData:data callback:callback];
+    [client writeData:data msgId:msgId];
 }
 
 RCT_EXPORT_METHOD(end:(nonnull NSNumber*)cId) {
@@ -133,6 +134,14 @@ RCT_EXPORT_METHOD(setKeepAlive:(nonnull NSNumber*)cId enable:(BOOL)enable initia
     if (!client) return;
     
     [client setKeepAlive:enable initialDelay:initialDelay];
+}
+
+- (void)onWrittenData:(TcpSocketClient*) client msgId:(NSNumber *)msgId
+{
+    [self sendEventWithName:@"written" body:@{
+        @"id": client.id,
+        @"msgId": msgId,
+    }];
 }
 
 - (void)onConnect:(TcpSocketClient*) client
