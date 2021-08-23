@@ -46,6 +46,8 @@ export default class Socket extends EventEmitter {
         this._id = undefined;
         /** @private */
         this._eventEmitter = nativeEventEmitter;
+        /** @type {EventEmitter<'written', any>} @private */
+        this._msgEvtEmitter = new EventEmitter();
         /** @type {number} @private */
         this._timeoutMsecs = 0;
         /** @private */
@@ -274,29 +276,24 @@ export default class Socket extends EventEmitter {
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
         const currentMsgId = this._msgId;
         this._msgId = (this._msgId + 1) % Number.MAX_SAFE_INTEGER;
-        const writtenListener = this.on(
-            // @ts-ignore
-            'written',
-            (msgId) => {
-                // Callback equivalent
-                if (msgId === currentMsgId) {
-                    // @ts-ignore
-                    this.removeListener(writtenListener);
-                    this._lastRcvMsgId = msgId;
-                    if (self._timeout) self._activateTimer();
-                    if (this.writableNeedDrain && this._lastSentMsgId == msgId) {
-                        this.writableNeedDrain = false;
-                        this.emit('drain');
-                    }
-                    if (callback) {
-                        // TODO
-                        // if (evt.err) return callback(evt.err);
-                        callback(null);
-                    }
+        const msgEvtHandler = (/** @type {number} */ msgId) => {
+            // Callback equivalent
+            if (msgId === currentMsgId) {
+                this._msgEvtEmitter.removeListener('written', msgEvtHandler);
+                this._lastRcvMsgId = msgId;
+                if (self._timeout) self._activateTimer();
+                if (this.writableNeedDrain && this._lastSentMsgId == msgId) {
+                    this.writableNeedDrain = false;
+                    this.emit('drain');
                 }
-            },
-            this
-        );
+                if (callback) {
+                    // TODO
+                    // if (evt.err) return callback(evt.err);
+                    callback(null);
+                }
+            }
+        };
+        this._msgEvtEmitter.on('written', msgEvtHandler, this);
         const ok = (this._lastRcvMsgId + 1) % Number.MAX_SAFE_INTEGER == currentMsgId;
         if (!ok) this.writableNeedDrain = true;
         this._lastSentMsgId = currentMsgId;
@@ -340,8 +337,7 @@ export default class Socket extends EventEmitter {
         });
         this._writtenListener = this._eventEmitter.addListener('written', (evt) => {
             if (evt.id !== this._id) return;
-            // @ts-ignore
-            this.emit('written', evt.msgId);
+            this._msgEvtEmitter.emit('written', evt.msgId);
         });
     }
 
