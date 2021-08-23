@@ -24,11 +24,11 @@ import androidx.annotation.Nullable;
 
 class TcpSocketClient extends TcpSocket {
     private final ExecutorService executorService;
-    private TcpReceiverTask receiverTask;
+    private final TcpReceiverTask receiverTask;
     private Socket socket;
-    private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
+    private final TcpEventListener mReceiverListener;
 
-    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
+    TcpSocketClient(@NonNull final TcpEventListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
         super(id);
         this.executorService = Executors.newFixedThreadPool(1);
         this.socket = socket;
