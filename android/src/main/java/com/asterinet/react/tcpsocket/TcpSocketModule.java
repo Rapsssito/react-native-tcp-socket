@@ -13,7 +13,6 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.Callback;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,20 +90,19 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
-    public void write(@NonNull final Integer cId, @NonNull final String base64String, @Nullable final Callback callback) {
+    public void write(final int cId, @NonNull final String base64String, final int msgId) {
         executorService.execute(new Thread(new Runnable() {
             @Override
             public void run() {
                 TcpSocketClient socketClient = getTcpClient(cId);
                 try {
                     socketClient.write(Base64.decode(base64String, Base64.NO_WRAP));
-                    if (callback != null) {
-                        callback.invoke();
-                    }
+                    tcpEvtListener.onWritten(cId, msgId);
                 } catch (IOException e) {
-                    if (callback != null) {
-                        callback.invoke(e.toString());
-                    }
+                    //  TODO
+                    // if (callback != null) {
+                    //    callback.invoke(e.toString());
+                    //}
                     tcpEvtListener.onError(cId, e.toString());
                 }
             }

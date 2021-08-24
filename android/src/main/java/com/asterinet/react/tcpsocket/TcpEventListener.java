@@ -21,7 +21,7 @@ public class TcpEventListener {
         rctEvtEmitter = reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
     }
 
-    public void onConnection(Integer serverId, Integer clientId, Socket socket) {
+    public void onConnection(int serverId, int clientId, Socket socket) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", serverId);
 
@@ -29,7 +29,7 @@ public class TcpEventListener {
         infoParams.putInt("id", clientId);
 
         WritableMap connectionParams = Arguments.createMap();
-        final InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
+        InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
 
         connectionParams.putString("localAddress", socket.getLocalAddress().getHostAddress());
         connectionParams.putInt("localPort", socket.getLocalPort());
@@ -43,12 +43,12 @@ public class TcpEventListener {
         sendEvent("connection", eventParams);
     }
 
-    public void onConnect(Integer id, TcpSocketClient client) {
+    public void onConnect(int id, TcpSocketClient client) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         WritableMap connectionParams = Arguments.createMap();
-        final Socket socket = client.getSocket();
-        final InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
+        Socket socket = client.getSocket();
+        InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
 
         connectionParams.putString("localAddress", socket.getLocalAddress().getHostAddress());
         connectionParams.putInt("localPort", socket.getLocalPort());
@@ -59,12 +59,12 @@ public class TcpEventListener {
         sendEvent("connect", eventParams);
     }
 
-    public void onListen(Integer id, TcpSocketServer server) {
+    public void onListen(int id, TcpSocketServer server) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         WritableMap connectionParams = Arguments.createMap();
-        final ServerSocket serverSocket = server.getServerSocket();
-        final InetAddress address = serverSocket.getInetAddress();
+        ServerSocket serverSocket = server.getServerSocket();
+        InetAddress address = serverSocket.getInetAddress();
 
         connectionParams.putString("localAddress", serverSocket.getInetAddress().getHostAddress());
         connectionParams.putInt("localPort", serverSocket.getLocalPort());
@@ -73,7 +73,7 @@ public class TcpEventListener {
         sendEvent("listening", eventParams);
     }
 
-    public void onData(Integer id, byte[] data) {
+    public void onData(int id, byte[] data) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));
@@ -81,7 +81,15 @@ public class TcpEventListener {
         sendEvent("data", eventParams);
     }
 
-    public void onClose(Integer id, String error) {
+    public void onWritten(int id, int msgId) {
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        eventParams.putInt("msgId", msgId);
+
+        sendEvent("written", eventParams);
+    }
+
+    public void onClose(int id, String error) {
         if (error != null) {
             onError(id, error);
         }
@@ -92,7 +100,7 @@ public class TcpEventListener {
         sendEvent("close", eventParams);
     }
 
-    public void onError(Integer id, String error) {
+    public void onError(int id, String error) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putString("error", error);
