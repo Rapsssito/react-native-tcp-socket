@@ -13,6 +13,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import javax.annotation.Nullable;
+
 public class TcpEventListener {
 
     private final DeviceEventManagerModule.RCTDeviceEventEmitter rctEvtEmitter;
@@ -81,10 +83,11 @@ public class TcpEventListener {
         sendEvent("data", eventParams);
     }
 
-    public void onWritten(int id, int msgId) {
+    public void onWritten(int id, int msgId, @Nullable String error) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putInt("msgId", msgId);
+        eventParams.putString("err", error);
 
         sendEvent("written", eventParams);
     }

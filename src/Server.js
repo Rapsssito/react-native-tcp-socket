@@ -7,7 +7,13 @@ import Socket from './Socket';
 import { nativeEventEmitter, getNextId } from './Globals';
 
 /**
- * @extends {EventEmitter<'connection' | 'listening' | 'error' | 'close', any>}
+ * @typedef {object} ServerEvents
+ * @property {() => void} close
+ * @property {(socket: Socket) => void} connection
+ * @property {() => void} listening
+ * @property {(err: Error) => void} error
+ *
+ * @extends {EventEmitter<ServerEvents, any>}
  */
 export default class Server extends EventEmitter {
     /**

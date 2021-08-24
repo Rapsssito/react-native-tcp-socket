@@ -97,12 +97,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
                 TcpSocketClient socketClient = getTcpClient(cId);
                 try {
                     socketClient.write(Base64.decode(base64String, Base64.NO_WRAP));
-                    tcpEvtListener.onWritten(cId, msgId);
+                    tcpEvtListener.onWritten(cId, msgId, null);
                 } catch (IOException e) {
-                    //  TODO
-                    // if (callback != null) {
-                    //    callback.invoke(e.toString());
-                    //}
+                    tcpEvtListener.onWritten(cId, msgId, e.toString());
                     tcpEvtListener.onError(cId, e.toString());
                 }
             }

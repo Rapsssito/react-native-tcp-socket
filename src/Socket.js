@@ -34,7 +34,15 @@ const STATE = {
  * tlsCert?: any,
  * }} ConnectionOptions
  *
- * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close' | 'drain', any>}
+ * @typedef {object} SocketEvents
+ * @property {(had_error: boolean) => void} close
+ * @property {() => void} connect
+ * @property {(data: Buffer | string) => void} data
+ * @property {() => void} drain
+ * @property {(err: Error) => void} error
+ * @property {() => void} timeout
+ *
+ * @extends {EventEmitter<SocketEvents, any>}
  */
 export default class Socket extends EventEmitter {
     /**
@@ -263,21 +271,24 @@ export default class Socket extends EventEmitter {
     /**
      * Sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
      *
+     * Returns `true` if the entire data was flushed successfully to the kernel buffer. Returns `false` if all or part of the data
+     * was queued in user memory. `'drain'` will be emitted when the buffer is again free.
+     *
      * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
      *
      * @param {string | Buffer | Uint8Array} buffer
      * @param {BufferEncoding} [encoding]
-     * @param {(error: string | null) => void} [callback]
+     * @param {(err?: Error) => void} [cb]
      */
-    write(buffer, encoding, callback) {
+    write(buffer, encoding, cb) {
         const self = this;
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
         const currentMsgId = this._msgId;
         this._msgId = (this._msgId + 1) % Number.MAX_SAFE_INTEGER;
-        const msgEvtHandler = (/** @type {number} */ msgId) => {
-            // Callback equivalent
+        const msgEvtHandler = (/** @type {{id: number, msgId: number, err?: string}} */ evt) => {
+            const { msgId, err } = evt;
             if (msgId === currentMsgId) {
                 this._msgEvtEmitter.removeListener('written', msgEvtHandler);
                 this._lastRcvMsgId = msgId;
@@ -286,13 +297,13 @@ export default class Socket extends EventEmitter {
                     this.writableNeedDrain = false;
                     this.emit('drain');
                 }
-                if (callback) {
-                    // TODO
-                    // if (evt.err) return callback(evt.err);
-                    callback(null);
+                if (cb) {
+                    if (err) cb(new Error(err));
+                    else cb();
                 }
             }
         };
+        // Callback equivalent with better performance
         this._msgEvtEmitter.on('written', msgEvtHandler, this);
         const ok = (this._lastRcvMsgId + 1) % Number.MAX_SAFE_INTEGER == currentMsgId;
         if (!ok) this.writableNeedDrain = true;
@@ -337,7 +348,7 @@ export default class Socket extends EventEmitter {
         });
         this._writtenListener = this._eventEmitter.addListener('written', (evt) => {
             if (evt.id !== this._id) return;
-            this._msgEvtEmitter.emit('written', evt.msgId);
+            this._msgEvtEmitter.emit('written', evt);
         });
     }
 

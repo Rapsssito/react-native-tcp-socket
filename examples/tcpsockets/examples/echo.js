@@ -12,7 +12,6 @@ function init() {
     server.listen({ port: PORT, host: '127.0.0.1', reuseAddress: true });
 
     client.connect(
-        // @ts-ignore
         {
             port: PORT,
             host: '127.0.0.1',
