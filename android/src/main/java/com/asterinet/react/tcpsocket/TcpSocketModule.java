@@ -179,6 +179,20 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         }
     }
 
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void pause(final int cId) {
+        TcpSocketClient client = getTcpClient(cId);
+        client.pause();
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void resume(final int cId) {
+        TcpSocketClient client = getTcpClient(cId);
+        client.resume();
+    }
+
     private void requestNetwork(final int transportType) throws InterruptedException {
         final NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
         requestBuilder.addTransportType(transportType);

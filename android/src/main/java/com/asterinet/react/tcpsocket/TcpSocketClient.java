@@ -2,7 +2,6 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
-import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
 
@@ -14,6 +13,7 @@ import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -24,20 +24,15 @@ import androidx.annotation.Nullable;
 
 class TcpSocketClient extends TcpSocket {
     private final ExecutorService executorService;
-    private final TcpReceiverTask receiverTask;
+    private final TcpEventListener receiverListener;
+    private Future<?> receiverFuture;
     private Socket socket;
-    private final TcpEventListener mReceiverListener;
 
     TcpSocketClient(@NonNull final TcpEventListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
         super(id);
-        this.executorService = Executors.newFixedThreadPool(1);
+        executorService = Executors.newFixedThreadPool(1);
         this.socket = socket;
-        receiverTask = new TcpReceiverTask();
-        mReceiverListener = receiverListener;
-    }
-
-    ExecutorService getExecutorService() {
-        return this.executorService;
+        this.receiverListener = receiverListener;
     }
 
     public Socket getSocket() {
@@ -83,10 +78,9 @@ class TcpSocketClient extends TcpSocket {
         startListening();
     }
 
-    @SuppressWarnings("WeakerAccess")
     public void startListening() {
-        //noinspection unchecked
-        receiverTask.executeOnExecutor(getExecutorService(), new Pair<>(this, mReceiverListener));
+        Runnable receiverTask = new TcpReceiverTask(this, receiverListener);
+        receiverFuture = executorService.submit(receiverTask);
     }
 
     /**
@@ -107,19 +101,20 @@ class TcpSocketClient extends TcpSocket {
      */
     public void destroy() {
         try {
-            if (receiverTask != null && !receiverTask.isCancelled()) {
+            if (receiverFuture != null && !receiverFuture.isCancelled()) {
                 // stop the receiving task
-                receiverTask.cancel(true);
-                getExecutorService().shutdown();
+                receiverFuture.cancel(true);
+                executorService.shutdown();
+                receiverFuture = null;
             }
             // close the socket
             if (socket != null && !socket.isClosed()) {
                 socket.close();
-                mReceiverListener.onClose(getId(), null);
+                receiverListener.onClose(getId(), null);
                 socket = null;
             }
         } catch (IOException e) {
-            mReceiverListener.onClose(getId(), e.getMessage());
+            receiverListener.onClose(getId(), e.getMessage());
         }
     }
 
@@ -142,5 +137,13 @@ class TcpSocketClient extends TcpSocket {
         }
         // `initialDelay` is ignored
         socket.setKeepAlive(enable);
+    }
+
+    public void pause() {
+
+    }
+
+    public void resume() {
+
     }
 }
