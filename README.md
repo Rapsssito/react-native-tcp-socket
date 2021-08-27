@@ -234,7 +234,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`resume()`](https://nodejs.org/api/net.html#net_socket_resume)
   * `unref()` - _Will not have any effect_
 * **Properties:**
-  * Inherited from [`Stream.Writable`](https://nodejs.org/api/stream.html#stream_class_stream_writable)
+  * Inherited from [`Stream.Writable`](https://nodejs.org/api/stream.html#stream_class_stream_writable):
     * [`writableNeedDrain`](https://nodejs.org/api/stream.html#stream_writable_writableneeddrain)
   * [`remoteAddress`](https://nodejs.org/api/net.html#net_socket_remoteaddress)
   * [`remoteFamily`](https://nodejs.org/api/net.html#net_socket_remotefamily)
@@ -242,7 +242,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`localAddress`](https://nodejs.org/api/net.html#net_socket_localaddress)
   * [`localPort`](https://nodejs.org/api/net.html#net_socket_localport)
 * **Events:**
-  * Inherited from [`Stream.Readable`](https://nodejs.org/api/stream.html#stream_class_stream_readable)
+  * Inherited from [`Stream.Readable`](https://nodejs.org/api/stream.html#stream_class_stream_readable):
     * [`'pause'`](https://nodejs.org/api/stream.html#stream_event_pause)
     * [`'resume'`](https://nodejs.org/api/stream.html#stream_event_resume)
   * [`'close'`](https://nodejs.org/api/net.html#net_event_close_1)
