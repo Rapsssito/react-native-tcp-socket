@@ -136,6 +136,20 @@ RCT_EXPORT_METHOD(setKeepAlive:(nonnull NSNumber*)cId enable:(BOOL)enable initia
     [client setKeepAlive:enable initialDelay:initialDelay];
 }
 
+RCT_EXPORT_METHOD(pause:(nonnull NSNumber*)cId) {
+    TcpSocketClient* client = [self findClient:cId];
+    if (!client) return;
+    
+    [client pause];
+}
+
+RCT_EXPORT_METHOD(resume:(nonnull NSNumber*)cId) {
+    TcpSocketClient* client = [self findClient:cId];
+    if (!client) return;
+    
+    [client resume];
+}
+
 - (void)onWrittenData:(TcpSocketClient*) client msgId:(NSNumber *)msgId
 {
     [self sendEventWithName:@"written" body:@{

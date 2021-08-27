@@ -99,4 +99,8 @@ typedef enum RCTTCPError RCTTCPError;
 
 - (void)setKeepAlive:(BOOL)enable initialDelay:(int)initialDelay;
 
+- (void) pause;
+
+- (void) resume;
+
 @end

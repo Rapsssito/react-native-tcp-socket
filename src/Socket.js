@@ -358,6 +358,7 @@ export default class Socket extends EventEmitter {
         if (this._resuming) return;
         this._resuming = true;
         while (this._pausedDataEvents.length > 0) {
+            console.log('Paused events', this._pausedDataEvents.length);
             // Concat all buffered events for better performance
             const buffArray = [];
             let readBytes = 0;
@@ -365,10 +366,12 @@ export default class Socket extends EventEmitter {
             for (; i < this._pausedDataEvents.length; i++) {
                 const evtData = Buffer.from(this._pausedDataEvents[i].data, 'base64');
                 readBytes += evtData.byteLength;
+                console.log('Concatting', this.readableHighWaterMark, readBytes);
                 if (readBytes <= this.readableHighWaterMark) {
                     buffArray.push(evtData);
                 } else {
                     const buffOffset = this.readableHighWaterMark - readBytes;
+                    buffArray.push(evtData.slice(0, buffOffset));
                     this._pausedDataEvents[i].data = evtData.slice(buffOffset).toString('base64');
                     break;
                 }
@@ -380,6 +383,7 @@ export default class Socket extends EventEmitter {
             };
             // Clean the old events
             this._pausedDataEvents = this._pausedDataEvents.slice(i);
+            console.log('Unpaused events', this._pausedDataEvents.length);
             this._onDeviceDataEvt(evt);
             if (this._paused) {
                 this._resuming = false;

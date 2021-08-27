@@ -7,7 +7,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { init, server, client } from './examples/drain-event';
+import { init, server, client } from './examples/pause-resume';
 
 class App extends React.Component {
     /**

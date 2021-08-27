@@ -12,6 +12,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 @private
     BOOL _tls;
     BOOL _checkValidity;
+    BOOL _paused;
     NSString *_certPath;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, NSNumber*> *_pendingSends;
@@ -47,6 +48,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     if (self) {
         _id = clientID;
         _clientDelegate = aDelegate;
+        _paused = false;
         _pendingSends = [NSMutableDictionary dictionary];
         _lock = [[NSLock alloc] init];
         _tcpSocket = tcpSocket;
@@ -182,7 +184,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     BOOL isListening = [_tcpSocket acceptOnInterface:host port:port error:error];
     if (isListening == YES) {
         [_clientDelegate onListen: self];
-        [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
     }
 
     return isListening;
@@ -237,8 +238,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     [_tcpSocket writeData:data withTimeout:-1 tag:_sendTag];
 
     _sendTag++;
-
-    [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
 }
 
 - (void)end
@@ -251,6 +250,17 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     [_tcpSocket disconnect];
 }
 
+- (void)pause {
+    _paused = true;
+}
+
+- (void)resume {
+    if (_paused) {
+        [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
+    }
+    _paused = false;
+}
+
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     if (!_clientDelegate) {
         RCTLogWarn(@"didReadData with nil clientDelegate for %@", [sock userData]);
@@ -258,8 +268,9 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
 
     [_clientDelegate onData:@(tag) data:data];
-
-    [sock readDataWithTimeout:-1 tag:tag];
+    if (!_paused) {
+        [sock readDataWithTimeout:-1 tag:tag];
+    }
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didAcceptNewSocket:(GCDAsyncSocket *)newSocket

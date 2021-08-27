@@ -1,5 +1,5 @@
 // Execute this file using NodeJS
-const { init, server, client } = require('./drain-event');
+const { init, server, client } = require('./pause-resume');
 
 server.on('connection', (socket) => {
     console.log('Client connected to server on ' + JSON.stringify(socket.address()));
