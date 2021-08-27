@@ -1,3 +1,10 @@
+# [5.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.2.1...v5.3.0) (2021-08-27)
+
+
+### Features
+
+* Implement backpressure handling ([#115](https://github.com/Rapsssito/react-native-tcp-socket/issues/115)) ([8a90f32](https://github.com/Rapsssito/react-native-tcp-socket/commit/8a90f32077417f0a2bb9d349470d078366e4fc6c))
+
 ## [5.2.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.2.0...v5.2.1) (2021-06-09)
 
 

@@ -1,7 +1,13 @@
 /**
- * @extends {EventEmitter<'connection' | 'listening' | 'error' | 'close', any>}
+ * @typedef {object} ServerEvents
+ * @property {() => void} close
+ * @property {(socket: Socket) => void} connection
+ * @property {() => void} listening
+ * @property {(err: Error) => void} error
+ *
+ * @extends {EventEmitter<ServerEvents, any>}
  */
-export default class Server extends EventEmitter<"error" | "close" | "connection" | "listening", any> {
+export default class Server extends EventEmitter<ServerEvents, any> {
     /**
      * @param {(socket: Socket) => void} [connectionCallback] Automatically set as a listener for the `'connection'` event.
      */
@@ -84,5 +90,11 @@ export default class Server extends EventEmitter<"error" | "close" | "connection
      */
     private _buildSocket;
 }
+export type ServerEvents = {
+    close: () => void;
+    connection: (socket: Socket) => void;
+    listening: () => void;
+    error: (err: Error) => void;
+};
 import EventEmitter from "eventemitter3";
 import Socket from "./Socket";

@@ -20,13 +20,27 @@
  * tlsCert?: any,
  * }} ConnectionOptions
  *
- * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close', any>}
+ * @typedef {object} ReadableEvents
+ * @property {() => void} pause
+ * @property {() => void} resume
+ *
+ * @typedef {object} SocketEvents
+ * @property {(had_error: boolean) => void} close
+ * @property {() => void} connect
+ * @property {(data: Buffer | string) => void} data
+ * @property {() => void} drain
+ * @property {(err: Error) => void} error
+ * @property {() => void} timeout
+ *
+ * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
-export default class Socket extends EventEmitter<"connect" | "timeout" | "data" | "error" | "close", any> {
+export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, any> {
     /** @private */
     private _id;
     /** @private */
     private _eventEmitter;
+    /** @type {EventEmitter<'written', any>} @private */
+    private _msgEvtEmitter;
     /** @type {number} @private */
     private _timeoutMsecs;
     /** @private */
@@ -35,6 +49,24 @@ export default class Socket extends EventEmitter<"connect" | "timeout" | "data" 
     private _state;
     /** @private */
     private _encoding;
+    /** @private */
+    private _msgId;
+    /** @private */
+    private _lastRcvMsgId;
+    /** @private */
+    private _lastSentMsgId;
+    /** @private */
+    private _paused;
+    /** @private */
+    private _resuming;
+    /** @private */
+    private _writeBufferSize;
+    /** @type {{ id: number; data: string; }[]} @private */
+    private _pausedDataEvents;
+    readableHighWaterMark: number;
+    writableHighWaterMark: number;
+    writableNeedDrain: boolean;
+    bytesSent: number;
     localAddress: string | undefined;
     localPort: number | undefined;
     remoteAddress: string | undefined;
@@ -124,15 +156,36 @@ export default class Socket extends EventEmitter<"connect" | "timeout" | "data" 
     /**
      * Sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
      *
+     * Returns `true` if the entire data was flushed successfully to the kernel buffer. Returns `false` if all or part of the data
+     * was queued in user memory. `'drain'` will be emitted when the buffer is again free.
+     *
      * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
      *
      * @param {string | Buffer | Uint8Array} buffer
      * @param {BufferEncoding} [encoding]
-     * @param {(error: string | null) => void} [callback]
+     * @param {(err?: Error) => void} [cb]
+     *
+     * @return {boolean}
      */
-    write(buffer: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined, callback?: ((error: string | null) => void) | undefined): void;
+    write(buffer: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined, cb?: ((err?: Error | undefined) => void) | undefined): boolean;
+    /**
+     * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
+     */
+    pause(): void;
+    /**
+     * Resumes reading after a call to `socket.pause()`.
+     */
+    resume(): void;
     ref(): void;
     unref(): void;
+    /**
+     * @private
+     */
+    private _recoverDataEventsAfterPause;
+    /**
+     * @private
+     */
+    private _onDeviceDataEvt;
     /**
      * @private
      */
@@ -141,6 +194,7 @@ export default class Socket extends EventEmitter<"connect" | "timeout" | "data" 
     _errorListener: import("react-native").EmitterSubscription | undefined;
     _closeListener: import("react-native").EmitterSubscription | undefined;
     _connectListener: import("react-native").EmitterSubscription | undefined;
+    _writtenListener: import("react-native").EmitterSubscription | undefined;
     /**
      * @private
      */
@@ -181,6 +235,18 @@ export type ConnectionOptions = {
     tls?: boolean | undefined;
     tlsCheckValidity?: boolean | undefined;
     tlsCert?: any;
+};
+export type ReadableEvents = {
+    pause: () => void;
+    resume: () => void;
+};
+export type SocketEvents = {
+    close: (had_error: boolean) => void;
+    connect: () => void;
+    data: (data: Buffer | string) => void;
+    drain: () => void;
+    error: (err: Error) => void;
+    timeout: () => void;
 };
 import EventEmitter from "eventemitter3";
 import { Buffer } from "buffer";
