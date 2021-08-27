@@ -1,5 +1,5 @@
 // Execute this file using NodeJS
-const { init, server, client } = require('./pause-resume');
+const { init, server, client } = require('./echo');
 
 server.on('connection', (socket) => {
     console.log('Client connected to server on ' + JSON.stringify(socket.address()));

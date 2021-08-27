@@ -46,7 +46,7 @@ const STATE = {
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
  *
- * @extends {EventEmitter<SocketEvents | ReadableEvents, any>}
+ * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
 export default class Socket extends EventEmitter {
     /**
@@ -331,13 +331,21 @@ export default class Socket extends EventEmitter {
         return ok;
     }
 
+    /**
+     * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
+     */
     pause() {
+        if (this._paused) return;
         this._paused = true;
         Sockets.pause(this._id);
         this.emit('pause');
     }
 
+    /**
+     * Resumes reading after a call to `socket.pause()`.
+     */
     resume() {
+        if (!this._paused) return;
         this._paused = false;
         this.emit('resume');
         this._recoverDataEventsAfterPause();
@@ -358,7 +366,6 @@ export default class Socket extends EventEmitter {
         if (this._resuming) return;
         this._resuming = true;
         while (this._pausedDataEvents.length > 0) {
-            console.log('Paused events', this._pausedDataEvents.length);
             // Concat all buffered events for better performance
             const buffArray = [];
             let readBytes = 0;
@@ -366,7 +373,6 @@ export default class Socket extends EventEmitter {
             for (; i < this._pausedDataEvents.length; i++) {
                 const evtData = Buffer.from(this._pausedDataEvents[i].data, 'base64');
                 readBytes += evtData.byteLength;
-                console.log('Concatting', this.readableHighWaterMark, readBytes);
                 if (readBytes <= this.readableHighWaterMark) {
                     buffArray.push(evtData);
                 } else {
@@ -383,7 +389,6 @@ export default class Socket extends EventEmitter {
             };
             // Clean the old events
             this._pausedDataEvents = this._pausedDataEvents.slice(i);
-            console.log('Unpaused events', this._pausedDataEvents.length);
             this._onDeviceDataEvt(evt);
             if (this._paused) {
                 this._resuming = false;
