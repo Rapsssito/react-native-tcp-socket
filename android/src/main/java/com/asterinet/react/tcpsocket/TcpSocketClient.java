@@ -6,14 +6,12 @@ import android.net.Network;
 import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -23,14 +21,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 class TcpSocketClient extends TcpSocket {
-    private final ExecutorService executorService;
+    private final ExecutorService listenExecutor;
+    private final ExecutorService writeExecutor;
     private final TcpEventListener receiverListener;
-    private Future<?> receiverFuture;
+    private final TcpReceiverTask receiverTask;
     private Socket socket;
 
     TcpSocketClient(@NonNull final TcpEventListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
         super(id);
-        executorService = Executors.newFixedThreadPool(1);
+        listenExecutor = Executors.newSingleThreadExecutor();
+        writeExecutor = Executors.newSingleThreadExecutor();
+        receiverTask = new TcpReceiverTask(this, receiverListener);
         this.socket = socket;
         this.receiverListener = receiverListener;
     }
@@ -79,8 +80,7 @@ class TcpSocketClient extends TcpSocket {
     }
 
     public void startListening() {
-        Runnable receiverTask = new TcpReceiverTask(this, receiverListener);
-        receiverFuture = executorService.submit(receiverTask);
+        listenExecutor.execute(receiverTask);
     }
 
     /**
@@ -88,12 +88,19 @@ class TcpSocketClient extends TcpSocket {
      *
      * @param data data to be sent
      */
-    public void write(final byte[] data) throws IOException {
-        if (socket == null) {
-            throw new IOException("Socket is not connected.");
-        }
-        OutputStream output = socket.getOutputStream();
-        output.write(data);
+    public void write(final int msgId, final byte[] data) {
+        writeExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    socket.getOutputStream().write(data);
+                    receiverListener.onWritten(getId(), msgId, null);
+                } catch (IOException e) {
+                    receiverListener.onWritten(getId(), msgId, e.toString());
+                    receiverListener.onError(getId(), e.toString());
+                }
+            }
+        });
     }
 
     /**
@@ -101,12 +108,6 @@ class TcpSocketClient extends TcpSocket {
      */
     public void destroy() {
         try {
-            if (receiverFuture != null && !receiverFuture.isCancelled()) {
-                // stop the receiving task
-                receiverFuture.cancel(true);
-                executorService.shutdown();
-                receiverFuture = null;
-            }
             // close the socket
             if (socket != null && !socket.isClosed()) {
                 socket.close();
@@ -140,10 +141,10 @@ class TcpSocketClient extends TcpSocket {
     }
 
     public void pause() {
-
+        receiverTask.pause();
     }
 
     public void resume() {
-
+        receiverTask.resume();
     }
 }

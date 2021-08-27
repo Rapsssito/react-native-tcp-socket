@@ -64,7 +64,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     @SuppressWarnings("unused")
     @ReactMethod
     public void connect(@NonNull final Integer cId, @NonNull final String host, @NonNull final Integer port, @NonNull final ReadableMap options) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 if (socketMap.get(cId) != null) {
@@ -84,40 +84,30 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
                     tcpEvtListener.onError(cId, e.getMessage());
                 }
             }
-        }));
+        });
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void write(final int cId, @NonNull final String base64String, final int msgId) {
-        executorService.execute(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                TcpSocketClient socketClient = getTcpClient(cId);
-                try {
-                    socketClient.write(Base64.decode(base64String, Base64.NO_WRAP));
-                    tcpEvtListener.onWritten(cId, msgId, null);
-                } catch (IOException e) {
-                    tcpEvtListener.onWritten(cId, msgId, e.toString());
-                    tcpEvtListener.onError(cId, e.toString());
-                }
-            }
-        }));
+        TcpSocketClient socketClient = getTcpClient(cId);
+        byte[] data = Base64.decode(base64String, Base64.NO_WRAP);
+        socketClient.write(msgId, data);
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void end(final Integer cId) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 TcpSocketClient socketClient = getTcpClient(cId);
                 socketClient.destroy();
                 socketMap.remove(cId);
             }
-        }));
+        });
     }
 
     @SuppressWarnings("unused")
@@ -129,21 +119,21 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     @SuppressWarnings("unused")
     @ReactMethod
     public void close(final Integer cId) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 TcpSocketServer socketServer = getTcpServer(cId);
                 socketServer.close();
                 socketMap.remove(cId);
             }
-        }));
+        });
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void listen(final Integer cId, final ReadableMap options) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -154,7 +144,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
                     tcpEvtListener.onError(cId, uhe.getMessage());
                 }
             }
-        }));
+        });
     }
 
     @SuppressWarnings("unused")
