@@ -34,7 +34,19 @@ const STATE = {
  * tlsCert?: any,
  * }} ConnectionOptions
  *
- * @extends {EventEmitter<'connect' | 'timeout' | 'data' | 'error' | 'close', any>}
+ * @typedef {object} ReadableEvents
+ * @property {() => void} pause
+ * @property {() => void} resume
+ *
+ * @typedef {object} SocketEvents
+ * @property {(had_error: boolean) => void} close
+ * @property {() => void} connect
+ * @property {(data: Buffer | string) => void} data
+ * @property {() => void} drain
+ * @property {(err: Error) => void} error
+ * @property {() => void} timeout
+ *
+ * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
 export default class Socket extends EventEmitter {
     /**
@@ -46,6 +58,8 @@ export default class Socket extends EventEmitter {
         this._id = undefined;
         /** @private */
         this._eventEmitter = nativeEventEmitter;
+        /** @type {EventEmitter<'written', any>} @private */
+        this._msgEvtEmitter = new EventEmitter();
         /** @type {number} @private */
         this._timeoutMsecs = 0;
         /** @private */
@@ -54,6 +68,24 @@ export default class Socket extends EventEmitter {
         this._state = STATE.DISCONNECTED;
         /** @private */
         this._encoding = undefined;
+        /** @private */
+        this._msgId = 0;
+        /** @private */
+        this._lastRcvMsgId = Number.MAX_SAFE_INTEGER - 1;
+        /** @private */
+        this._lastSentMsgId = 0;
+        /** @private */
+        this._paused = false;
+        /** @private */
+        this._resuming = false;
+        /** @private */
+        this._writeBufferSize = 0;
+        /** @type {{ id: number; data: string; }[]} @private */
+        this._pausedDataEvents = [];
+        this.readableHighWaterMark = 16384;
+        this.writableHighWaterMark = 16384;
+        this.writableNeedDrain = false;
+        this.bytesSent = 0;
         this.localAddress = undefined;
         this.localPort = undefined;
         this.remoteAddress = undefined;
@@ -254,53 +286,140 @@ export default class Socket extends EventEmitter {
     /**
      * Sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
      *
+     * Returns `true` if the entire data was flushed successfully to the kernel buffer. Returns `false` if all or part of the data
+     * was queued in user memory. `'drain'` will be emitted when the buffer is again free.
+     *
      * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
      *
      * @param {string | Buffer | Uint8Array} buffer
      * @param {BufferEncoding} [encoding]
-     * @param {(error: string | null) => void} [callback]
+     * @param {(err?: Error) => void} [cb]
+     *
+     * @return {boolean}
      */
-    write(buffer, encoding, callback) {
+    write(buffer, encoding, cb) {
         const self = this;
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
-        callback = callback || (() => {});
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
-        Sockets.write(
-            this._id,
-            generatedBuffer.toString('base64'),
-            /**
-             * @param {string} err
-             */
-            function(err) {
+        this._writeBufferSize += generatedBuffer.byteLength;
+        const currentMsgId = this._msgId;
+        this._msgId = (this._msgId + 1) % Number.MAX_SAFE_INTEGER;
+        const msgEvtHandler = (/** @type {{id: number, msgId: number, err?: string}} */ evt) => {
+            const { msgId, err } = evt;
+            if (msgId === currentMsgId) {
+                this._msgEvtEmitter.removeListener('written', msgEvtHandler);
+                this._writeBufferSize -= generatedBuffer.byteLength;
+                this._lastRcvMsgId = msgId;
                 if (self._timeout) self._activateTimer();
-                if (callback) {
-                    if (err) return callback(err);
-                    callback(null);
+                if (this.writableNeedDrain && this._lastSentMsgId == msgId) {
+                    this.writableNeedDrain = false;
+                    this.emit('drain');
+                }
+                if (cb) {
+                    if (err) cb(new Error(err));
+                    else cb();
                 }
             }
-        );
+        };
+        // Callback equivalent with better performance
+        this._msgEvtEmitter.on('written', msgEvtHandler, this);
+        const ok = this._writeBufferSize < this.writableHighWaterMark;
+        if (!ok) this.writableNeedDrain = true;
+        this._lastSentMsgId = currentMsgId;
+        Sockets.write(this._id, generatedBuffer.toString('base64'), currentMsgId);
+        return ok;
+    }
+
+    /**
+     * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
+     */
+    pause() {
+        if (this._paused) return;
+        this._paused = true;
+        Sockets.pause(this._id);
+        this.emit('pause');
+    }
+
+    /**
+     * Resumes reading after a call to `socket.pause()`.
+     */
+    resume() {
+        if (!this._paused) return;
+        this._paused = false;
+        this.emit('resume');
+        this._recoverDataEventsAfterPause();
     }
 
     ref() {
-        console.warn('react-native-tcp-socket: TcpSocket.ref() method will have no effect.');
+        console.warn('react-native-tcp-socket: Socket.ref() method will have no effect.');
     }
 
     unref() {
-        console.warn('react-native-tcp-socket: TcpSocket.unref() method will have no effect.');
+        console.warn('react-native-tcp-socket: Socket.unref() method will have no effect.');
     }
+
+    /**
+     * @private
+     */
+    async _recoverDataEventsAfterPause() {
+        if (this._resuming) return;
+        this._resuming = true;
+        while (this._pausedDataEvents.length > 0) {
+            // Concat all buffered events for better performance
+            const buffArray = [];
+            let readBytes = 0;
+            let i = 0;
+            for (; i < this._pausedDataEvents.length; i++) {
+                const evtData = Buffer.from(this._pausedDataEvents[i].data, 'base64');
+                readBytes += evtData.byteLength;
+                if (readBytes <= this.readableHighWaterMark) {
+                    buffArray.push(evtData);
+                } else {
+                    const buffOffset = this.readableHighWaterMark - readBytes;
+                    buffArray.push(evtData.slice(0, buffOffset));
+                    this._pausedDataEvents[i].data = evtData.slice(buffOffset).toString('base64');
+                    break;
+                }
+            }
+            // Generate new event with the concatenated events
+            const evt = {
+                id: this._pausedDataEvents[0].id,
+                data: Buffer.concat(buffArray).toString('base64'),
+            };
+            // Clean the old events
+            this._pausedDataEvents = this._pausedDataEvents.slice(i);
+            this._onDeviceDataEvt(evt);
+            if (this._paused) {
+                this._resuming = false;
+                return;
+            }
+        }
+        this._resuming = false;
+        Sockets.resume(this._id);
+    }
+
+    /**
+     * @private
+     */
+    _onDeviceDataEvt = (/** @type {{ id: number; data: string; }} */ evt) => {
+        if (evt.id !== this._id) return;
+        if (!this._paused) {
+            const bufferTest = Buffer.from(evt.data, 'base64');
+            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
+            this.emit('data', finalData);
+        } else {
+            // If the socket is paused, save the data events for later
+            this._pausedDataEvents.push(evt);
+        }
+    };
 
     /**
      * @private
      */
     _registerEvents() {
         this._unregisterEvents();
-        this._dataListener = this._eventEmitter.addListener('data', (evt) => {
-            if (evt.id !== this._id) return;
-            const bufferTest = Buffer.from(evt.data, 'base64');
-            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
-            this.emit('data', finalData);
-        });
+        this._dataListener = this._eventEmitter.addListener('data', this._onDeviceDataEvt);
         this._errorListener = this._eventEmitter.addListener('error', (evt) => {
             if (evt.id !== this._id) return;
             this.destroy();
@@ -316,6 +435,10 @@ export default class Socket extends EventEmitter {
             this._setConnected(evt.connection);
             this.emit('connect');
         });
+        this._writtenListener = this._eventEmitter.addListener('written', (evt) => {
+            if (evt.id !== this._id) return;
+            this._msgEvtEmitter.emit('written', evt);
+        });
     }
 
     /**
@@ -326,6 +449,7 @@ export default class Socket extends EventEmitter {
         this._errorListener?.remove();
         this._closeListener?.remove();
         this._connectListener?.remove();
+        this._writtenListener?.remove();
     }
 
     /**

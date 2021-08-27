@@ -9,21 +9,12 @@ import android.net.NetworkRequest;
 import android.util.Base64;
 import android.net.Network;
 
-import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.Callback;
-import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.io.IOException;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpReceiverTask.OnDataReceivedListener {
+public class TcpSocketModule extends ReactContextBaseJavaModule {
     private static final String TAG = "TcpSockets";
     private static final int N_THREADS = 2;
     private final ReactApplicationContext mReactContext;
@@ -42,6 +33,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     private final ConcurrentHashMap<String, Network> mNetworkMap = new ConcurrentHashMap<>();
     private final CurrentNetwork currentNetwork = new CurrentNetwork();
     private final ExecutorService executorService = Executors.newFixedThreadPool(N_THREADS);
+    private TcpEventListener tcpEvtListener;
 
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -49,15 +41,15 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     }
 
     @Override
+    public void initialize() {
+        super.initialize();
+        tcpEvtListener = new TcpEventListener(mReactContext);
+    }
+
+    @Override
     public @NonNull
     String getName() {
         return TAG;
-    }
-
-    private void sendEvent(String eventName, WritableMap params) {
-        mReactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit(eventName, params);
     }
 
     /**
@@ -72,11 +64,11 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     @SuppressWarnings("unused")
     @ReactMethod
     public void connect(@NonNull final Integer cId, @NonNull final String host, @NonNull final Integer port, @NonNull final ReadableMap options) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 if (socketMap.get(cId) != null) {
-                    onError(cId, TAG + "createSocket called twice with the same id.");
+                    tcpEvtListener.onError(cId, TAG + "createSocket called twice with the same id.");
                     return;
                 }
                 try {
@@ -84,52 +76,38 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
                     final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : null;
                     final String iface = options.hasKey("interface") ? options.getString("interface") : null;
                     selectNetwork(iface, localAddress);
-                    TcpSocketClient client = new TcpSocketClient(TcpSocketModule.this, cId, null);
+                    TcpSocketClient client = new TcpSocketClient(tcpEvtListener, cId, null);
                     socketMap.put(cId, client);
                     client.connect(mReactContext, host, port, options, currentNetwork.getNetwork());
-                    onConnect(cId, client);
+                    tcpEvtListener.onConnect(cId, client);
                 } catch (Exception e) {
-                    onError(cId, e.getMessage());
+                    tcpEvtListener.onError(cId, e.getMessage());
                 }
             }
-        }));
+        });
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
-    public void write(@NonNull final Integer cId, @NonNull final String base64String, @Nullable final Callback callback) {
-        executorService.execute(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                TcpSocketClient socketClient = getTcpClient(cId);
-                try {
-                    socketClient.write(Base64.decode(base64String, Base64.NO_WRAP));
-                    if (callback != null) {
-                        callback.invoke();
-                    }
-                } catch (IOException e) {
-                    if (callback != null) {
-                        callback.invoke(e.toString());
-                    }
-                    onError(cId, e.toString());
-                }
-            }
-        }));
+    public void write(final int cId, @NonNull final String base64String, final int msgId) {
+        TcpSocketClient socketClient = getTcpClient(cId);
+        byte[] data = Base64.decode(base64String, Base64.NO_WRAP);
+        socketClient.write(msgId, data);
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void end(final Integer cId) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 TcpSocketClient socketClient = getTcpClient(cId);
                 socketClient.destroy();
                 socketMap.remove(cId);
             }
-        }));
+        });
     }
 
     @SuppressWarnings("unused")
@@ -141,32 +119,32 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
     @SuppressWarnings("unused")
     @ReactMethod
     public void close(final Integer cId) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 TcpSocketServer socketServer = getTcpServer(cId);
                 socketServer.close();
                 socketMap.remove(cId);
             }
-        }));
+        });
     }
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
     public void listen(final Integer cId, final ReadableMap options) {
-        executorService.execute(new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    TcpSocketServer server = new TcpSocketServer(socketMap, TcpSocketModule.this, cId, options);
+                    TcpSocketServer server = new TcpSocketServer(socketMap, tcpEvtListener, cId, options);
                     socketMap.put(cId, server);
-                    onListen(cId, server);
+                    tcpEvtListener.onListen(cId, server);
                 } catch (Exception uhe) {
-                    onError(cId, uhe.getMessage());
+                    tcpEvtListener.onError(cId, uhe.getMessage());
                 }
             }
-        }));
+        });
     }
 
     @SuppressWarnings("unused")
@@ -176,7 +154,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         try {
             client.setNoDelay(noDelay);
         } catch (IOException e) {
-            onError(cId, e.getMessage());
+            tcpEvtListener.onError(cId, e.getMessage());
         }
     }
 
@@ -187,8 +165,22 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
         try {
             client.setKeepAlive(enable, initialDelay);
         } catch (IOException e) {
-            onError(cId, e.getMessage());
+            tcpEvtListener.onError(cId, e.getMessage());
         }
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void pause(final int cId) {
+        TcpSocketClient client = getTcpClient(cId);
+        client.pause();
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void resume(final int cId) {
+        TcpSocketClient client = getTcpClient(cId);
+        client.resume();
     }
 
     private void requestNetwork(final int transportType) throws InterruptedException {
@@ -251,93 +243,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule implements TcpRe
             throw new IOException("Interface " + iface + " unreachable");
         } else if (ipAddress != null && !ipAddress.equals("0.0.0.0"))
             mNetworkMap.put(iface + ipAddress, currentNetwork.getNetwork());
-    }
-
-    // TcpReceiverTask.OnDataReceivedListener
-
-    @Override
-    public void onConnect(Integer id, TcpSocketClient client) {
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        WritableMap connectionParams = Arguments.createMap();
-        final Socket socket = client.getSocket();
-        final InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
-
-        connectionParams.putString("localAddress", socket.getLocalAddress().getHostAddress());
-        connectionParams.putInt("localPort", socket.getLocalPort());
-        connectionParams.putString("remoteAddress", remoteAddress.getAddress().getHostAddress());
-        connectionParams.putInt("remotePort", socket.getPort());
-        connectionParams.putString("remoteFamily", remoteAddress.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
-        eventParams.putMap("connection", connectionParams);
-        sendEvent("connect", eventParams);
-    }
-
-    @Override
-    public void onListen(Integer id, TcpSocketServer server) {
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        WritableMap connectionParams = Arguments.createMap();
-        final ServerSocket serverSocket = server.getServerSocket();
-        final InetAddress address = serverSocket.getInetAddress();
-
-        connectionParams.putString("localAddress", serverSocket.getInetAddress().getHostAddress());
-        connectionParams.putInt("localPort", serverSocket.getLocalPort());
-        connectionParams.putString("localFamily", address instanceof Inet6Address ? "IPv6" : "IPv4");
-        eventParams.putMap("connection", connectionParams);
-        sendEvent("listening", eventParams);
-    }
-
-    @Override
-    public void onData(Integer id, byte[] data) {
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));
-
-        sendEvent("data", eventParams);
-    }
-
-    @Override
-    public void onClose(Integer id, String error) {
-        if (error != null) {
-            onError(id, error);
-        }
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        eventParams.putBoolean("hadError", error != null);
-
-        sendEvent("close", eventParams);
-    }
-
-    @Override
-    public void onError(Integer id, String error) {
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        eventParams.putString("error", error);
-
-        sendEvent("error", eventParams);
-    }
-
-    @Override
-    public void onConnection(Integer serverId, Integer clientId, Socket socket) {
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", serverId);
-
-        WritableMap infoParams = Arguments.createMap();
-        infoParams.putInt("id", clientId);
-
-        WritableMap connectionParams = Arguments.createMap();
-        final InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
-
-        connectionParams.putString("localAddress", socket.getLocalAddress().getHostAddress());
-        connectionParams.putInt("localPort", socket.getLocalPort());
-        connectionParams.putString("remoteAddress", remoteAddress.getAddress().getHostAddress());
-        connectionParams.putInt("remotePort", socket.getPort());
-        connectionParams.putString("remoteFamily", remoteAddress.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
-
-        infoParams.putMap("connection", connectionParams);
-        eventParams.putMap("info", infoParams);
-
-        sendEvent("connection", eventParams);
     }
 
     private TcpSocketClient getTcpClient(final int id) {

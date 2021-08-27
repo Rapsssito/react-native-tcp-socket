@@ -2,12 +2,10 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
-import android.util.Pair;
 
 import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -23,21 +21,19 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 class TcpSocketClient extends TcpSocket {
-    private final ExecutorService executorService;
-    private TcpReceiverTask receiverTask;
+    private final ExecutorService listenExecutor;
+    private final ExecutorService writeExecutor;
+    private final TcpEventListener receiverListener;
+    private final TcpReceiverTask receiverTask;
     private Socket socket;
-    private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
 
-    TcpSocketClient(@NonNull final TcpReceiverTask.OnDataReceivedListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
+    TcpSocketClient(@NonNull final TcpEventListener receiverListener, @NonNull final Integer id, @Nullable final Socket socket) {
         super(id);
-        this.executorService = Executors.newFixedThreadPool(1);
+        listenExecutor = Executors.newSingleThreadExecutor();
+        writeExecutor = Executors.newSingleThreadExecutor();
+        receiverTask = new TcpReceiverTask(this, receiverListener);
         this.socket = socket;
-        receiverTask = new TcpReceiverTask();
-        mReceiverListener = receiverListener;
-    }
-
-    ExecutorService getExecutorService() {
-        return this.executorService;
+        this.receiverListener = receiverListener;
     }
 
     public Socket getSocket() {
@@ -83,10 +79,8 @@ class TcpSocketClient extends TcpSocket {
         startListening();
     }
 
-    @SuppressWarnings("WeakerAccess")
     public void startListening() {
-        //noinspection unchecked
-        receiverTask.executeOnExecutor(getExecutorService(), new Pair<>(this, mReceiverListener));
+        listenExecutor.execute(receiverTask);
     }
 
     /**
@@ -94,12 +88,19 @@ class TcpSocketClient extends TcpSocket {
      *
      * @param data data to be sent
      */
-    public void write(final byte[] data) throws IOException {
-        if (socket == null) {
-            throw new IOException("Socket is not connected.");
-        }
-        OutputStream output = socket.getOutputStream();
-        output.write(data);
+    public void write(final int msgId, final byte[] data) {
+        writeExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    socket.getOutputStream().write(data);
+                    receiverListener.onWritten(getId(), msgId, null);
+                } catch (IOException e) {
+                    receiverListener.onWritten(getId(), msgId, e.toString());
+                    receiverListener.onError(getId(), e.toString());
+                }
+            }
+        });
     }
 
     /**
@@ -107,19 +108,14 @@ class TcpSocketClient extends TcpSocket {
      */
     public void destroy() {
         try {
-            if (receiverTask != null && !receiverTask.isCancelled()) {
-                // stop the receiving task
-                receiverTask.cancel(true);
-                getExecutorService().shutdown();
-            }
             // close the socket
             if (socket != null && !socket.isClosed()) {
                 socket.close();
-                mReceiverListener.onClose(getId(), null);
+                receiverListener.onClose(getId(), null);
                 socket = null;
             }
         } catch (IOException e) {
-            mReceiverListener.onClose(getId(), e.getMessage());
+            receiverListener.onClose(getId(), e.getMessage());
         }
     }
 
@@ -142,5 +138,13 @@ class TcpSocketClient extends TcpSocket {
         }
         // `initialDelay` is ignored
         socket.setKeepAlive(enable);
+    }
+
+    public void pause() {
+        receiverTask.pause();
+    }
+
+    public void resume() {
+        receiverTask.resume();
     }
 }

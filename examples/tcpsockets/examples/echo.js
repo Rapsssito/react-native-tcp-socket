@@ -1,5 +1,4 @@
 const net = require('net');
-const PORT = Number(9 + (Math.random() * 999).toFixed(0));
 
 const server = new net.Server();
 const client = new net.Socket();
@@ -9,23 +8,24 @@ function init() {
         socket.write('Echo server\r\n');
     });
 
-    server.listen({ port: PORT, host: '127.0.0.1', reuseAddress: true });
-
-    client.connect(
-        // @ts-ignore
-        {
-            port: PORT,
-            host: '127.0.0.1',
-            localAddress: '127.0.0.1',
-            reuseAddress: true,
-            // localPort: 20000,
-            // interface: "wifi",
-            // tls: true
-        },
-        () => {
-            client.write('Hello, server! Love, Client.');
-        }
-    );
+    server.listen({ port: 0, host: '127.0.0.1', reuseAddress: true }, () => {
+        const port = server.address()?.port;
+        if (!port) throw new Error('Server port not found');
+        client.connect(
+            {
+                port: port,
+                host: '127.0.0.1',
+                localAddress: '127.0.0.1',
+                reuseAddress: true,
+                // localPort: 20000,
+                // interface: "wifi",
+                // tls: true
+            },
+            () => {
+                client.write('Hello, server! Love, Client.');
+            }
+        );
+    });
 
     client.on('data', () => {
         client.destroy(); // kill client after server's response

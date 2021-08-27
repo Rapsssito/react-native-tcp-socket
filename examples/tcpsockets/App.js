@@ -60,6 +60,10 @@ class App extends React.Component {
             this.updateChatter('Opened client on ' + JSON.stringify(client.address()));
         });
 
+        client.on('drain', () => {
+            this.updateChatter('Client drained');
+        });
+
         client.on('data', (data) => {
             this.updateChatter('Client received: ' + data);
         });

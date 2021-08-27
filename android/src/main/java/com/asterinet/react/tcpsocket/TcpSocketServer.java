@@ -7,7 +7,6 @@ import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +15,7 @@ import java.util.concurrent.Executors;
 
 public final class TcpSocketServer extends TcpSocket {
     private ServerSocket serverSocket;
-    private TcpReceiverTask.OnDataReceivedListener mReceiverListener;
+    private final TcpEventListener mReceiverListener;
     private int clientSocketIds;
     private final ExecutorService executorService;
     private final ConcurrentHashMap<Integer, TcpSocket> socketClients;
@@ -44,7 +43,7 @@ public final class TcpSocketServer extends TcpSocket {
     };
 
 
-    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpReceiverTask.OnDataReceivedListener receiverListener, final Integer id,
+    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpEventListener receiverListener, final Integer id,
                            final ReadableMap options) throws IOException {
         super(id);
         this.executorService = Executors.newFixedThreadPool(1);
@@ -105,9 +104,5 @@ public final class TcpSocketServer extends TcpSocket {
         } catch (IOException e) {
             mReceiverListener.onClose(getId(), e.getMessage());
         }
-    }
-
-    public int getListeningPort() {
-        return (serverSocket == null) ? -1 : serverSocket.getLocalPort();
     }
 }

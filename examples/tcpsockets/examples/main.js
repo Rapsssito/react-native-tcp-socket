@@ -29,6 +29,10 @@ client.on('connect', () => {
     console.log('Opened client on ' + JSON.stringify(client.address()));
 });
 
+client.on('drain', () => {
+    console.log('Client drained');
+});
+
 client.on('data', (data) => {
     console.log('Client received: ' + data);
 });
