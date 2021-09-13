@@ -1,3 +1,10 @@
+## [5.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.3.0...v5.3.1) (2021-09-13)
+
+
+### Bug Fixes
+
+* Fix Gradle 7 compatibility ([#126](https://github.com/Rapsssito/react-native-tcp-socket/issues/126)) ([14fdab8](https://github.com/Rapsssito/react-native-tcp-socket/commit/14fdab88906ab0f865cdb126be4989c42c82bfdd))
+
 # [5.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.2.1...v5.3.0) (2021-08-27)
 
 
