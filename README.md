@@ -143,7 +143,7 @@ To use this library you need to ensure you are using the correct version of Reac
 
 | `react-native-tcp-socket` version         | Required React Native Version                                                     |
 | ----------------------------------------- | --------------------------------------------------------------------------------- |
-| `4.X.X`, `3.X.X`                          | `>= 0.60.0`                                                                         |
+| `5.X.X`, `4.X.X`, `3.X.X`                 | `>= 0.60.0`                                                                       |
 | `1.4.0`                                   | `>= Unknown`                                                                      |
 
 ## Usage
