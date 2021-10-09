@@ -299,6 +299,7 @@ export default class Socket extends EventEmitter {
      */
     write(buffer, encoding, cb) {
         const self = this;
+        if (encoding && typeof encoding === 'function') cb = encoding;
         if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
 
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
