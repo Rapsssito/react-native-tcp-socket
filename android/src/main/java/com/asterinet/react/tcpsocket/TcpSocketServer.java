@@ -61,9 +61,13 @@ public final class TcpSocketServer extends TcpSocket {
         try {
             boolean reuseAddress = options.getBoolean("reuseAddress");
             serverSocket.setReuseAddress(reuseAddress);
+            int timeout = options.getInt("timeout");
+            serverSocket.setSoTimeout(timeout);
         } catch (Exception e) {
             // Default to true
             serverSocket.setReuseAddress(true);
+            // release connection in 15 min
+            serverSocket.setSoTimeout(900000);
         }
         mReceiverListener = receiverListener;
         listen();
