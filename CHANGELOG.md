@@ -1,3 +1,10 @@
+# [5.4.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.3.1...v5.4.0) (2021-10-26)
+
+
+### Features
+
+* Publish Socket timeout property ([#131](https://github.com/Rapsssito/react-native-tcp-socket/issues/131)) ([b87a282](https://github.com/Rapsssito/react-native-tcp-socket/commit/b87a2827ecf11aad8deff4ae9e3b45567d57b580))
+
 ## [5.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.3.0...v5.3.1) (2021-09-13)
 
 

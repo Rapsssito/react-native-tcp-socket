@@ -43,7 +43,7 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     private _msgEvtEmitter;
     /** @type {number} @private */
     private _timeoutMsecs;
-    /** @private */
+    /** @type {number | undefined} @private */
     private _timeout;
     /** @type {number} @private */
     private _state;
@@ -72,6 +72,7 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     remoteAddress: string | undefined;
     remotePort: number | undefined;
     remoteFamily: string | undefined;
+    get timeout(): number | undefined;
     /**
      * @package
      * @param {number} id
