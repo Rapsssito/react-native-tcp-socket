@@ -33,6 +33,9 @@ local.properties
 android/gradle/
 android/gradlew
 android/gradlew.bat
+.project
+.classpath
+.settings
 
 # node.js
 #

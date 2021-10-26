@@ -1,8 +1,5 @@
 package com.asterinet.react.tcpsocket;
 
-import android.annotation.SuppressLint;
-import android.os.AsyncTask;
-
 import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
@@ -14,39 +11,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class TcpSocketServer extends TcpSocket {
-    private ServerSocket serverSocket;
     private final TcpEventListener mReceiverListener;
-    private int clientSocketIds;
-    private final ExecutorService executorService;
+    private final ExecutorService listenExecutor;
     private final ConcurrentHashMap<Integer, TcpSocket> socketClients;
-
-    @SuppressLint("StaticFieldLeak")
-    private final AsyncTask listening = new AsyncTask() {
-        @Override
-        protected Void doInBackground(Object[] objects) {
-            try {
-                while (!isCancelled() && !serverSocket.isClosed()) {
-                    Socket socket = serverSocket.accept();
-                    int clientId = getClientId();
-                    TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
-                    socketClients.put(clientId, socketClient);
-                    mReceiverListener.onConnection(getId(), clientId, socket);
-                    socketClient.startListening();
-                }
-            } catch (IOException e) {
-                if (!serverSocket.isClosed()) {
-                    mReceiverListener.onError(getId(), e.getMessage());
-                }
-            }
-            return null;
-        }
-    };
-
+    private ServerSocket serverSocket;
+    private int clientSocketIds;
 
     public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpEventListener receiverListener, final Integer id,
                            final ReadableMap options) throws IOException {
         super(id);
-        this.executorService = Executors.newFixedThreadPool(1);
+        listenExecutor = Executors.newSingleThreadExecutor();
         // Get data from options
         int port = options.getInt("port");
         String address = options.getString("host");
@@ -73,6 +47,14 @@ public final class TcpSocketServer extends TcpSocket {
         return serverSocket;
     }
 
+    private void addClient(Socket socket) {
+        int clientId = getClientId();
+        TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
+        socketClients.put(clientId, socketClient);
+        mReceiverListener.onConnection(getId(), clientId, socket);
+        socketClient.startListening();
+    }
+
     /**
      * Next ID for a client socket
      *
@@ -83,18 +65,12 @@ public final class TcpSocketServer extends TcpSocket {
     }
 
     private void listen() {
-        //noinspection unchecked
-        listening.executeOnExecutor(executorService);
+        TcpListenTask tcpListenTask = new TcpListenTask(this, mReceiverListener);
+        listenExecutor.execute(tcpListenTask);
     }
 
     public void close() {
         try {
-            if (!listening.isCancelled()) {
-                // stop the receiving task
-                listening.cancel(true);
-                executorService.shutdown();
-            }
-
             // close the socket
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
@@ -103,6 +79,31 @@ public final class TcpSocketServer extends TcpSocket {
             }
         } catch (IOException e) {
             mReceiverListener.onClose(getId(), e.getMessage());
+        }
+    }
+
+    private static class TcpListenTask implements Runnable {
+        private final TcpEventListener receiverListener;
+        private final TcpSocketServer server;
+
+        private TcpListenTask(TcpSocketServer server, TcpEventListener receiverListener) {
+            this.server = server;
+            this.receiverListener = receiverListener;
+        }
+
+        @Override
+        public void run() {
+            ServerSocket serverSocket = server.getServerSocket();
+            try {
+                while (!serverSocket.isClosed()) {
+                    Socket socket = serverSocket.accept();
+                    server.addClient(socket);
+                }
+            } catch (IOException e) {
+                if (!serverSocket.isClosed()) {
+                    receiverListener.onError(server.getId(), e.getMessage());
+                }
+            }
         }
     }
 }
