@@ -1,3 +1,10 @@
+# [5.5.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.4.0...v5.5.0) (2021-10-26)
+
+
+### Features
+
+* Add isIP & isIPv4 & isIPv6 methods ([#133](https://github.com/Rapsssito/react-native-tcp-socket/issues/133)) ([5498814](https://github.com/Rapsssito/react-native-tcp-socket/commit/5498814022272385ee8e2492f998c58d12773a43))
+
 # [5.4.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.3.1...v5.4.0) (2021-10-26)
 
 
