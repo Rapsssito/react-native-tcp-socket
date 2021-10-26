@@ -241,6 +241,7 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`remotePort`](https://nodejs.org/api/net.html#net_socket_remoteport)
   * [`localAddress`](https://nodejs.org/api/net.html#net_socket_localaddress)
   * [`localPort`](https://nodejs.org/api/net.html#net_socket_localport)
+  * [`timeout`](https://nodejs.org/api/net.html#sockettimeout)
 * **Events:**
   * Inherited from [`Stream.Readable`](https://nodejs.org/api/stream.html#stream_class_stream_readable):
     * [`'pause'`](https://nodejs.org/api/stream.html#stream_event_pause)

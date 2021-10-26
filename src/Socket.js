@@ -62,7 +62,7 @@ export default class Socket extends EventEmitter {
         this._msgEvtEmitter = new EventEmitter();
         /** @type {number} @private */
         this._timeoutMsecs = 0;
-        /** @private */
+        /** @type {number | undefined} @private */
         this._timeout = undefined;
         /** @type {number} @private */
         this._state = STATE.DISCONNECTED;
@@ -92,6 +92,10 @@ export default class Socket extends EventEmitter {
         this.remotePort = undefined;
         this.remoteFamily = undefined;
         this._registerEvents();
+    }
+
+    get timeout() {
+        return this._timeout;
     }
 
     /**
