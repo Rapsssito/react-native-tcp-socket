@@ -1,3 +1,10 @@
+# [5.6.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.5.0...v5.6.0) (2022-02-22)
+
+
+### Features
+
+* Add missing Socket properties ([7c94304](https://github.com/Rapsssito/react-native-tcp-socket/commit/7c943045f0564e3d848dfc21de49b1c8952ac7f9))
+
 # [5.5.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.4.0...v5.5.0) (2021-10-26)
 
 

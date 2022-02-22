@@ -45,8 +45,6 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     private _timeoutMsecs;
     /** @type {number | undefined} @private */
     private _timeout;
-    /** @type {number} @private */
-    private _state;
     /** @private */
     private _encoding;
     /** @private */
@@ -61,17 +59,34 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     private _resuming;
     /** @private */
     private _writeBufferSize;
+    /** @private */
+    private _bytesRead;
+    /** @private */
+    private _bytesWritten;
+    /** @private */
+    private _connecting;
+    /** @private */
+    private _pending;
+    /** @private */
+    private _destroyed;
+    /** @type {'opening' | 'open' | 'readOnly' | 'writeOnly'} @private */
+    private _readyState;
     /** @type {{ id: number; data: string; }[]} @private */
     private _pausedDataEvents;
     readableHighWaterMark: number;
     writableHighWaterMark: number;
     writableNeedDrain: boolean;
-    bytesSent: number;
     localAddress: string | undefined;
     localPort: number | undefined;
     remoteAddress: string | undefined;
     remotePort: number | undefined;
     remoteFamily: string | undefined;
+    get readyState(): "opening" | "open" | "readOnly" | "writeOnly";
+    get destroyed(): boolean;
+    get pending(): boolean;
+    get connecting(): boolean;
+    get bytesWritten(): number;
+    get bytesRead(): number;
     get timeout(): number | undefined;
     /**
      * @package
@@ -88,7 +103,6 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
      * @param {() => void} [callback]
      */
     connect(options: ConnectionOptions, callback?: (() => void) | undefined): Socket;
-    _destroyed: boolean | undefined;
     /**
      * Sets the socket to timeout after `timeout` milliseconds of inactivity on the socket. By default `TcpSocket` do not have a timeout.
      *
@@ -152,8 +166,8 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
      * @param {string | Buffer | Uint8Array} data
      * @param {BufferEncoding} [encoding]
      */
-    end(data: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined): void;
-    destroy(): void;
+    end(data: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined): Socket;
+    destroy(): Socket;
     /**
      * Sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
      *
