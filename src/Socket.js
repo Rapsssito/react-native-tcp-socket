@@ -6,12 +6,6 @@ import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
 import { nativeEventEmitter, getNextId } from './Globals';
 
-const STATE = {
-    DISCONNECTED: 0,
-    CONNECTING: 1,
-    CONNECTED: 2,
-};
-
 /**
  * @typedef {"ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex"} BufferEncoding
  *
@@ -64,8 +58,6 @@ export default class Socket extends EventEmitter {
         this._timeoutMsecs = 0;
         /** @type {number | undefined} @private */
         this._timeout = undefined;
-        /** @type {number} @private */
-        this._state = STATE.DISCONNECTED;
         /** @private */
         this._encoding = undefined;
         /** @private */
@@ -80,18 +72,54 @@ export default class Socket extends EventEmitter {
         this._resuming = false;
         /** @private */
         this._writeBufferSize = 0;
+        /** @private */
+        this._bytesRead = 0;
+        /** @private */
+        this._bytesWritten = 0;
+        /** @private */
+        this._connecting = false;
+        /** @private */
+        this._pending = true;
+        /** @private */
+        this._destroyed = false;
+        // TODO: Add readOnly and writeOnly states
+        /** @type {'opening' | 'open' | 'readOnly' | 'writeOnly'} @private */
+        this._readyState = 'open'; // Incorrect, but matches NodeJS behavior
         /** @type {{ id: number; data: string; }[]} @private */
         this._pausedDataEvents = [];
         this.readableHighWaterMark = 16384;
         this.writableHighWaterMark = 16384;
         this.writableNeedDrain = false;
-        this.bytesSent = 0;
         this.localAddress = undefined;
         this.localPort = undefined;
         this.remoteAddress = undefined;
         this.remotePort = undefined;
         this.remoteFamily = undefined;
         this._registerEvents();
+    }
+
+    get readyState() {
+        return this._readyState;
+    }
+
+    get destroyed() {
+        return this._destroyed;
+    }
+
+    get pending() {
+        return this._pending;
+    }
+
+    get connecting() {
+        return this._connecting;
+    }
+
+    get bytesWritten() {
+        return this._bytesWritten;
+    }
+
+    get bytesRead() {
+        return this._bytesRead;
     }
 
     get timeout() {
@@ -112,7 +140,9 @@ export default class Socket extends EventEmitter {
      * @param {NativeConnectionInfo} connectionInfo
      */
     _setConnected(connectionInfo) {
-        this._state = STATE.CONNECTED;
+        this._connecting = false;
+        this._readyState = 'open';
+        this._pending = false;
         this.localAddress = connectionInfo.localAddress;
         this.localPort = connectionInfo.localPort;
         this.remoteAddress = connectionInfo.remoteAddress;
@@ -141,9 +171,8 @@ export default class Socket extends EventEmitter {
         if (customOptions.tlsCert) {
             customOptions.tlsCert = Image.resolveAssetSource(customOptions.tlsCert).uri;
         }
-        // console.log(getAndroidResourceIdentifier(customOptions.tlsCert));
-        this._state = STATE.CONNECTING;
-        this._destroyed = false;
+        this._connecting = true;
+        this._readyState = 'opening';
         Sockets.connect(this._id, customOptions.host, customOptions.port, customOptions);
         return this;
     }
@@ -218,7 +247,7 @@ export default class Socket extends EventEmitter {
      * @param {boolean} noDelay Default: `true`
      */
     setNoDelay(noDelay = true) {
-        if (this._state != STATE.CONNECTED) {
+        if (this._pending) {
             this.once('connect', () => this.setNoDelay(noDelay));
             return this;
         }
@@ -235,7 +264,7 @@ export default class Socket extends EventEmitter {
      * @param {number} initialDelay ***IGNORED**. Default: `0`
      */
     setKeepAlive(enable = false, initialDelay = 0) {
-        if (this._state != STATE.CONNECTED) {
+        if (this._pending) {
             this.once('connect', () => this.setKeepAlive(enable, initialDelay));
             return this;
         }
@@ -266,17 +295,15 @@ export default class Socket extends EventEmitter {
      * @param {BufferEncoding} [encoding]
      */
     end(data, encoding) {
-        if (this._destroyed) return;
         if (data) {
             this.write(data, encoding, () => {
-                this._destroyed = true;
                 Sockets.end(this._id);
             });
         } else {
-            this._destroyed = true;
             this._clearTimeout();
             Sockets.end(this._id);
         }
+        return this;
     }
 
     destroy() {
@@ -285,6 +312,7 @@ export default class Socket extends EventEmitter {
             this._clearTimeout();
             Sockets.destroy(this._id);
         }
+        return this;
     }
 
     /**
@@ -303,7 +331,7 @@ export default class Socket extends EventEmitter {
      */
     write(buffer, encoding, cb) {
         const self = this;
-        if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
+        if (this._pending || this._destroyed) throw new Error('Socket is not connected.');
 
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
         this._writeBufferSize += generatedBuffer.byteLength;
@@ -316,7 +344,7 @@ export default class Socket extends EventEmitter {
                 this._writeBufferSize -= generatedBuffer.byteLength;
                 this._lastRcvMsgId = msgId;
                 if (self._timeout) self._activateTimer();
-                if (this.writableNeedDrain && this._lastSentMsgId == msgId) {
+                if (this.writableNeedDrain && this._lastSentMsgId === msgId) {
                     this.writableNeedDrain = false;
                     this.emit('drain');
                 }
@@ -331,6 +359,7 @@ export default class Socket extends EventEmitter {
         const ok = this._writeBufferSize < this.writableHighWaterMark;
         if (!ok) this.writableNeedDrain = true;
         this._lastSentMsgId = currentMsgId;
+        this._bytesWritten += generatedBuffer.byteLength;
         Sockets.write(this._id, generatedBuffer.toString('base64'), currentMsgId);
         return ok;
     }
@@ -409,8 +438,9 @@ export default class Socket extends EventEmitter {
     _onDeviceDataEvt = (/** @type {{ id: number; data: string; }} */ evt) => {
         if (evt.id !== this._id) return;
         if (!this._paused) {
-            const bufferTest = Buffer.from(evt.data, 'base64');
-            const finalData = this._encoding ? bufferTest.toString(this._encoding) : bufferTest;
+            const bufferData = Buffer.from(evt.data, 'base64');
+            this._bytesRead += bufferData.byteLength;
+            const finalData = this._encoding ? bufferData.toString(this._encoding) : bufferData;
             this.emit('data', finalData);
         } else {
             // If the socket is paused, save the data events for later
@@ -479,8 +509,6 @@ export default class Socket extends EventEmitter {
      * @private
      */
     _setDisconnected() {
-        if (this._state === STATE.DISCONNECTED) return;
         this._unregisterEvents();
-        this._state = STATE.DISCONNECTED;
     }
 }

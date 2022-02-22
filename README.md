@@ -236,12 +236,18 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
 * **Properties:**
   * Inherited from [`Stream.Writable`](https://nodejs.org/api/stream.html#stream_class_stream_writable):
     * [`writableNeedDrain`](https://nodejs.org/api/stream.html#stream_writable_writableneeddrain)
+  * [`bytesRead`](https://nodejs.org/api/net.html#socketbytesread)
+  * [`bytesWritten`](https://nodejs.org/api/net.html#socketbyteswritten)
+  * [`connecting`](https://nodejs.org/api/net.html#socketconnecting)
+  * [`destroyed`](https://nodejs.org/api/net.html#socketdestroyed)
+  * [`localAddress`](https://nodejs.org/api/net.html#net_socket_localaddress)
+  * [`localPort`](https://nodejs.org/api/net.html#net_socket_localport)
   * [`remoteAddress`](https://nodejs.org/api/net.html#net_socket_remoteaddress)
   * [`remoteFamily`](https://nodejs.org/api/net.html#net_socket_remotefamily)
   * [`remotePort`](https://nodejs.org/api/net.html#net_socket_remoteport)
-  * [`localAddress`](https://nodejs.org/api/net.html#net_socket_localaddress)
-  * [`localPort`](https://nodejs.org/api/net.html#net_socket_localport)
+  * [`pending`](https://nodejs.org/api/net.html#socketpending)
   * [`timeout`](https://nodejs.org/api/net.html#sockettimeout)
+  * [`readyState`](https://nodejs.org/api/net.html#socketreadystate)
 * **Events:**
   * Inherited from [`Stream.Readable`](https://nodejs.org/api/stream.html#stream_class_stream_readable):
     * [`'pause'`](https://nodejs.org/api/stream.html#stream_event_pause)
