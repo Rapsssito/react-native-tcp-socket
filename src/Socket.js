@@ -291,7 +291,9 @@ export default class Socket extends EventEmitter {
     }
 
     /**
-     * @param {string | Buffer | Uint8Array} data
+     * Half-closes the socket. i.e., it sends a FIN packet. It is possible the server will still send some data.
+     *
+     * @param {string | Buffer | Uint8Array} [data]
      * @param {BufferEncoding} [encoding]
      */
     end(data, encoding) {
@@ -299,19 +301,23 @@ export default class Socket extends EventEmitter {
             this.write(data, encoding, () => {
                 Sockets.end(this._id);
             });
-        } else {
-            this._clearTimeout();
-            Sockets.end(this._id);
+            return this;
         }
+        if (this._pending || this._destroyed) return this;
+
+        this._clearTimeout();
+        Sockets.end(this._id);
         return this;
     }
 
+    /**
+     * Ensures that no more I/O activity happens on this socket. Destroys the stream and closes the connection.
+     */
     destroy() {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            this._clearTimeout();
-            Sockets.destroy(this._id);
-        }
+        if (this._pending || this._destroyed) return this;
+        this._destroyed = true;
+        this._clearTimeout();
+        Sockets.destroy(this._id);
         return this;
     }
 
@@ -331,7 +337,7 @@ export default class Socket extends EventEmitter {
      */
     write(buffer, encoding, cb) {
         const self = this;
-        if (this._pending || this._destroyed) throw new Error('Socket is not connected.');
+        if (this._pending || this._destroyed) throw new Error('Socket is closed.');
 
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
         this._writeBufferSize += generatedBuffer.byteLength;
