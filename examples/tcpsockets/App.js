@@ -24,6 +24,7 @@ class App extends React.Component {
      * @param {string | Error} msg
      */
     updateChatter(msg) {
+        console.log(msg);
         this.setState({
             // @ts-ignore
             chatter: this.state.chatter.concat([msg]),
@@ -35,7 +36,7 @@ class App extends React.Component {
             this.updateChatter('Client connected to server on ' + JSON.stringify(socket.address()));
 
             socket.on('data', (data) => {
-                this.updateChatter('Server client received: ' + data);
+                this.updateChatter('Server client received: ' + (data.length < 500 ? data : data.length + ' bytes'));
             });
 
             socket.on('error', (error) => {
@@ -65,7 +66,7 @@ class App extends React.Component {
         });
 
         client.on('data', (data) => {
-            this.updateChatter('Client received: ' + data);
+            this.updateChatter('Client received: ' + (data.length < 500 ? data : data.length + ' bytes'));
         });
 
         client.on('error', (error) => {

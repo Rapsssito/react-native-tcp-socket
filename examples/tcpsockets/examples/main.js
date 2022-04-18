@@ -5,7 +5,7 @@ server.on('connection', (socket) => {
     console.log('Client connected to server on ' + JSON.stringify(socket.address()));
 
     socket.on('data', (data) => {
-        console.log('Server client received: ' + data);
+        console.log('Server client received: ' + (data.length < 500 ? data : data.length + ' bytes'));
     });
 
     socket.on('error', (error) => {
@@ -34,7 +34,7 @@ client.on('drain', () => {
 });
 
 client.on('data', (data) => {
-    console.log('Client received: ' + data);
+    console.log('Client received: ' + (data.length < 500 ? data : data.length + ' bytes'));
 });
 
 client.on('error', (error) => {
