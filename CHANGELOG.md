@@ -1,3 +1,10 @@
+## [5.6.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.6.0...v5.6.1) (2022-04-18)
+
+
+### Bug Fixes
+
+* destroy & end work as no-op on closed streams ([b129cf3](https://github.com/Rapsssito/react-native-tcp-socket/commit/b129cf3b4b93e84bf79e36766ed296ffa8041bf2)), closes [#145](https://github.com/Rapsssito/react-native-tcp-socket/issues/145)
+
 # [5.6.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.5.0...v5.6.0) (2022-02-22)
 
 
