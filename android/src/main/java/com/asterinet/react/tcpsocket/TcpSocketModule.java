@@ -182,6 +182,18 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         TcpSocketClient client = getTcpClient(cId);
         client.resume();
     }
+    
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void addListener(String eventName) {
+        // Keep: Required for RN built in Event Emitter Calls.
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void removeListeners(Integer count) {
+        // Keep: Required for RN built in Event Emitter Calls.
+    }
 
     private void requestNetwork(final int transportType) throws InterruptedException {
         final NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
