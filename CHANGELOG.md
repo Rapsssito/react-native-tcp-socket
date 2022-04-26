@@ -1,3 +1,10 @@
+## [5.6.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.6.1...v5.6.2) (2022-04-26)
+
+
+### Bug Fixes
+
+* **Android:** Add RN 0.65 event emitter stubs ([#151](https://github.com/Rapsssito/react-native-tcp-socket/issues/151)) ([8c025ef](https://github.com/Rapsssito/react-native-tcp-socket/commit/8c025ef19cc871c78b44960597ecce4cfd739c7f))
+
 ## [5.6.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.6.0...v5.6.1) (2022-04-18)
 
 
