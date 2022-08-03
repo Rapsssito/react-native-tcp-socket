@@ -95,6 +95,7 @@ export default class Server extends EventEmitter {
         if (callback) this.once('close', callback);
         this.listening = false;
         Sockets.close(this._id);
+        if (this._connections.size === 0) this.emit('close');
         return this;
     }
 
