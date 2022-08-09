@@ -137,7 +137,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
             @Override
             public void run() {
                 try {
-                    TcpSocketServer server = new TcpSocketServer(socketMap, tcpEvtListener, cId, options);
+                    TcpSocketServer server = new TcpSocketServer(mReactContext, socketMap, tcpEvtListener, cId, options);
                     socketMap.put(cId, server);
                     tcpEvtListener.onListen(cId, server);
                 } catch (Exception uhe) {

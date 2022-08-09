@@ -2,6 +2,8 @@
 
 import Socket from './Socket';
 import Server from './Server';
+import TLSServer from './TLSServer';
+import TLSSocket from './TLSSocket';
 
 /**
  * @param {(socket: Socket) => void} connectionListener
@@ -70,7 +72,27 @@ function isIP(input) {
     return 0;
 }
 
-export default { createServer, createConnection, isIP, isIPv4, isIPv6, Server, Socket };
+export default {
+    createServer,
+    createConnection,
+    isIP,
+    isIPv4,
+    isIPv6,
+    Server,
+    Socket,
+    TLSServer,
+    TLSSocket,
+};
 
 // @ts-ignore
-module.exports = { createServer, createConnection, isIP, isIPv4, isIPv6, Server, Socket };
+module.exports = {
+    createServer,
+    createConnection,
+    isIP,
+    isIPv4,
+    isIPv6,
+    Server,
+    Socket,
+    TLSServer,
+    TLSSocket,
+};

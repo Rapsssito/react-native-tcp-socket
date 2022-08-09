@@ -1,14 +1,20 @@
 package com.asterinet.react.tcpsocket;
 
+import android.content.Context;
+
 import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 
 public final class TcpSocketServer extends TcpSocket {
     private final TcpEventListener mReceiverListener;
@@ -17,8 +23,8 @@ public final class TcpSocketServer extends TcpSocket {
     private ServerSocket serverSocket;
     private int clientSocketIds;
 
-    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpEventListener receiverListener, final Integer id,
-                           final ReadableMap options) throws IOException {
+    public TcpSocketServer(final Context context, final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpEventListener receiverListener, final Integer id,
+                           final ReadableMap options) throws IOException, GeneralSecurityException {
         super(id);
         listenExecutor = Executors.newSingleThreadExecutor();
         // Get data from options
@@ -29,7 +35,20 @@ public final class TcpSocketServer extends TcpSocket {
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
-        serverSocket = new ServerSocket(port, 50, localInetAddress);
+        // Check if TLS
+        ReadableMap tlsOptions = options.getMap("tls");
+        if (tlsOptions != null) {
+            String certResourceUri = tlsOptions.getString("cert");
+            String keyResourceUri = tlsOptions.getString("key");
+            assert certResourceUri != null;
+            assert keyResourceUri != null;
+
+            SSLServerSocketFactory ssf = SSLCertificateHelper.createServerSocketFactory(context, certResourceUri, keyResourceUri);
+            serverSocket = ssf.createServerSocket(port, 50, localInetAddress);
+            ((SSLServerSocket) serverSocket).setNeedClientAuth(true);
+        } else {
+            serverSocket = new ServerSocket(port, 50, localInetAddress);
+        }
 
         // setReuseAddress
         try {

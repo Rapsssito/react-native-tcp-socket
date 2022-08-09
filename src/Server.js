@@ -7,11 +7,14 @@ import Socket from './Socket';
 import { nativeEventEmitter, getNextId } from './Globals';
 
 /**
+ * @typedef {import('./TLSSocket').default} TLSSocket
+ *
  * @typedef {object} ServerEvents
  * @property {() => void} close
  * @property {(socket: Socket) => void} connection
  * @property {() => void} listening
  * @property {(err: Error) => void} error
+ * @property {(tlsSocket: TLSSocket) => void} secureConnection
  *
  * @extends {EventEmitter<ServerEvents, any>}
  */
@@ -21,9 +24,9 @@ export default class Server extends EventEmitter {
      */
     constructor(connectionCallback) {
         super();
-        /** @private */
+        /** @protected @readonly */
         this._id = getNextId();
-        /** @private */
+        /** @protected @readonly */
         this._eventEmitter = nativeEventEmitter;
         /** @private @type {Set<Socket>} */
         this._connections = new Set();
@@ -124,7 +127,7 @@ export default class Server extends EventEmitter {
      * @private
      */
     _registerEvents() {
-        this._errorListener = this._eventEmitter.addListener('listening', (evt) => {
+        this._listeningListener = this._eventEmitter.addListener('listening', (evt) => {
             if (evt.id !== this._id) return;
             this._localAddress = evt.connection.localAddress;
             this._localPort = evt.connection.localPort;

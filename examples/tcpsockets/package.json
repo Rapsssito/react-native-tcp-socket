@@ -13,8 +13,8 @@
     "checkjs": "tsc"
   },
   "dependencies": {
-    "react": "16.13.1",
-    "react-native": "0.63.2",
+    "react": "17.0.1",
+    "react-native": "0.64.0",
     "react-native-tcp-socket": "link:../../"
   },
   "devDependencies": {
@@ -33,6 +33,7 @@
     "preset": "react-native"
   },
   "react-native": {
-    "net": "react-native-tcp-socket"
+    "net": "react-native-tcp-socket",
+    "tls": "react-native-tcp-socket"
   }
 }

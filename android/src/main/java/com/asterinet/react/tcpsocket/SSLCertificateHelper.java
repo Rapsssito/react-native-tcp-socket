@@ -3,6 +3,9 @@ package com.asterinet.react.tcpsocket;
 import android.annotation.SuppressLint;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RawRes;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -14,13 +17,15 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509TrustManager;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RawRes;
+import nl.altindag.ssl.SSLFactory;
+import nl.altindag.ssl.util.PemUtils;
 
 final class SSLCertificateHelper {
     /**
@@ -32,6 +37,14 @@ final class SSLCertificateHelper {
         SSLContext ctx = SSLContext.getInstance("TLS");
         ctx.init(null, new TrustManager[]{new BlindTrustManager()}, null);
         return ctx.getSocketFactory();
+    }
+
+    static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String certResourceUri, @NonNull final String keyResourceUri) throws GeneralSecurityException, IOException {
+        InputStream certInput = getRawResourceStream(context, certResourceUri);
+        InputStream keyInput = getRawResourceStream(context, keyResourceUri);
+        X509ExtendedKeyManager keyManager = PemUtils.loadIdentityMaterial(certInput, keyInput);
+        SSLFactory sslFactory = SSLFactory.builder().withIdentityMaterial(keyManager).build();
+        return sslFactory.getSslServerSocketFactory();
     }
 
     /**

@@ -15,5 +15,6 @@ android {
 
 dependencies {
     //noinspection GradleDynamicVersion
+    implementation 'io.github.hakky54:sslcontext-kickstart-for-pem:7.4.5'
     implementation 'com.facebook.react:react-native:+'  // From node_modules
 }
