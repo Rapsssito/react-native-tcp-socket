@@ -12,7 +12,7 @@ import { nativeEventEmitter, getNextId } from './Globals';
 export default class TLSSocket extends Socket {
     /**
      * @param {Socket} socket Any instance of `Socket`.
-     * @param {object} options Options for the TLS socket.
+     * @param {object} [options] Options for the TLS socket.
      */
     constructor(socket, options) {
         super();

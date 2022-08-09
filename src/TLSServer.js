@@ -1,6 +1,6 @@
 'use strict';
 
-import { NativeModules } from 'react-native';
+import { Image, NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 const Sockets = NativeModules.TcpSockets;
 import Socket from './Socket';
@@ -30,7 +30,9 @@ export default class TLSServer extends Server {
      */
     setSecureContext(options) {
         /** @private */
-        this._options = options;
+        this._options = { ...options };
+        this._options.cert = Image.resolveAssetSource(this._options.cert).uri;
+        this._options.key = Image.resolveAssetSource(this._options.key).uri;
     }
 
     /**

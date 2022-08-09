@@ -5,7 +5,9 @@ const client = new net.Socket();
 
 function init() {
     server.on('connection', (socket) => {
-        socket.write('Echo server\r\n');
+        socket.on('data', () => {
+            socket.write('Echo server\r\n');
+        })
     });
 
     server.listen({ port: 0, host: '127.0.0.1', reuseAddress: true }, () => {

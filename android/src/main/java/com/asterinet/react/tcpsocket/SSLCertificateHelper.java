@@ -24,8 +24,6 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509TrustManager;
 
-import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.util.PemUtils;
 
 final class SSLCertificateHelper {
     /**
@@ -42,9 +40,7 @@ final class SSLCertificateHelper {
     static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String certResourceUri, @NonNull final String keyResourceUri) throws GeneralSecurityException, IOException {
         InputStream certInput = getRawResourceStream(context, certResourceUri);
         InputStream keyInput = getRawResourceStream(context, keyResourceUri);
-        X509ExtendedKeyManager keyManager = PemUtils.loadIdentityMaterial(certInput, keyInput);
-        SSLFactory sslFactory = SSLFactory.builder().withIdentityMaterial(keyManager).build();
-        return sslFactory.getSslServerSocketFactory();
+        
     }
 
     /**

@@ -7,7 +7,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { init, server, client } from './examples/echo';
+import { init, server, client } from './examples/echo-ssl';
 
 class App extends React.Component {
     /**
@@ -49,7 +49,6 @@ class App extends React.Component {
         });
 
         server.on('error', (error) => {
-            this.updateChatter(error);
             this.updateChatter('Server error ' + error);
         });
 
