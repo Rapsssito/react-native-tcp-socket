@@ -26,10 +26,6 @@ function init() {
             client.write('GET / HTTP/1.1\r\nHost:www.google.com\r\n\r\n');
         }
     );
-
-    client.on('data', (data) => {
-        client.destroy(); // kill client after server's response
-    });
 }
 
 module.exports = { init, server, client };

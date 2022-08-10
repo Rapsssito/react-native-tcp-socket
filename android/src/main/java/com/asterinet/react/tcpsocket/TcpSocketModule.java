@@ -8,6 +8,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.util.Base64;
 import android.net.Network;
+import android.util.Log;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -30,6 +31,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     private static final int N_THREADS = 2;
     private final ReactApplicationContext mReactContext;
     private final ConcurrentHashMap<Integer, TcpSocket> socketMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, ReadableMap> pendingTLS = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Network> mNetworkMap = new ConcurrentHashMap<>();
     private final CurrentNetwork currentNetwork = new CurrentNetwork();
     private final ExecutorService executorService = Executors.newFixedThreadPool(N_THREADS);
@@ -78,13 +80,34 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
                     selectNetwork(iface, localAddress);
                     TcpSocketClient client = new TcpSocketClient(tcpEvtListener, cId, null);
                     socketMap.put(cId, client);
-                    client.connect(mReactContext, host, port, options, currentNetwork.getNetwork());
+                    ReadableMap tlsOptions = pendingTLS.get(cId);
+                    client.connect(mReactContext, host, port, options, currentNetwork.getNetwork(), tlsOptions);
                     tcpEvtListener.onConnect(cId, client);
                 } catch (Exception e) {
+                    Log.e(TAG, "Exception", e);
                     tcpEvtListener.onError(cId, e.getMessage());
                 }
             }
         });
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void startTLS(final int cId, @NonNull final ReadableMap tlsOptions) {
+        TcpSocketClient socketClient = (TcpSocketClient) socketMap.get(cId);
+        // Not yet connected
+        if (socketClient == null) {
+            pendingTLS.put(cId, tlsOptions);
+        } else {
+            // TODO: Upgrade to TLS
+            /*try {
+                socketClient.startTLS(mReactContext, options);
+            } catch (Exception e) {
+                Log.e(TAG, "Exception", e);
+                tcpEvtListener.onError(cId, e.getMessage());
+            }*/
+        }
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -103,7 +126,12 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                TcpSocketClient socketClient = getTcpClient(cId);
+                TcpSocketClient socketClient;
+                try { // TODO: Think about this exception
+                    socketClient = getTcpClient(cId);
+                } catch (Exception e) {
+                    return;
+                }
                 socketClient.destroy();
                 socketMap.remove(cId);
             }

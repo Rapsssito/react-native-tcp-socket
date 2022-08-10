@@ -7,7 +7,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { init, server, client } from './examples/echo-ssl';
+import { init, server, client } from './examples/client-ssl';
 
 class App extends React.Component {
     /**

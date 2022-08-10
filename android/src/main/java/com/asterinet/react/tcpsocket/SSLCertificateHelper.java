@@ -40,7 +40,7 @@ final class SSLCertificateHelper {
     static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String certResourceUri, @NonNull final String keyResourceUri) throws GeneralSecurityException, IOException {
         InputStream certInput = getRawResourceStream(context, certResourceUri);
         InputStream keyInput = getRawResourceStream(context, keyResourceUri);
-        
+        return null; // TODO: implement
     }
 
     /**
