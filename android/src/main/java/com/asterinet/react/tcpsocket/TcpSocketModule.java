@@ -4,11 +4,13 @@ package com.asterinet.react.tcpsocket;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.util.Base64;
-import android.net.Network;
-import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -22,9 +24,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 public class TcpSocketModule extends ReactContextBaseJavaModule {
     public static final String TAG = "TcpSockets";
@@ -123,7 +122,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                Log.e("TcpSockets", "Ending " + cId);
                 TcpSocketClient socketClient = getTcpClient(cId);
                 socketClient.destroy();
                 socketMap.remove(cId);
@@ -203,7 +201,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         TcpSocketClient client = getTcpClient(cId);
         client.resume();
     }
-    
+
     @SuppressWarnings("unused")
     @ReactMethod
     public void addListener(String eventName) {

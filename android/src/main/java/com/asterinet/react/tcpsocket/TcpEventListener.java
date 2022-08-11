@@ -92,7 +92,12 @@ public class TcpEventListener {
         sendEvent("data", eventParams);
     }
 
-    public void onWritten(int id, int msgId, @Nullable String error) {
+    public void onWritten(int id, int msgId, @Nullable Exception e) {
+        String error = null;
+        if (e != null) {
+            Log.e(TcpSocketModule.TAG, "Exception on socket " + id, e);
+            error = e.getMessage();
+        }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putInt("msgId", msgId);
