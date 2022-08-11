@@ -17,14 +17,14 @@ React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. I
     - [Using React Native < 0.60](#using-react-native--060-1)
 - [React Native Compatibility](#react-native-compatibility)
 - [Usage](#usage)
-  - [Client](#client)
-  - [Server](#server)
-  - [TLS Client](#tls-client)
-  - [TLS Server](#tls-server)
+  - [Client example](#client-example)
+  - [Server example](#server-example)
+  - [TLS Client example](#tls-client-example)
+  - [TLS Server example](#tls-server-example)
 - [API](#api)
   - [net](#net)
     - [Socket](#socket)
-    - [Server](#server-1)
+    - [Server](#server)
   - [tls](#tls)
     - [TLSSocket](#tlssocket)
     - [TLSServer](#tlsserver)
@@ -172,7 +172,7 @@ import TcpSocket from 'react-native-tcp-socket';
 // const net = require('react-native-tcp-socket');
 // const tls = require('react-native-tcp-socket');
 ```
-### Client
+### Client example
 ```javascript
 const options = {
   port: port,
@@ -205,7 +205,7 @@ client.on('close', function(){
 });
 ```
 
-### Server
+### Server example
 ```javascript
 const server = TcpSocket.createServer(function(socket) {
   socket.on('data', (data) => {
@@ -230,7 +230,7 @@ server.on('close', () => {
 });
 ```
 
-### TLS Client
+### TLS Client example
 ```javascript
 const options = {
   port: port,
@@ -265,7 +265,7 @@ client.on('close', function(){
 
 ```
 
-### TLS Server
+### TLS Server example
 ```javascript
 const options = {
   keystore: require('server-keystore.p12'),
