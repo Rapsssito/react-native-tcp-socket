@@ -26,7 +26,6 @@ serverCert = ca;
 
 const client = new tls.TLSSocket(clientSocket, {
     ca,
-    rejectUnauthorized: true,
 });
 
 function init() {
@@ -72,7 +71,7 @@ function init() {
                 localAddress: '127.0.0.1',
                 reuseAddress: true,
                 // localPort: 20000,
-                // interface: "wifi"
+                // interface: "wifi",
             },
             () => {
                 client.write('Hello, server! Love, Client.');

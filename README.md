@@ -5,12 +5,13 @@
   <img src="https://img.shields.io/npm/v/react-native-tcp-socket?color=gr&label=npm%20version" />
 <p/>
 
-React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. It allows you to create TCP client and server sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
+React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. It allows you to create TCP client and server sockets, imitating Node's [net](https://nodejs.org/api/net.html) and Node's [tls](https://nodejs.org/api/tls.html) API functionalities (check the available [API](#api) for more information).
 
 ## Table of Contents <!-- omit in toc -->
 
 - [Getting started](#getting-started)
     - [Overriding `net`](#overriding-net)
+    - [Overriding `tls`](#overriding-tls)
     - [Using React Native >= 0.60](#using-react-native--060)
     - [Self-Signed SSL (only available for React Native > 0.60)](#self-signed-ssl-only-available-for-react-native--060)
     - [Using React Native < 0.60](#using-react-native--060-1)
@@ -18,12 +19,15 @@ React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. I
 - [Usage](#usage)
   - [Client](#client)
   - [Server](#server)
-  - [SSL Client](#ssl-client)
+  - [TLS Client](#tls-client)
+  - [TLS Server](#tls-server)
 - [API](#api)
-  - [Socket](#socket)
-    - [`createConnection()`](#createconnection)
-  - [Server](#server-1)
-    - [`listen()`](#listen)
+  - [net](#net)
+    - [Socket](#socket)
+    - [Server](#server-1)
+  - [tls](#tls)
+    - [TLSSocket](#tlssocket)
+    - [TLSServer](#tlsserver)
 - [Maintainers](#maintainers)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
@@ -66,6 +70,13 @@ If you want to avoid duplicated `net` types, make sure not to use the default `n
 
 _Check the [example app](./examples/tcpsockets/) provided for a working example._
 
+#### Overriding `tls`
+The same applies to `tls` module. However, you should be aware of the following:
+
+* The `Server` class exported by default is non-TLS. In order to use the TLS server, you must use the `TLSServer` class. You may override the default `Server` class (`tls.Server = tls.TLSServer`). The same goes with the `createServer()` and `connect()`. In order to use the TLS methods, you must use the `createTLSServer()` and `connectTLS()` methods respectively. You may override the default methods (`tls.createServer = tls.createTLSServer` and `tls.connect = tls.connectTLS`).
+* Node's `tls` module requires the keys and certificates to be provided as a string. However, the `react-native-tcp-socket` module requires them to be imported with `require()`.
+
+_Check the [example app](./examples/tcpsockets/) provided for a working example._
 
 #### Using React Native >= 0.60
 Linking the package manually is not required anymore with [Autolinking](https://github.com/react-native-community/cli/blob/master/docs/autolinking.md).
@@ -87,6 +98,15 @@ Linking the package manually is not required anymore with [Autolinking](https://
   ```
 
 #### Self-Signed SSL (only available for React Native > 0.60)
+In order to generate the required files (keys and certificates) for self-signed SSL, you can use the following command:
+```
+openssl genrsa -out server-key.pem 4096
+openssl req -new -key server-key.pem -out server-csr.pem
+openssl x509 -req -in server-csr.pem -signkey server-key.pem -out server-cert.pem
+openssl pkcs12 -export -out server-keystore.p12 -inkey server-key.pem -in server-cert.pem
+```
+__Note:__ The `server-keystore.p12` must not have a password.
+
 You will need a [metro.config.js](https://facebook.github.io/metro/docs/en/configuration.html) file in order to use a self-signed SSL certificate. You should already have this file in your root project directory, but if you don't, create it.
 Inside a `module.exports` object, create a key called `resolver` with another object called `assetExts`. The value of `assetExts` should be an array of the resource file extensions you want to support.
 
@@ -101,14 +121,6 @@ module.exports = {
   },
   // ...
 };
-```
-
-
-```
-openssl genrsa -out server-key.pem 4096
-openssl req -new -key server-key.pem -out server-csr.pem
-openssl x509 -req -in server-csr.pem -signkey server-key.pem -out server-cert.pem
-openssl pkcs12 -export -out server-keystore.p12 -inkey server-key.pem -in server-cert.pem
 ```
 
 #### Using React Native < 0.60
@@ -148,19 +160,29 @@ If you can't or don't want to use the CLI tool, you can also manually link the l
 ## React Native Compatibility
 To use this library you need to ensure you are using the correct version of React Native. If you are using a version of React Native that is lower than `0.60` you will need to upgrade before attempting to use this library latest version.
 
-| `react-native-tcp-socket` version         | Required React Native Version                                                     |
-| ----------------------------------------- | --------------------------------------------------------------------------------- |
-| `5.X.X`, `4.X.X`, `3.X.X`                 | `>= 0.60.0`                                                                       |
-| `1.4.0`                                   | `>= Unknown`                                                                      |
+| `react-native-tcp-socket` version  | Required React Native Version |
+| ---------------------------------- | ----------------------------- |
+| `6.X.X`, `5.X.X`, `4.X.X`, `3.X.X` | `>= 0.60.0`                   |
+| `1.4.0`                            | `>= Unknown`                  |
 
 ## Usage
 Import the library:
 ```javascript
 import TcpSocket from 'react-native-tcp-socket';
 // const net = require('react-native-tcp-socket');
+// const tls = require('react-native-tcp-socket');
 ```
 ### Client
 ```javascript
+const options = {
+  port: port,
+  host: '127.0.0.1',
+  localAddress: '127.0.0.1',
+  reuseAddress: true,
+  // localPort: 20000,
+  // interface: "wifi",
+};
+
 // Create socket
 const client = TcpSocket.createConnection(options, () => {
   // Write on the socket
@@ -208,26 +230,82 @@ server.on('close', () => {
 });
 ```
 
-### SSL Client
+### TLS Client
 ```javascript
-const client = TcpSocket.createConnection({
-    port: 8443,
-    host: "example.com",
-    tls: true,
-    // tlsCheckValidity: false, // Disable validity checking
-    // tlsCert: require('./selfmade.pem') // Self-signed certificate
+const options = {
+  port: port,
+  host: '127.0.0.1',
+  localAddress: '127.0.0.1',
+  reuseAddress: true,
+  // localPort: 20000,
+  // interface: "wifi",
+  ca: require('server-cert.pem'),
+};
+
+// Create socket
+const client = TcpSocket.connectTLS(options, () => {
+  // Write on the socket
+  client.write('Hello server!');
+
+  // Close socket
+  client.destroy();
 });
 
-// ...
+client.on('data', function(data) {
+  console.log('message was received', data);
+});
+
+client.on('error', function(error) {
+  console.log(error);
+});
+
+client.on('close', function(){
+  console.log('Connection closed!');
+});
+
 ```
+
+### TLS Server
+```javascript
+const options = {
+  keystore: require('server-keystore.p12'),
+};
+
+
+const server = TcpSocket.createTLSServer(options, function(socket) {
+  socket.on('data', (data) => {
+    socket.write('Echo server ' + data);
+  });
+
+  socket.on('error', (error) => {
+    console.log('An error ocurred with SSL client socket ', error);
+  });
+
+  socket.on('close', (error) => {
+    console.log('SSL closed connection with ', socket.address());
+  });
+}).listen({ port: 12345, host: '0.0.0.0' });
+
+server.on('error', (error) => {
+  console.log('An error ocurred with the server', error);
+});
+
+server.on('close', () => {
+  console.log('Server closed connection');
+});
+```
+
 _Note: In order to use self-signed certificates make sure to [update your metro.config.js configuration](#self-signed-ssl-only-available-for-react-native--060)._
 
 ## API
-Here are listed all methods implemented in `react-native-tcp-socket`, their functionalities are equivalent to those provided by Node's [net](https://nodejs.org/api/net.html) (more info on [#41](https://github.com/Rapsssito/react-native-tcp-socket/issues/41)). However, the **methods whose interface differs from Node are marked in bold**.
+### net
+Here are listed all methods implemented in `react-native-tcp-socket` that imitate Node's [net](https://nodejs.org/api/net.html) API, their functionalities are equivalent to those provided by Node's [net](https://nodejs.org/api/net.html) (more info on [#41](https://github.com/Rapsssito/react-native-tcp-socket/issues/41)). However, the **methods whose interface differs from Node are marked in bold**.
 
-### Socket
+* **[`net.createConnection(options[, callback])`](#netcreateconnection----omit-in-toc)**
+* [`net.createServer(connectionListener)`](https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener)
+
+#### Socket
 * **Methods:**
-  * **[`TcpSocket.createConnection(options[, callback])`](#createconnection)**
   * [`address()`](https://nodejs.org/api/net.html#net_socket_address)
   * [`destroy([error])`](https://nodejs.org/api/net.html#net_socket_destroy_error)
   * [`end([data][, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_end_data_encoding_callback)
@@ -266,31 +344,25 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`'error'`](https://nodejs.org/api/net.html#net_event_error_1)
   * [`'timeout'`](https://nodejs.org/api/net.html#net_event_timeout)
 
-#### `createConnection()`
-`createConnection(options[, callback])` creates a TCP connection using the given [`options`](#createconnection-options).
-##### `createConnection: options` <!-- omit in toc -->
-**Required**. Available options for creating a socket. It must be an `object` with the following properties:
+##### `net.createConnection()` <!-- omit in toc -->
+`net.createConnection(options[, callback])` creates a TCP connection using the given `options`. The `options` parameter must be an `object` with the following properties:
 
-| Property              | Type   | iOS/macOS  | Android |Description                                                                                        |
-| --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
-| **`port`** | `<number>` | ✅  |   ✅   | **Required**. Port the socket should connect to. |
-| `host` | `<string>` | ✅  |   ✅  | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`. |
-| `timeout` | `<number>` | ✅  |   ✅  | If set, will be used to call [`setTimeout(timeout)`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback) after the socket is created, but before it starts the connection. |
-| `localAddress` | `<string>` | ✅  |   ✅  | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
-| `localPort` | `<number>` | ✅  |   ✅  | Local port the socket should connect from. If not specified, the OS will decide. |
-| `interface`| `<string>` | ❌  |   ✅  | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`. |
-| `reuseAddress`| `<boolean>` | ❌  |   ✅  | Enable/disable the reuseAddress socket option. **Default**: `true`. |
-| `tls`| `<boolean>` | ✅  |   ✅  | Enable/disable SSL/TLS socket creation. **Default**: `false`. |
-| `tlsCheckValidity`| `<boolean>` | ✅  |   ✅  | Enable/disable SSL/TLS certificate validity check. **Default**: `true`. |
-| `tlsCert`| `<any>` | ✅  |   ✅  | CA file (.pem format) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _See [example](#ssl-client) for more info_. **Default**: `null`. |
+| Property       | Type        | iOS/macOS | Android | Description                                                                                                                                                                                      |
+| -------------- | ----------- | :-------: | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`port`**     | `<number>`  |     ✅     |    ✅    | **Required**. Port the socket should connect to.                                                                                                                                                 |
+| `host`         | `<string>`  |     ✅     |    ✅    | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`.                                                                                       |
+| `timeout`      | `<number>`  |     ✅     |    ✅    | If set, will be used to call [`setTimeout(timeout)`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback) after the socket is created, but before it starts the connection.   |
+| `localAddress` | `<string>`  |     ✅     |    ✅    | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
+| `localPort`    | `<number>`  |     ✅     |    ✅    | Local port the socket should connect from. If not specified, the OS will decide.                                                                                                                 |
+| `interface`    | `<string>`  |     ❌     |    ✅    | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`.                                        |
+| `reuseAddress` | `<boolean>` |     ❌     |    ✅    | Enable/disable the reuseAddress socket option. **Default**: `true`.                                                                                                                              |
 
 **Note**: The platforms marked as ❌ use the default value.
 
-### Server
+#### Server
 * **Methods:**
-  * [`TcpSocket.createServer(connectionListener)`](https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener)
   * [`address()`](https://nodejs.org/api/net.html#net_server_address)
-  * **[`listen(options[, callback])`](#listen)**
+  * **[`listen(options[, callback])`](#serverlisten----omit-in-toc)**
   * [`close([callback])`](https://nodejs.org/api/net.html#net_server_close_callback)
   * [`getConnections(callback)`](https://nodejs.org/api/net.html#net_server_getconnections_callback)
 * **Properties:**
@@ -301,19 +373,55 @@ Here are listed all methods implemented in `react-native-tcp-socket`, their func
   * [`'error'`](https://nodejs.org/api/net.html#net_event_error)
   * [`'listening'`](https://nodejs.org/api/net.html#net_event_listening)
 
-#### `listen()`
-`listen(options[, callback])` creates a TCP server socket using the given [`options`](#listen-options).
+##### `Server.listen()` <!-- omit in toc -->
+`Server.listen(options[, callback])` creates a TCP server socket using the given `options`. The `options` parameter must be an `object` with the following properties:
 
-##### `listen: options` <!-- omit in toc -->
-**Required**. Available options for creating a server socket. It must be an `object` with the following properties:
-
-| Property              | Type   | iOS/macOS  | Android |Description                                                                                        |
-| --------------------- | ------ | :--: | :-----: |-------------------------------------------------------------------------------------------------- |
-| **`port`** | `<number>`  | ✅  |   ✅    | **Required**. Port the socket should listen to. |
-| `host` | `<string>` | ✅  |   ✅    | Host the socket should listen to. IP address in IPv4 format or `'localhost'`. **Default**: `'0.0.0.0'`. |
-| `reuseAddress`| `<boolean>` | ❌  |   ✅    | Enable/disable the reuseAddress socket option. **Default**: `true`. |
+| Property       | Type        | iOS/macOS | Android | Description                                                                                             |
+| -------------- | ----------- | :-------: | :-----: | ------------------------------------------------------------------------------------------------------- |
+| **`port`**     | `<number>`  |     ✅     |    ✅    | **Required**. Port the socket should listen to.                                                         |
+| `host`         | `<string>`  |     ✅     |    ✅    | Host the socket should listen to. IP address in IPv4 format or `'localhost'`. **Default**: `'0.0.0.0'`. |
+| `reuseAddress` | `<boolean>` |     ❌     |    ✅    | Enable/disable the reuseAddress socket option. **Default**: `true`.                                     |
 
 **Note**: The platforms marked as ❌ use the default value.
+
+### tls
+Here are listed all methods implemented in `react-native-tcp-socket` that imitate Node's [tls](https://nodejs.org/api/tls.html) API, their functionalities are equivalent to those provided by Node's [tls](https://nodejs.org/api/tls.html). However, the **methods whose interface differs from Node are marked in bold**.
+
+* **[`tls.connectTLS(options[, callback])`](#tlsconnecttls----omit-in-toc)**
+* **[`tls.createTLSServer([options][, secureConnectionListener])`](#tlscreatetlsserver----omit-in-toc)**
+
+#### TLSSocket
+* **Methods:**
+  * All methods from [`Socket`](#socket)
+* **Properties:**
+  * All properties from [`Socket`](#socket)
+* **Events:**
+  * All events from [`Socket`](#socket)
+
+##### `tls.connectTLS()` <!-- omit in toc -->
+`tls.connectTLS(options[, callback])` creates a TLS socket connection using the given `options`. The `options` parameter must be an `object` with the following properties:
+
+| Property | Type       | iOS/macOS | Android | Description                                                                                                                                                                                                                                                          |
+| -------- | ---------- | :-------: | :-----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ca`     | `<import>` |     ✅     |    ✅    | CA file (.pem format) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _Check the [documentation](#self-signed-ssl-only-available-for-react-native--060) for generating such file_. **Default**: `null`. |
+| `...`    | `<any>`    |     ✅     |    ✅    | Any other [`socket.connect()`](#netcreateconnection----omit-in-toc) options not already listed.                                                                                                                                                                      |
+
+#### TLSServer
+__Note__: The TLS server is named `Server` in Node's tls, but it is named `TLSServer` in `react-native-tcp-socket` in order to avoid confusion with the [`Server`](#server) class.
+* **Methods:**
+  * All methods from [`Server`](#server)
+* **Properties:**
+  * All properties from [`Server`](#server)
+* **Events:**
+  * All events from [`Server`](#server)
+  * [`'secureConnection'`](https://nodejs.org/api/tls.html#event-secureconnection)
+
+##### `tls.createTLSServer()` <!-- omit in toc -->
+`tls.createTLSServer([options][, secureConnectionListener])` creates a new `tls.TLSServer`. The `secureConnectionListener`, if provided, is automatically set as a listener for the `'secureConnection'` event. The `options` parameter must be an `object` with the following properties:
+
+| Property       | Type       | iOS/macOS | Android | Description                                                                                                                                                                                         |
+| -------------- | ---------- | :-------: | :-----: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`keystore`** | `<import>` |     ✅     |    ✅    | **Required**. Key store in PKCS#12 format with the server certificate and private key. _Check the [documentation](#self-signed-ssl-only-available-for-react-native--060) for generating such file_. |
 
 ## Maintainers
 
