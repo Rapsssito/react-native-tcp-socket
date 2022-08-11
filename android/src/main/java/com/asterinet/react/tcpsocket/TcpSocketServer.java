@@ -13,13 +13,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 
 public final class TcpSocketServer extends TcpSocket {
     private final TcpEventListener mReceiverListener;
     private final ExecutorService listenExecutor;
     private final ConcurrentHashMap<Integer, TcpSocket> socketClients;
+    private final boolean isTLS;
     private ServerSocket serverSocket;
     private int clientSocketIds;
 
@@ -38,16 +38,16 @@ public final class TcpSocketServer extends TcpSocket {
         // Check if TLS
         ReadableMap tlsOptions = options.getMap("tls");
         if (tlsOptions != null) {
-            String certResourceUri = tlsOptions.getString("cert");
-            String keyResourceUri = tlsOptions.getString("key");
-            assert certResourceUri != null;
-            assert keyResourceUri != null;
+            String keystoreResourceUri = tlsOptions.getString("keystore");
+            assert keystoreResourceUri != null;
 
-            SSLServerSocketFactory ssf = SSLCertificateHelper.createServerSocketFactory(context, certResourceUri, keyResourceUri);
+            SSLServerSocketFactory ssf = SSLCertificateHelper.createServerSocketFactory(context, keystoreResourceUri);
             serverSocket = ssf.createServerSocket(port, 50, localInetAddress);
-            ((SSLServerSocket) serverSocket).setNeedClientAuth(true);
+            isTLS = true;
+            // ((SSLServerSocket) serverSocket).setNeedClientAuth(true);
         } else {
             serverSocket = new ServerSocket(port, 50, localInetAddress);
+            isTLS = false;
         }
 
         // setReuseAddress
@@ -70,7 +70,11 @@ public final class TcpSocketServer extends TcpSocket {
         int clientId = getClientId();
         TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
         socketClients.put(clientId, socketClient);
-        mReceiverListener.onConnection(getId(), clientId, socket);
+        if (isTLS) {
+            mReceiverListener.onSecureConnection(getId(), clientId, socket);
+        } else {
+            mReceiverListener.onConnection(getId(), clientId, socket);
+        }
         socketClient.startListening();
     }
 
@@ -97,7 +101,7 @@ public final class TcpSocketServer extends TcpSocket {
                 serverSocket = null;
             }
         } catch (IOException e) {
-            mReceiverListener.onClose(getId(), e.getMessage());
+            mReceiverListener.onClose(getId(), e);
         }
     }
 
@@ -120,7 +124,7 @@ public final class TcpSocketServer extends TcpSocket {
                 }
             } catch (IOException e) {
                 if (!serverSocket.isClosed()) {
-                    receiverListener.onError(server.getId(), e.getMessage());
+                    receiverListener.onError(server.getId(), e);
                 }
             }
         }

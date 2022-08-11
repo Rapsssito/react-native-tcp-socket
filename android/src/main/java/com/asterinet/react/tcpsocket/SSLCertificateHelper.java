@@ -16,8 +16,10 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -37,10 +39,21 @@ final class SSLCertificateHelper {
         return ctx.getSocketFactory();
     }
 
-    static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String certResourceUri, @NonNull final String keyResourceUri) throws GeneralSecurityException, IOException {
-        InputStream certInput = getRawResourceStream(context, certResourceUri);
-        InputStream keyInput = getRawResourceStream(context, keyResourceUri);
-        return null; // TODO: implement
+    static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String keyStoreResourceUri) throws GeneralSecurityException, IOException {
+        char[] password = "".toCharArray();
+
+        InputStream keyStoreInput = getRawResourceStream(context, keyStoreResourceUri);
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(keyStoreInput, password);
+        keyStoreInput.close();
+
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("X509");
+        keyManagerFactory.init(keyStore, password);
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), new TrustManager[]{new BlindTrustManager()}, null);
+
+        return sslContext.getServerSocketFactory();
     }
 
     /**

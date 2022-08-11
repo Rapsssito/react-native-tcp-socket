@@ -1,17 +1,14 @@
 'use strict';
 
-import { Image, NativeModules } from 'react-native';
-import EventEmitter from 'eventemitter3';
-const Sockets = NativeModules.TcpSockets;
-import Socket from './Socket';
+import { Image } from 'react-native';
 import Server from './Server';
 import TLSSocket from './TLSSocket';
-import { nativeEventEmitter, getNextId } from './Globals';
 
 /**
  * @typedef {object} TLSServerOptions
  * @property {string} cert
  * @property {string} key
+ * @property {string} keystore
  *
  * @extends {Server}
  */
@@ -33,6 +30,7 @@ export default class TLSServer extends Server {
         this._options = { ...options };
         this._options.cert = Image.resolveAssetSource(this._options.cert).uri;
         this._options.key = Image.resolveAssetSource(this._options.key).uri;
+        this._options.keystore = Image.resolveAssetSource(this._options.keystore).uri;
     }
 
     /**
@@ -64,7 +62,12 @@ export default class TLSServer extends Server {
             'secureConnection',
             (evt) => {
                 if (evt.id !== this._id) return;
-                // this.emit('secureConnection');
+                const standardSocket = this._buildSocket(evt.info);
+                standardSocket._unregisterEvents();
+                const tlsSocket = new TLSSocket(standardSocket);
+                this._addConnection(tlsSocket);
+                this.emit('connection', standardSocket);
+                this.emit('secureConnection', tlsSocket);
             }
         );
     }

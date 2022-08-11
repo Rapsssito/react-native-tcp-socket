@@ -2,6 +2,7 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
+import android.util.Log;
 
 import com.facebook.react.bridge.ReadableMap;
 
@@ -69,6 +70,7 @@ class TcpSocketClient extends TcpSocket {
     }
 
     public void startTLS(Context context, ReadableMap tlsOptions) throws IOException, GeneralSecurityException {
+        if (socket instanceof SSLSocket) return;
         SSLSocketFactory ssf = getSSLSocketFactory(context, tlsOptions);
         SSLSocket sslSocket = (SSLSocket) ssf.createSocket(socket, socket.getInetAddress().getHostAddress(), socket.getPort(), true);
         sslSocket.setUseClientMode(true);
@@ -106,7 +108,7 @@ class TcpSocketClient extends TcpSocket {
                     receiverListener.onWritten(getId(), msgId, null);
                 } catch (IOException e) {
                     receiverListener.onWritten(getId(), msgId, e.toString());
-                    receiverListener.onError(getId(), e.toString());
+                    receiverListener.onError(getId(), e);
                 }
             }
         });
@@ -119,12 +121,16 @@ class TcpSocketClient extends TcpSocket {
         try {
             // close the socket
             if (socket != null && !socket.isClosed()) {
+                Log.e("TcpSockets", "CLosing " + getId());
                 socket.close();
+                Log.e("TcpSockets", "Closed" + getId());
                 receiverListener.onClose(getId(), null);
+                Log.e("TcpSockets", "Closed evt" + getId());
                 socket = null;
             }
         } catch (IOException e) {
-            receiverListener.onClose(getId(), e.getMessage());
+            Log.e("TcpSockets", "Closed error evt" + getId());
+            receiverListener.onClose(getId(), e);
         }
     }
 
@@ -189,12 +195,13 @@ class TcpSocketClient extends TcpSocket {
                     if (bufferCount > 0) {
                         receiverListener.onData(socketId, Arrays.copyOfRange(buffer, 0, bufferCount));
                     } else if (bufferCount == -1) {
+                        Log.e("TcpSockets", "Destroyed " + socketId);
                         clientSocket.destroy();
                     }
                 }
             } catch (IOException | InterruptedException ioe) {
                 if (receiverListener != null && !socket.isClosed()) {
-                    receiverListener.onError(socketId, ioe.getMessage());
+                    receiverListener.onError(socketId, ioe);
                 }
             }
         }

@@ -476,7 +476,7 @@ export default class Socket extends EventEmitter {
     }
 
     /**
-     * @private
+     * @package
      */
     _unregisterEvents() {
         this._dataListener?.remove();

@@ -1,6 +1,7 @@
 package com.asterinet.react.tcpsocket;
 
 import android.util.Base64;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -24,6 +25,14 @@ public class TcpEventListener {
     }
 
     public void onConnection(int serverId, int clientId, Socket socket) {
+        onSocketConnection("connection", serverId, clientId, socket);
+    }
+
+    public void onSecureConnection(int serverId, int clientId, Socket socket) {
+        onSocketConnection("secureConnection", serverId, clientId, socket);
+    }
+
+    private void onSocketConnection(String connectionType, int serverId, int clientId, Socket socket) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", serverId);
 
@@ -42,7 +51,7 @@ public class TcpEventListener {
         infoParams.putMap("connection", connectionParams);
         eventParams.putMap("info", infoParams);
 
-        sendEvent("connection", eventParams);
+        sendEvent(connectionType, eventParams);
     }
 
     public void onConnect(int id, TcpSocketClient client) {
@@ -92,18 +101,20 @@ public class TcpEventListener {
         sendEvent("written", eventParams);
     }
 
-    public void onClose(int id, String error) {
-        if (error != null) {
-            onError(id, error);
+    public void onClose(int id, Exception e) {
+        if (e != null) {
+            onError(id, e);
         }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
-        eventParams.putBoolean("hadError", error != null);
+        eventParams.putBoolean("hadError", e != null);
 
         sendEvent("close", eventParams);
     }
 
-    public void onError(int id, String error) {
+    public void onError(int id, Exception e) {
+        Log.e(TcpSocketModule.TAG, "Exception on socket " + id, e);
+        String error = e.getMessage();
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putString("error", error);

@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/npm/v/react-native-tcp-socket?color=gr&label=npm%20version" />
 <p/>
 
-React Native TCP socket API for Android, iOS & macOS with **client SSL/TLS support**. It allows you to create TCP client and server sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
+React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. It allows you to create TCP client and server sockets, imitating Node's [net](https://nodejs.org/api/net.html) API functionalities (check the available [API](#api) for more information).
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -90,20 +90,27 @@ Linking the package manually is not required anymore with [Autolinking](https://
 You will need a [metro.config.js](https://facebook.github.io/metro/docs/en/configuration.html) file in order to use a self-signed SSL certificate. You should already have this file in your root project directory, but if you don't, create it.
 Inside a `module.exports` object, create a key called `resolver` with another object called `assetExts`. The value of `assetExts` should be an array of the resource file extensions you want to support.
 
-If you want to support `.pem` files (plus all the already supported files), your `metro.config.js` would like like this:
+If you want to be able to use `.pem` and `.p12` files (plus all the already supported files), your `metro.config.js` should look like this:
 ```javascript
 const {getDefaultConfig} = require('metro-config');
 const defaultConfig = getDefaultConfig.getDefaultValues(__dirname);
 
 module.exports = {
   resolver: {
-    assetExts: [...defaultConfig.resolver.assetExts, 'pem'],
+    assetExts: [...defaultConfig.resolver.assetExts, 'pem', 'p12'],
   },
   // ...
 };
 ```
 
-  
+
+```
+openssl genrsa -out server-key.pem 4096
+openssl req -new -key server-key.pem -out server-csr.pem
+openssl x509 -req -in server-csr.pem -signkey server-key.pem -out server-cert.pem
+openssl pkcs12 -export -out server-keystore.p12 -inkey server-key.pem -in server-cert.pem
+```
+
 #### Using React Native < 0.60
 
 You then need to link the native parts of the library for the platforms you are using. The easiest way to link the library is using the CLI tool by running this command from the root of your project:

@@ -142,12 +142,7 @@ export default class Server extends EventEmitter {
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
             const newSocket = this._buildSocket(evt.info);
-            // Emit 'close' when all connection closed
-            newSocket.on('close', () => {
-                this._connections.delete(newSocket);
-                if (!this.listening && this._connections.size === 0) this.emit('close');
-            });
-            this._connections.add(newSocket);
+            this._addConnection(newSocket);
             this.emit('connection', newSocket);
         });
     }
@@ -162,7 +157,20 @@ export default class Server extends EventEmitter {
     }
 
     /**
-     * @private
+     * @protected
+     * @param {Socket} socket
+     */
+    _addConnection(socket) {
+        // Emit 'close' when all connection closed
+        socket.on('close', () => {
+            this._connections.delete(socket);
+            if (!this.listening && this._connections.size === 0) this.emit('close');
+        });
+        this._connections.add(socket);
+    }
+
+    /**
+     * @protected
      * @param {{ id: number; connection: import('./Socket').NativeConnectionInfo; }} info
      * @returns {Socket}
      */
