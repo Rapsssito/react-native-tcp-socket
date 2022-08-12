@@ -6,9 +6,7 @@ import TLSSocket from './TLSSocket';
 
 /**
  * @typedef {object} TLSServerOptions
- * @property {string} cert
- * @property {string} key
- * @property {string} keystore
+ * @property {any} keystore
  *
  * @extends {Server}
  */
@@ -28,8 +26,6 @@ export default class TLSServer extends Server {
     setSecureContext(options) {
         /** @private */
         this._options = { ...options };
-        this._options.cert = Image.resolveAssetSource(this._options.cert).uri;
-        this._options.key = Image.resolveAssetSource(this._options.key).uri;
         this._options.keystore = Image.resolveAssetSource(this._options.keystore).uri;
     }
 

@@ -14,6 +14,33 @@ function createServer(connectionListener) {
 }
 
 /**
+ * @param {import('./TLSServer').TLSServerOptions} options
+ * @param {(socket: TLSSocket) => void} connectionListener
+ * @returns {TLSServer}
+ */
+function createTLSServer(options, connectionListener) {
+    const server = new TLSServer(connectionListener);
+    server.setSecureContext(options);
+    return server;
+}
+
+/**
+ * The `callback` function, if specified, will be added as a listener for the `'secureConnect'` event.
+ *
+ * @param {import('./TLSSocket').TLSSocketOptions & import('./Socket').ConnectionOptions} options
+ * @param {() => void} [callback]
+ * @returns {TLSSocket}
+ */
+function connectTLS(options, callback) {
+    const socket = new Socket();
+    const tlsSocket = new TLSSocket(socket, options);
+    socket.once('connect', () => tlsSocket.emit('secureConnect'));
+    if (callback) tlsSocket.once('secureConnect', callback);
+    socket.connect(options);
+    return tlsSocket;
+}
+
+/**
  * @param {import('./Socket').ConnectionOptions} options
  * @param {() => void} callback
  * @returns {Socket}
@@ -73,8 +100,11 @@ function isIP(input) {
 }
 
 export default {
+    connect: createConnection,
     createServer,
     createConnection,
+    createTLSServer,
+    connectTLS,
     isIP,
     isIPv4,
     isIPv6,
@@ -86,8 +116,11 @@ export default {
 
 // @ts-ignore
 module.exports = {
+    connect: createConnection,
     createServer,
     createConnection,
+    createTLSServer,
+    connectTLS,
     isIP,
     isIPv4,
     isIPv6,

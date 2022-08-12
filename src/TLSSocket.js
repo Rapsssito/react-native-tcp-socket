@@ -5,12 +5,15 @@ const Sockets = NativeModules.TcpSockets;
 import Socket from './Socket';
 
 /**
+ * @typedef {object} TLSSocketOptions
+ * @property {any} [ca]
+ *
  * @extends {Socket}
  */
 export default class TLSSocket extends Socket {
     /**
      * @param {Socket} socket Any instance of `Socket`.
-     * @param {object} [options] Options for the TLS socket.
+     * @param {TLSSocketOptions} [options] Options for the TLS socket.
      */
     constructor(socket, options = {}) {
         super();

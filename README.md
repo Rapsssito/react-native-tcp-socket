@@ -76,6 +76,19 @@ The same applies to `tls` module. However, you should be aware of the following:
 * The `Server` class exported by default is non-TLS. In order to use the TLS server, you must use the `TLSServer` class. You may override the default `Server` class (`tls.Server = tls.TLSServer`). The same goes with the `createServer()` and `connect()`. In order to use the TLS methods, you must use the `createTLSServer()` and `connectTLS()` methods respectively. You may override the default methods (`tls.createServer = tls.createTLSServer` and `tls.connect = tls.connectTLS`).
 * Node's `tls` module requires the keys and certificates to be provided as a string. However, the `react-native-tcp-socket` module requires them to be imported with `require()`.
 
+In addition, in order to obtain the TS types (or autocompletion) provided by this module, you must also add the following to your custom declarations file.
+
+```ts
+...
+declare module 'tls' {
+    import TcpSockets from 'react-native-tcp-socket';
+    export const Server = TcpSockets.TLSServer;
+    export const TLSSocket = TcpSockets.TLSSocket;
+    export const connect = TcpSockets.connectTLS;
+    export const createServer = TcpSockets.createTLSServer;
+}
+```
+
 _Check the [example app](./examples/tcpsockets/) provided for a working example._
 
 #### Using React Native >= 0.60
@@ -301,8 +314,12 @@ _Note: In order to use self-signed certificates make sure to [update your metro.
 ### net
 Here are listed all methods implemented in `react-native-tcp-socket` that imitate Node's [net](https://nodejs.org/api/net.html) API, their functionalities are equivalent to those provided by Node's [net](https://nodejs.org/api/net.html) (more info on [#41](https://github.com/Rapsssito/react-native-tcp-socket/issues/41)). However, the **methods whose interface differs from Node are marked in bold**.
 
+* **[`net.connect(options[, callback])`](#netcreateconnection----omit-in-toc)**
 * **[`net.createConnection(options[, callback])`](#netcreateconnection----omit-in-toc)**
 * [`net.createServer(connectionListener)`](https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener)
+* [`net.isIP(input)`](https://nodejs.org/api/net.html#netisipinput)
+* [`net.isIPv4(input)`](https://nodejs.org/api/net.html#netisipv4input)
+* [`net.isIPv6(input)`](https://nodejs.org/api/net.html#netisipv6input)
 
 #### Socket
 * **Methods:**
@@ -397,6 +414,7 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
   * All properties from [`Socket`](#socket)
 * **Events:**
   * All events from [`Socket`](#socket)
+  * [`'secureConnect'`](https://nodejs.org/api/tls.html#event-secureconnect)
 
 ##### `tls.connectTLS()` <!-- omit in toc -->
 `tls.connectTLS(options[, callback])` creates a TLS socket connection using the given `options`. The `options` parameter must be an `object` with the following properties:

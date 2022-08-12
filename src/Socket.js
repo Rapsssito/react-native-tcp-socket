@@ -39,6 +39,7 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * @property {() => void} drain
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
+ * @property {() => void} secureConnect
  *
  * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
