@@ -12,6 +12,7 @@
 @implementation TcpSockets
 {
     NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients;
+    NSMutableDictionary<NSNumber *,NSDictionary*> *_pendingTLS;
     int _counter;
 }
 
@@ -20,8 +21,10 @@ RCT_EXPORT_MODULE()
 - (NSArray<NSString *> *)supportedEvents
 {
     return @[@"connect",
+             @"secureConnect",
              @"listening",
              @"connection",
+             @"secureConnection",
              @"data",
              @"close",
              @"error",
@@ -74,8 +77,10 @@ RCT_EXPORT_METHOD(connect:(nonnull NSNumber*)cId
         client = [self createSocket:cId];
     }
     
+    NSDictionary *tlsOptions = _pendingTLS[cId];
+    
     NSError *error = nil;
-    if (![client connect:host port:port withOptions:options error:&error])
+    if (![client connect:host port:port withOptions:options tlsOptions:tlsOptions error:&error])
     {
         [self onError:client withError:error];
         return;
@@ -119,6 +124,20 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
     {
         [self onError:client withError:error];
         return;
+    }
+}
+
+RCT_EXPORT_METHOD(startTLS:(nonnull NSNumber*)cId
+                  tlsOptions:(nonnull NSDictionary *)tlsOptions)
+{
+    TcpSocketClient* client = _clients[cId];
+    if (!client) {
+        if (!_pendingTLS) {
+            _pendingTLS = [NSMutableDictionary new];
+        }
+        _pendingTLS[cId] = tlsOptions;
+    } else {
+        [client startTLS:tlsOptions];
     }
 }
 

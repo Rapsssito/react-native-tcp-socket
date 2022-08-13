@@ -62,7 +62,7 @@ typedef enum RCTTCPError RCTTCPError;
  * @param options NSDictionary which can have @"localAddress" and @"localPort" to specify the local interface
  * @return true if connected, false if there was an error
  */
-- (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options error:(NSError **)error;
+- (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options tlsOptions:(NSDictionary*)tlsOptions error:(NSError **)error;
 
 /**
  * Starts listening on a local host and port
@@ -83,7 +83,10 @@ typedef enum RCTTCPError RCTTCPError;
  * write data
  *
  */
-- (void)writeData:(NSData*) data msgId:(NSNumber*)msgId;
+- (void)writeData:(NSData*)data msgId:(NSNumber*)msgId;
+
+
+- (void)startTLS:(NSDictionary*)tlsOptions;
 
 /**
  * end client

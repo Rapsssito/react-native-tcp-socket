@@ -14,6 +14,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     BOOL _checkValidity;
     BOOL _paused;
     NSString *_certPath;
+    NSString *_host;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, NSNumber*> *_pendingSends;
     NSLock *_lock;
@@ -60,7 +61,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return self;
 }
 
-- (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options error:(NSError **)error
+- (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options tlsOptions:(NSDictionary*)tlsOptions error:(NSError **)error
 {
     if (_tcpSocket) {
         if (error) {
@@ -77,6 +78,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     NSString *localAddress = options[@"localAddress"];
     NSNumber *localPort = options[@"localPort"];
+    _host = host;
 
     if (!localAddress && !localPort) {
         result = [_tcpSocket connectToHost:host onPort:port error:error];
@@ -92,26 +94,30 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                                withTimeout:-1
                                      error:error];
     }
-    _tls = (options[@"tls"]?[options[@"tls"] boolValue]:false);
-    if (result && _tls){
-        NSMutableDictionary *settings = [NSMutableDictionary dictionary];
-        NSString *certResourcePath = options[@"tlsCert"];
-        BOOL checkValidity = (options[@"tlsCheckValidity"]?[options[@"tlsCheckValidity"] boolValue]:true);
-        if (!checkValidity) {
-            // Do not validate
-            _checkValidity = false;
-            [settings setObject:[NSNumber numberWithBool:YES] forKey:GCDAsyncSocketManuallyEvaluateTrust];
-        } else if (certResourcePath != nil) {
-            // Self-signed certificate
-            _certPath = certResourcePath;
-            [settings setObject:[NSNumber numberWithBool:YES] forKey:GCDAsyncSocketManuallyEvaluateTrust];
-        } else {
-            // Default certificates
-            [settings setObject:host forKey:(NSString *) kCFStreamSSLPeerName];
-        }
-        [_tcpSocket startTLS:settings];
+    if (result && tlsOptions) {
+        [self startTLS:tlsOptions];
     }
     return result;
+}
+
+- (void)startTLS:(NSDictionary*) tlsOptions
+{
+    NSMutableDictionary *settings = [NSMutableDictionary dictionary];
+    NSString *certResourcePath = tlsOptions[@"ca"];
+    BOOL checkValidity = (tlsOptions[@"rejectUnauthorized"]?[tlsOptions[@"rejectUnauthorized"] boolValue]:true);
+    if (!checkValidity) {
+        // Do not validate
+        _checkValidity = false;
+        [settings setObject:[NSNumber numberWithBool:YES] forKey:GCDAsyncSocketManuallyEvaluateTrust];
+    } else if (certResourcePath != nil) {
+        // Self-signed certificate
+        _certPath = certResourcePath;
+        [settings setObject:[NSNumber numberWithBool:YES] forKey:GCDAsyncSocketManuallyEvaluateTrust];
+    } else {
+        // Default certificates
+        [settings setObject:_host forKey:(NSString *) kCFStreamSSLPeerName];
+    }
+    [_tcpSocket startTLS:settings];
 }
 
 - (NSDictionary<NSString *, id> *)getAddress
