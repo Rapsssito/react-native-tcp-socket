@@ -21,7 +21,6 @@ RCT_EXPORT_MODULE()
 - (NSArray<NSString *> *)supportedEvents
 {
     return @[@"connect",
-             @"secureConnect",
              @"listening",
              @"connection",
              @"secureConnection",
@@ -204,11 +203,20 @@ RCT_EXPORT_METHOD(resume:(nonnull NSNumber*)cId) {
 }
 
 -(void)onConnection:(TcpSocketClient *)client toClient:(NSNumber *)clientID {
+    [self onSocketConnection:client toClient:clientID connectionType:@"connection"];
+}
+
+-(void)onSecureConnection:(TcpSocketClient *)client toClient:(NSNumber *)clientID {
+    [self onSocketConnection:client toClient:clientID connectionType:@"secureConnection"];
+}
+
+-(void)onSocketConnection:(TcpSocketClient *)client toClient:(NSNumber *)clientID connectionType:(NSString *)connectionType
+{
     _clients[client.id] = client;
     
     GCDAsyncSocket * socket = [client getSocket];
     
-    [self sendEventWithName:@"connection" body:@{
+    [self sendEventWithName:connectionType body:@{
         @"id": clientID,
         @"info": @{
                 @"id": client.id,

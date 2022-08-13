@@ -117,6 +117,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         // Default certificates
         [settings setObject:_host forKey:(NSString *) kCFStreamSSLPeerName];
     }
+    _tls = true;
     [_tcpSocket startTLS:settings];
 }
 
@@ -178,6 +179,17 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
     [_tcpSocket setUserData: _id];
+    
+    // Get TLS data if present
+    NSDictionary* tlsOptions = options[@"tls"];
+    if (tlsOptions) {
+        
+        BOOL tlsSuccess = [self startServerTLS:tlsOptions];
+        if (!tlsSuccess) {
+            *error = [self badInvocationError:@"An error ocurred while loading SSL/TLS data"];
+            return false;
+        }
+    }
 
     // Get the host and port
     NSString *host = options[@"host"];
@@ -193,6 +205,42 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
 
     return isListening;
+}
+
+- (BOOL)startServerTLS:(NSDictionary*)tlsOptions
+{
+    NSString *keystoreResourcePath = tlsOptions[@"keystore"];
+    NSURL *keystoreUrl = [[NSURL alloc] initWithString:keystoreResourcePath];
+    NSData *pkcs12data = [[NSData alloc] initWithContentsOfURL:keystoreUrl];
+    CFDataRef inPCKS12Data = (CFDataRef) CFBridgingRetain(pkcs12data);
+    CFStringRef password = CFSTR("");
+    const void *keys[] = {kSecImportExportPassphrase};
+    const void *values[] = {password};
+    CFDictionaryRef options = CFDictionaryCreate(NULL, keys, values, 1, NULL, NULL);
+    
+    CFArrayRef items = CFArrayCreate(NULL, 0,0,NULL);
+    
+    OSStatus securityError = SecPKCS12Import(inPCKS12Data, options, &items);
+    CFRelease(options);
+    CFRelease(password);
+    
+    if (securityError != errSecSuccess) {
+        return false;
+    }
+    
+    CFDictionaryRef identityDict = CFArrayGetValueAtIndex(items, 0);
+    SecIdentityRef myIdent = (SecIdentityRef) CFDictionaryGetValue(identityDict, kSecImportItemIdentity);
+    
+    SecIdentityRef certArray[1] = {myIdent};
+    CFArrayRef myCerts = CFArrayCreate(NULL, (void *) certArray, 1, NULL);
+    
+    NSMutableDictionary *settings = [NSMutableDictionary dictionary];
+    [settings setObject:[NSNumber numberWithBool:YES] forKey:(NSString*)kCFStreamSSLIsServer];
+    [settings setObject:(id)CFBridgingRelease(myCerts) forKey:(NSString*)kCFStreamSSLCertificates];
+    
+    _tls = true;
+    [_tcpSocket startTLS:settings];
+    return true;
 }
 
 - (void)setPendingSend:(NSNumber *)msgId forKey:(NSNumber *)key
@@ -284,8 +332,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     TcpSocketClient *inComing = [[TcpSocketClient alloc] initWithClientId:[_clientDelegate getNextId]
                                                                 andConfig:_clientDelegate
                                                                 andSocket:newSocket];
-    [_clientDelegate onConnection: inComing
-                         toClient: _id];
+    if (_tls) {
+        [_clientDelegate onSecureConnection: inComing toClient: _id];
+    } else {
+        [_clientDelegate onConnection: inComing toClient: _id];
+    }
     [newSocket readDataWithTimeout:-1 tag:inComing.id.longValue];
 }
 
