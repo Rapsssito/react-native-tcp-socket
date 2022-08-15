@@ -1,5 +1,5 @@
 // Execute this file using NodeJS
-const { init, server, client } = require('./echo-ssl');
+const { init, server, client } = require('./client-ssl');
 
 server.on('secureConnection', (socket) => {
     console.log('SSL Client connected to server on ' + JSON.stringify(socket.address()));

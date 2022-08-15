@@ -17,6 +17,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     NSString *_host;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, NSNumber*> *_pendingSends;
+    NSDictionary *_tlsOptions;
     NSLock *_lock;
     long _sendTag;
 }
@@ -102,6 +103,9 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)startTLS:(NSDictionary*) tlsOptions
 {
+    if ([_tcpSocket isSecure]) {
+        return;
+    }
     NSMutableDictionary *settings = [NSMutableDictionary dictionary];
     NSString *certResourcePath = tlsOptions[@"ca"];
     BOOL checkValidity = (tlsOptions[@"rejectUnauthorized"]?[tlsOptions[@"rejectUnauthorized"] boolValue]:true);
@@ -183,12 +187,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     // Get TLS data if present
     NSDictionary* tlsOptions = options[@"tls"];
     if (tlsOptions) {
-        
-        BOOL tlsSuccess = [self startServerTLS:tlsOptions];
-        if (!tlsSuccess) {
-            *error = [self badInvocationError:@"An error ocurred while loading SSL/TLS data"];
-            return false;
-        }
+        _tls = true;
+        _tlsOptions = tlsOptions;
     }
 
     // Get the host and port
@@ -207,7 +207,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return isListening;
 }
 
-- (BOOL)startServerTLS:(NSDictionary*)tlsOptions
+- (BOOL)startServerTLS:(GCDAsyncSocket *)sock tlsOptions:(NSDictionary*)tlsOptions
 {
     NSString *keystoreResourcePath = tlsOptions[@"keystore"];
     NSURL *keystoreUrl = [[NSURL alloc] initWithString:keystoreResourcePath];
@@ -236,10 +236,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     
     NSMutableDictionary *settings = [NSMutableDictionary dictionary];
     [settings setObject:[NSNumber numberWithBool:YES] forKey:(NSString*)kCFStreamSSLIsServer];
+    [settings setObject:[NSNumber numberWithInteger:2] forKey:GCDAsyncSocketSSLProtocolVersionMin];
+    [settings setObject:[NSNumber numberWithInteger:8] forKey:GCDAsyncSocketSSLProtocolVersionMax];
     [settings setObject:(id)CFBridgingRelease(myCerts) forKey:(NSString*)kCFStreamSSLCertificates];
     
-    _tls = true;
-    [_tcpSocket startTLS:settings];
+    [sock startTLS:settings];
     return true;
 }
 
@@ -333,6 +334,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                                                                 andConfig:_clientDelegate
                                                                 andSocket:newSocket];
     if (_tls) {
+        [self startServerTLS:newSocket tlsOptions:_tlsOptions];
         [_clientDelegate onSecureConnection: inComing toClient: _id];
     } else {
         [_clientDelegate onConnection: inComing toClient: _id];
