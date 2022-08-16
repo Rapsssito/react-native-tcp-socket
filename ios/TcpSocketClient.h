@@ -1,18 +1,18 @@
-#import <React/RCTBridgeModule.h>
 #import "CocoaAsyncSocket/GCDAsyncSocket.h"
+#import <React/RCTBridgeModule.h>
+
 
 extern NSString *const RCTTCPErrorDomain;
 
-enum RCTTCPError
-{
-    RCTTCPNoError = 0,           // Never used
-    RCTTCPInvalidInvocationError,// Invalid method invocation
-    RCTTCPBadConfigError,        // Invalid configuration
-    RCTTCPBadParamError,         // Invalid parameter was passed
-    RCTTCPSendTimeoutError,      // A send operation timed out
-    RCTTCPSendFailedError,       // A send operation failed
-    RCTTCPClosedError,           // The socket was closed
-    RCTTCPOtherError,            // Description provided in userInfo
+enum RCTTCPError {
+    RCTTCPNoError = 0,            // Never used
+    RCTTCPInvalidInvocationError, // Invalid method invocation
+    RCTTCPBadConfigError,         // Invalid configuration
+    RCTTCPBadParamError,          // Invalid parameter was passed
+    RCTTCPSendTimeoutError,       // A send operation timed out
+    RCTTCPSendFailedError,        // A send operation failed
+    RCTTCPClosedError,            // The socket was closed
+    RCTTCPOtherError,             // Description provided in userInfo
 };
 
 typedef enum RCTTCPError RCTTCPError;
@@ -21,24 +21,25 @@ typedef enum RCTTCPError RCTTCPError;
 
 @protocol SocketClientDelegate <NSObject>
 
-- (void)onConnect:(TcpSocketClient*)client;
-- (void)onListen:(TcpSocketClient*)server;
-- (void)onConnection:(TcpSocketClient*)client toClient:(NSNumber *)clientID;
-- (void)onSecureConnection:(TcpSocketClient*)client toClient:(NSNumber *)clientID;
+- (void)onConnect:(TcpSocketClient *)client;
+- (void)onListen:(TcpSocketClient *)server;
+- (void)onConnection:(TcpSocketClient *)client toClient:(NSNumber *)clientID;
+- (void)onSecureConnection:(TcpSocketClient *)client
+                  toClient:(NSNumber *)clientID;
 - (void)onData:(NSNumber *)clientID data:(NSData *)data;
-- (void)onClose:(TcpSocketClient*)client withError:(NSError *)err;
-- (void)onError:(TcpSocketClient*)client withError:(NSError *)err;
-- (void)onWrittenData:(TcpSocketClient*)client msgId:(NSNumber *)msgId;
-- (NSNumber*)getNextId;
+- (void)onClose:(TcpSocketClient *)client withError:(NSError *)err;
+- (void)onError:(TcpSocketClient *)client withError:(NSError *)err;
+- (void)onWrittenData:(TcpSocketClient *)client msgId:(NSNumber *)msgId;
+- (NSNumber *)getNextId;
 
 @end
 
-@interface TcpSocketClient : NSObject<GCDAsyncSocketDelegate>
+@interface TcpSocketClient : NSObject <GCDAsyncSocketDelegate>
 
-@property (nonatomic, retain) NSNumber * id;
-@property (nonatomic, weak) id<SocketClientDelegate> clientDelegate;
+@property(nonatomic, retain) NSNumber *id;
+@property(nonatomic, weak) id<SocketClientDelegate> clientDelegate;
 
-- (GCDAsyncSocket *) getSocket;
+- (GCDAsyncSocket *)getSocket;
 
 ///---------------------------------------------------------------------------------------
 /// @name Class Methods
@@ -51,7 +52,8 @@ typedef enum RCTTCPError RCTTCPError;
  * @return New RCTTCPClient
  */
 
-+ (id)socketClientWithId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>) delegate;
++ (id)socketClientWithId:(NSNumber *)clientID
+               andConfig:(id<SocketClientDelegate>)delegate;
 
 ///---------------------------------------------------------------------------------------
 /// @name Instance Methods
@@ -60,15 +62,21 @@ typedef enum RCTTCPError RCTTCPError;
  * Connects to a host and port
  * @param port port
  * @param host ip address
- * @param options NSDictionary which can have @"localAddress" and @"localPort" to specify the local interface
+ * @param options NSDictionary which can have @"localAddress" and @"localPort"
+ * to specify the local interface
  * @return true if connected, false if there was an error
  */
-- (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options tlsOptions:(NSDictionary*)tlsOptions error:(NSError **)error;
+- (BOOL)connect:(NSString *)host
+           port:(int)port
+    withOptions:(NSDictionary *)options
+     tlsOptions:(NSDictionary *)tlsOptions
+          error:(NSError **)error;
 
 /**
  * Starts listening on a local host and port
  *
- * @param options NSDictionary which must have a @"port" and @"host" to specify where to listen
+ * @param options NSDictionary which must have a @"port" and @"host" to specify
+ * where to listen
  * @return true if connected, false if there was an error
  */
 - (BOOL)listen:(NSDictionary *)options error:(NSError **)error;
@@ -84,10 +92,9 @@ typedef enum RCTTCPError RCTTCPError;
  * write data
  *
  */
-- (void)writeData:(NSData*)data msgId:(NSNumber*)msgId;
+- (void)writeData:(NSData *)data msgId:(NSNumber *)msgId;
 
-
-- (void)startTLS:(NSDictionary*)tlsOptions;
+- (void)startTLS:(NSDictionary *)tlsOptions;
 
 /**
  * end client
@@ -103,8 +110,8 @@ typedef enum RCTTCPError RCTTCPError;
 
 - (void)setKeepAlive:(BOOL)enable initialDelay:(int)initialDelay;
 
-- (void) pause;
+- (void)pause;
 
-- (void) resume;
+- (void)resume;
 
 @end
