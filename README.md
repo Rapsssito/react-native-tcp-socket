@@ -428,6 +428,7 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
 __Note__: The TLS server is named `Server` in Node's tls, but it is named `TLSServer` in `react-native-tcp-socket` in order to avoid confusion with the [`Server`](#server) class.
 * **Methods:**
   * All methods from [`Server`](#server)
+  * **[`setSecureContext(options)`](#tlscreatetlsserver----omit-in-toc)**
 * **Properties:**
   * All properties from [`Server`](#server)
 * **Events:**

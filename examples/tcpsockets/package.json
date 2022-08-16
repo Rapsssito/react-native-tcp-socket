@@ -34,6 +34,7 @@
   },
   "react-native": {
     "net": "react-native-tcp-socket",
-    "tls": "react-native-tcp-socket"
+    "tls": "react-native-tcp-socket",
+    "fs": "react-native-tcp-socket"
   }
 }

@@ -1,34 +1,36 @@
 const tls = require('tls');
 const net = require('net');
+// @ts-ignore
+const fs = require('fs');
 
 // @ts-ignore
 const runningNode = typeof process !== 'undefined' && process.release?.name === 'node';
 if (!runningNode) {
     // @ts-ignore
     tls.Server = tls.TLSServer;
+    fs.readFileSync = () => {};
 }
 
-const clientSocket = new net.Socket();
+const ca = !runningNode
+    ? // @ts-ignore
+      require('../tls/server-cert.pem')
+    : fs.readFileSync('tls/server-cert.pem');
+const serverKey = !runningNode
+    ? // @ts-ignore
+      require('../tls/server-key.pem')
+    : fs.readFileSync('tls/server-key.pem');
+// @ts-ignore
+const keystore = !runningNode ? require('../tls/server-keystore.p12') : undefined;
+
 const server = new tls.Server();
+const clientSocket = new net.Socket();
 const client = new tls.TLSSocket(clientSocket);
-
-let ca, /** @type {any} */ serverCert, /** @type {any} */ serverKey, /** @type {any} */ keystore;
-
-ca = require('../tls/server-cert.pem');
-serverKey = require('../tls/server-key.pem');
-keystore = require('../tls/server-keystore.p12');
-// serverCert = ca;
-// // @ts-ignore
-// ca = require('fs').readFileSync('tls/server-cert.pem');
-// // @ts-ignore
-// serverKey = require('fs').readFileSync('tls/server-key.pem');
-// serverCert = ca;
-// keystore = undefined;
 
 function init() {
     server.setSecureContext({
+        // @ts-ignore
         key: serverKey,
-        cert: serverCert,
+        cert: ca,
         keystore: keystore,
     });
 

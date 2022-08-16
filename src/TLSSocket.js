@@ -17,8 +17,10 @@ export default class TLSSocket extends Socket {
      */
     constructor(socket, options = {}) {
         super();
+        /** @private */
         this._options = { ...options };
         if (this._options.ca) this._options.ca = Image.resolveAssetSource(this._options.ca).uri;
+        /** @private */
         this._socket = socket;
         // @ts-ignore
         this._setId(this._socket._id);
