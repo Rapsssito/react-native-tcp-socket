@@ -134,7 +134,7 @@ RCT_EXPORT_METHOD(startTLS
         }
         _pendingTLS[cId] = tlsOptions;
     } else {
-        [client startTLS:tlsOptions];
+        // [client startTLS:tlsOptions]; TODO
     }
 }
 

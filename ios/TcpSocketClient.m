@@ -203,7 +203,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     // Get TLS data if present
     NSDictionary *tlsOptions = options[@"tls"];
     if (tlsOptions) {
-        success = [self setSecureContext:tlsOptions];
+        BOOL success = [self setSecureContext:tlsOptions];
         if (!success) {
             if (error) {
                 *error = [self badInvocationError:@"failed to set TLS context"];
@@ -259,14 +259,14 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     CFArrayRef myCerts = CFArrayCreate(NULL, (void *)certArray, 1, NULL);
 
     _tlsSettings = [NSMutableDictionary dictionary];
-    [_tlsSettings setObject:[NSNumber numberWithBool:YES]
-                     forKey:(NSString *)kCFStreamSSLIsServer];
-    [_tlsSettings setObject:[NSNumber numberWithInteger:2]
-                     forKey:GCDAsyncSocketSSLProtocolVersionMin];
-    [_tlsSettings setObject:[NSNumber numberWithInteger:8]
-                     forKey:GCDAsyncSocketSSLProtocolVersionMax];
-    [_tlsSettings setObject:(id)CFBridgingRelease(myCerts)
-                     forKey:(NSString *)kCFStreamSSLCertificates];
+    [(NSMutableDictionary*) _tlsSettings setObject:[NSNumber numberWithBool:YES]
+                                            forKey:(NSString *)kCFStreamSSLIsServer];
+    [(NSMutableDictionary*) _tlsSettings setObject:[NSNumber numberWithInteger:2]
+                                            forKey:GCDAsyncSocketSSLProtocolVersionMin];
+    [(NSMutableDictionary*) _tlsSettings setObject:[NSNumber numberWithInteger:8]
+                                            forKey:GCDAsyncSocketSSLProtocolVersionMax];
+    [(NSMutableDictionary*) _tlsSettings setObject:(id)CFBridgingRelease(myCerts)
+                                            forKey:(NSString *)kCFStreamSSLCertificates];
     _tls = true;
     return true;
 }
