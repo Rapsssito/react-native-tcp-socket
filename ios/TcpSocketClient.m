@@ -12,12 +12,14 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     BOOL _tls;
     BOOL _checkValidity;
     BOOL _paused;
+    BOOL _connecting;
     NSString *_certPath;
     NSString *_host;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, NSNumber *> *_pendingSends;
     NSDictionary *_tlsSettings;
     NSLock *_lock;
+    NSNumber *_serverId;
     long _sendTag;
 }
 
@@ -25,7 +27,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
              andConfig:(id<SocketClientDelegate>)aDelegate;
 - (id)initWithClientId:(NSNumber *)clientID
              andConfig:(id<SocketClientDelegate>)aDelegate
-             andSocket:(GCDAsyncSocket *)tcpSocket;
+             andSocket:(GCDAsyncSocket *)tcpSocket
+             andServer:(NSNumber *)serverID;
 
 @end
 
@@ -39,26 +42,30 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                andConfig:(id<SocketClientDelegate>)delegate {
     return [[[self class] alloc] initWithClientId:clientID
                                         andConfig:delegate
-                                        andSocket:nil];
+                                        andSocket:nil
+                                        andServer:nil];
 }
 
 - (id)initWithClientId:(NSNumber *)clientID
              andConfig:(id<SocketClientDelegate>)aDelegate {
-    return [self initWithClientId:clientID andConfig:aDelegate andSocket:nil];
+    return [self initWithClientId:clientID andConfig:aDelegate andSocket:nil andServer:nil];
 }
 
 - (id)initWithClientId:(NSNumber *)clientID
              andConfig:(id<SocketClientDelegate>)aDelegate
-             andSocket:(GCDAsyncSocket *)tcpSocket;
+             andSocket:(GCDAsyncSocket *)tcpSocket
+             andServer:(NSNumber *)serverID;
 {
     self = [super init];
     if (self) {
         _id = clientID;
         _clientDelegate = aDelegate;
         _paused = false;
+        _connecting = false;
         _pendingSends = [NSMutableDictionary dictionary];
         _lock = [[NSLock alloc] init];
         _tcpSocket = tcpSocket;
+        _serverId = serverID;
         [_tcpSocket setUserData:clientID];
         [_tcpSocket setDelegate:self];
         [_tcpSocket setDelegateQueue:[self methodQueue]];
@@ -89,8 +96,9 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     NSString *localAddress = options[@"localAddress"];
     NSNumber *localPort = options[@"localPort"];
-    _host = host;
 
+    _host = host;
+    _connecting = true;
     if (!localAddress && !localPort) {
         result = [_tcpSocket connectToHost:host onPort:port error:error];
     } else {
@@ -113,9 +121,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 }
 
 - (void)startTLS:(NSDictionary *)tlsOptions {
-    if ([_tcpSocket isSecure]) {
-        return;
-    }
+    if (_tls) return;
     NSMutableDictionary *settings = [NSMutableDictionary dictionary];
     NSString *certResourcePath = tlsOptions[@"ca"];
     BOOL checkValidity = (tlsOptions[@"rejectUnauthorized"]
@@ -353,10 +359,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     TcpSocketClient *inComing =
         [[TcpSocketClient alloc] initWithClientId:[_clientDelegate getNextId]
                                         andConfig:_clientDelegate
-                                        andSocket:newSocket];
+                                        andSocket:newSocket
+                                        andServer:_id];
+    // Store the socket or the connection will be closed
+    [_clientDelegate addClient:inComing];
     if (_tls) {
         [newSocket startTLS:_tlsSettings];
-        [_clientDelegate onSecureConnection:inComing toClient:_id];
     } else {
         [_clientDelegate onConnection:inComing toClient:_id];
     }
@@ -370,8 +378,13 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                    [sock userData]);
         return;
     }
-
-    [_clientDelegate onConnect:self];
+    if (_serverId != nil) {
+        [_clientDelegate onSecureConnection:self toClient:_serverId];
+    } else if (_connecting) {
+        [_clientDelegate onConnect:self];
+        _connecting = false;
+    }
+    _tls = true;
 }
 
 - (void)socket:(GCDAsyncSocket *)sock

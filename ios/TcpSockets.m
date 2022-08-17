@@ -134,7 +134,7 @@ RCT_EXPORT_METHOD(startTLS
         }
         _pendingTLS[cId] = tlsOptions;
     } else {
-        // [client startTLS:tlsOptions]; TODO
+        [client startTLS:tlsOptions];
     }
 }
 
@@ -229,11 +229,13 @@ RCT_EXPORT_METHOD(resume : (nonnull NSNumber *)cId) {
               connectionType:@"secureConnection"];
 }
 
+- (void)addClient:(TcpSocketClient *)client {
+    _clients[client.id] = client;
+}
+
 - (void)onSocketConnection:(TcpSocketClient *)client
                   toClient:(NSNumber *)clientID
             connectionType:(NSString *)connectionType {
-    _clients[client.id] = client;
-
     GCDAsyncSocket *socket = [client getSocket];
 
     [self sendEventWithName:connectionType
