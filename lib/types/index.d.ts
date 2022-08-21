@@ -6,6 +6,8 @@ declare namespace _default {
     export { isIPv6 };
     export { Server };
     export { Socket };
+    export { TLSServer };
+    export { TLSSocket };
 }
 export default _default;
 /**
@@ -39,3 +41,5 @@ declare function isIPv4(input: string): boolean;
 declare function isIPv6(input: string): boolean;
 import Server from "./Server";
 import Socket from "./Socket";
+import TLSServer from "./TLSServer";
+import TLSSocket from "./TLSSocket";

@@ -7,11 +7,14 @@ import Socket from './Socket';
 import { nativeEventEmitter, getNextId } from './Globals';
 
 /**
+ * @typedef {import('./TLSSocket').default} TLSSocket
+ *
  * @typedef {object} ServerEvents
  * @property {() => void} close
  * @property {(socket: Socket) => void} connection
  * @property {() => void} listening
  * @property {(err: Error) => void} error
+ * @property {(tlsSocket: TLSSocket) => void} secureConnection
  *
  * @extends {EventEmitter<ServerEvents, any>}
  */
@@ -21,9 +24,9 @@ export default class Server extends EventEmitter {
      */
     constructor(connectionCallback) {
         super();
-        /** @private */
+        /** @protected @readonly */
         this._id = getNextId();
-        /** @private */
+        /** @protected @readonly */
         this._eventEmitter = nativeEventEmitter;
         /** @private @type {Set<Socket>} */
         this._connections = new Set();
@@ -124,7 +127,7 @@ export default class Server extends EventEmitter {
      * @private
      */
     _registerEvents() {
-        this._errorListener = this._eventEmitter.addListener('listening', (evt) => {
+        this._listeningListener = this._eventEmitter.addListener('listening', (evt) => {
             if (evt.id !== this._id) return;
             this._localAddress = evt.connection.localAddress;
             this._localPort = evt.connection.localPort;
@@ -139,12 +142,7 @@ export default class Server extends EventEmitter {
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
             const newSocket = this._buildSocket(evt.info);
-            // Emit 'close' when all connection closed
-            newSocket.on('close', () => {
-                this._connections.delete(newSocket);
-                if (!this.listening && this._connections.size === 0) this.emit('close');
-            });
-            this._connections.add(newSocket);
+            this._addConnection(newSocket);
             this.emit('connection', newSocket);
         });
     }
@@ -159,7 +157,20 @@ export default class Server extends EventEmitter {
     }
 
     /**
-     * @private
+     * @protected
+     * @param {Socket} socket
+     */
+    _addConnection(socket) {
+        // Emit 'close' when all connection closed
+        socket.on('close', () => {
+            this._connections.delete(socket);
+            if (!this.listening && this._connections.size === 0) this.emit('close');
+        });
+        this._connections.add(socket);
+    }
+
+    /**
+     * @protected
      * @param {{ id: number; connection: import('./Socket').NativeConnectionInfo; }} info
      * @returns {Socket}
      */

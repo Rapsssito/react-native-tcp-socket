@@ -2,6 +2,8 @@
 
 import Socket from './Socket';
 import Server from './Server';
+import TLSServer from './TLSServer';
+import TLSSocket from './TLSSocket';
 
 /**
  * @param {(socket: Socket) => void} connectionListener
@@ -9,6 +11,33 @@ import Server from './Server';
  */
 function createServer(connectionListener) {
     return new Server(connectionListener);
+}
+
+/**
+ * @param {import('./TLSServer').TLSServerOptions} options
+ * @param {(socket: TLSSocket) => void} connectionListener
+ * @returns {TLSServer}
+ */
+function createTLSServer(options, connectionListener) {
+    const server = new TLSServer(connectionListener);
+    server.setSecureContext(options);
+    return server;
+}
+
+/**
+ * The `callback` function, if specified, will be added as a listener for the `'secureConnect'` event.
+ *
+ * @param {import('./TLSSocket').TLSSocketOptions & import('./Socket').ConnectionOptions} options
+ * @param {() => void} [callback]
+ * @returns {TLSSocket}
+ */
+function connectTLS(options, callback) {
+    const socket = new Socket();
+    const tlsSocket = new TLSSocket(socket, options);
+    socket.once('connect', () => tlsSocket.emit('secureConnect'));
+    if (callback) tlsSocket.once('secureConnect', callback);
+    socket.connect(options);
+    return tlsSocket;
 }
 
 /**
@@ -70,7 +99,33 @@ function isIP(input) {
     return 0;
 }
 
-export default { createServer, createConnection, isIP, isIPv4, isIPv6, Server, Socket };
+export default {
+    connect: createConnection,
+    createServer,
+    createConnection,
+    createTLSServer,
+    connectTLS,
+    isIP,
+    isIPv4,
+    isIPv6,
+    Server,
+    Socket,
+    TLSServer,
+    TLSSocket,
+};
 
 // @ts-ignore
-module.exports = { createServer, createConnection, isIP, isIPv4, isIPv6, Server, Socket };
+module.exports = {
+    connect: createConnection,
+    createServer,
+    createConnection,
+    createTLSServer,
+    connectTLS,
+    isIP,
+    isIPv4,
+    isIPv6,
+    Server,
+    Socket,
+    TLSServer,
+    TLSSocket,
+};

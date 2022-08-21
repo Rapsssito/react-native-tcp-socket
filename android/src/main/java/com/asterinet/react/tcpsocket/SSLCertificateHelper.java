@@ -3,6 +3,9 @@ package com.asterinet.react.tcpsocket;
 import android.annotation.SuppressLint;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RawRes;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -13,14 +16,16 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509TrustManager;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RawRes;
 
 final class SSLCertificateHelper {
     /**
@@ -32,6 +37,23 @@ final class SSLCertificateHelper {
         SSLContext ctx = SSLContext.getInstance("TLS");
         ctx.init(null, new TrustManager[]{new BlindTrustManager()}, null);
         return ctx.getSocketFactory();
+    }
+
+    static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String keyStoreResourceUri) throws GeneralSecurityException, IOException {
+        char[] password = "".toCharArray();
+
+        InputStream keyStoreInput = getRawResourceStream(context, keyStoreResourceUri);
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(keyStoreInput, password);
+        keyStoreInput.close();
+
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("X509");
+        keyManagerFactory.init(keyStore, password);
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), new TrustManager[]{new BlindTrustManager()}, null);
+
+        return sslContext.getServerSocketFactory();
     }
 
     /**

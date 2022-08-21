@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -25,6 +24,7 @@ class TcpSocketClient extends TcpSocket {
     private final TcpEventListener receiverListener;
     private TcpReceiverTask receiverTask;
     private Socket socket;
+    private boolean closed = true;
 
     TcpSocketClient(TcpEventListener receiverListener, Integer id, Socket socket) {
         super(id);
@@ -38,20 +38,12 @@ class TcpSocketClient extends TcpSocket {
         return socket;
     }
 
-    public void connect(Context context, String address, final Integer port, ReadableMap options, Network network) throws IOException, GeneralSecurityException {
+    public void connect(Context context, String address, final Integer port, ReadableMap options, Network network, ReadableMap tlsOptions) throws IOException, GeneralSecurityException {
         if (socket != null) throw new IOException("Already connected");
-        final boolean isTls = options.hasKey("tls") && options.getBoolean("tls");
-        if (isTls) {
-            SocketFactory sf;
-            if (options.hasKey("tlsCheckValidity") && !options.getBoolean("tlsCheckValidity")) {
-                sf = SSLCertificateHelper.createBlindSocketFactory();
-            } else {
-                final String customTlsCert = options.hasKey("tlsCert") ? options.getString("tlsCert") : null;
-                sf = customTlsCert != null ? SSLCertificateHelper.createCustomTrustedSocketFactory(context, customTlsCert) : SSLSocketFactory.getDefault();
-            }
-            final SSLSocket sslSocket = (SSLSocket) sf.createSocket();
-            sslSocket.setUseClientMode(true);
-            socket = sslSocket;
+        if (tlsOptions != null) {
+            SSLSocketFactory ssf = getSSLSocketFactory(context, tlsOptions);
+            socket = ssf.createSocket();
+            ((SSLSocket) socket).setUseClientMode(true);
         } else {
             socket = new Socket();
         }
@@ -73,8 +65,28 @@ class TcpSocketClient extends TcpSocket {
         // bind
         socket.bind(new InetSocketAddress(localInetAddress, localPort));
         socket.connect(new InetSocketAddress(remoteInetAddress, port));
-        if (isTls) ((SSLSocket) socket).startHandshake();
+        if (socket instanceof SSLSocket) ((SSLSocket) socket).startHandshake();
         startListening();
+    }
+
+    public void startTLS(Context context, ReadableMap tlsOptions) throws IOException, GeneralSecurityException {
+        if (socket instanceof SSLSocket) return;
+        SSLSocketFactory ssf = getSSLSocketFactory(context, tlsOptions);
+        SSLSocket sslSocket = (SSLSocket) ssf.createSocket(socket, socket.getInetAddress().getHostAddress(), socket.getPort(), true);
+        sslSocket.setUseClientMode(true);
+        sslSocket.startHandshake();
+        socket = sslSocket;
+    }
+
+    private SSLSocketFactory getSSLSocketFactory(Context context, ReadableMap tlsOptions) throws GeneralSecurityException, IOException {
+        SSLSocketFactory ssf;
+        if (tlsOptions.hasKey("rejectUnauthorized") && !tlsOptions.getBoolean("rejectUnauthorized")) {
+            ssf = SSLCertificateHelper.createBlindSocketFactory();
+        } else {
+            final String customTlsCert = tlsOptions.hasKey("ca") ? tlsOptions.getString("ca") : null;
+            ssf = customTlsCert != null ? SSLCertificateHelper.createCustomTrustedSocketFactory(context, customTlsCert) : (SSLSocketFactory) SSLSocketFactory.getDefault();
+        }
+        return ssf;
     }
 
     public void startListening() {
@@ -95,8 +107,8 @@ class TcpSocketClient extends TcpSocket {
                     socket.getOutputStream().write(data);
                     receiverListener.onWritten(getId(), msgId, null);
                 } catch (IOException e) {
-                    receiverListener.onWritten(getId(), msgId, e.toString());
-                    receiverListener.onError(getId(), e.toString());
+                    receiverListener.onWritten(getId(), msgId, e);
+                    receiverListener.onError(getId(), e);
                 }
             }
         });
@@ -109,12 +121,13 @@ class TcpSocketClient extends TcpSocket {
         try {
             // close the socket
             if (socket != null && !socket.isClosed()) {
+                closed = true;
                 socket.close();
                 receiverListener.onClose(getId(), null);
                 socket = null;
             }
         } catch (IOException e) {
-            receiverListener.onClose(getId(), e.getMessage());
+            receiverListener.onClose(getId(), e);
         }
     }
 
@@ -183,8 +196,8 @@ class TcpSocketClient extends TcpSocket {
                     }
                 }
             } catch (IOException | InterruptedException ioe) {
-                if (receiverListener != null && !socket.isClosed()) {
-                    receiverListener.onError(socketId, ioe.getMessage());
+                if (receiverListener != null && !socket.isClosed() && !clientSocket.closed) {
+                    receiverListener.onError(socketId, ioe);
                 }
             }
         }

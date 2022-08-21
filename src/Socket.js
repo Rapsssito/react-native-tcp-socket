@@ -1,6 +1,6 @@
 'use strict';
 
-import { NativeModules, Image } from 'react-native';
+import { NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
@@ -39,6 +39,7 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * @property {() => void} drain
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
+ * @property {() => void} secureConnect
  *
  * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
@@ -48,8 +49,8 @@ export default class Socket extends EventEmitter {
      */
     constructor() {
         super();
-        /** @private */
-        this._id = undefined;
+        /** @package */
+        this._id = getNextId();
         /** @private */
         this._eventEmitter = nativeEventEmitter;
         /** @type {EventEmitter<'written', any>} @private */
@@ -155,8 +156,6 @@ export default class Socket extends EventEmitter {
      * @param {() => void} [callback]
      */
     connect(options, callback) {
-        if (this._id === undefined) this._setId(getNextId());
-
         const customOptions = { ...options };
         // Normalize args
         customOptions.host = customOptions.host || 'localhost';
@@ -167,10 +166,6 @@ export default class Socket extends EventEmitter {
         // Timeout
         if (customOptions.timeout) this.setTimeout(customOptions.timeout);
         else if (this._timeout) this._activateTimer();
-        // TLS Cert
-        if (customOptions.tlsCert) {
-            customOptions.tlsCert = Image.resolveAssetSource(customOptions.tlsCert).uri;
-        }
         this._connecting = true;
         this._readyState = 'opening';
         Sockets.connect(this._id, customOptions.host, customOptions.port, customOptions);
@@ -482,7 +477,7 @@ export default class Socket extends EventEmitter {
     }
 
     /**
-     * @private
+     * @package
      */
     _unregisterEvents() {
         this._dataListener?.remove();

@@ -1,24 +1,30 @@
 package com.asterinet.react.tcpsocket;
 
+import android.content.Context;
+
 import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.net.ssl.SSLServerSocketFactory;
 
 public final class TcpSocketServer extends TcpSocket {
     private final TcpEventListener mReceiverListener;
     private final ExecutorService listenExecutor;
     private final ConcurrentHashMap<Integer, TcpSocket> socketClients;
+    private final boolean isTLS;
     private ServerSocket serverSocket;
     private int clientSocketIds;
 
-    public TcpSocketServer(final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpEventListener receiverListener, final Integer id,
-                           final ReadableMap options) throws IOException {
+    public TcpSocketServer(final Context context, final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpEventListener receiverListener, final Integer id,
+                           final ReadableMap options) throws IOException, GeneralSecurityException {
         super(id);
         listenExecutor = Executors.newSingleThreadExecutor();
         // Get data from options
@@ -29,7 +35,20 @@ public final class TcpSocketServer extends TcpSocket {
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
-        serverSocket = new ServerSocket(port, 50, localInetAddress);
+        // Check if TLS
+        ReadableMap tlsOptions = options.getMap("tls");
+        if (tlsOptions != null) {
+            String keystoreResourceUri = tlsOptions.getString("keystore");
+            assert keystoreResourceUri != null;
+
+            SSLServerSocketFactory ssf = SSLCertificateHelper.createServerSocketFactory(context, keystoreResourceUri);
+            serverSocket = ssf.createServerSocket(port, 50, localInetAddress);
+            isTLS = true;
+            // ((SSLServerSocket) serverSocket).setNeedClientAuth(true);
+        } else {
+            serverSocket = new ServerSocket(port, 50, localInetAddress);
+            isTLS = false;
+        }
 
         // setReuseAddress
         try {
@@ -51,7 +70,11 @@ public final class TcpSocketServer extends TcpSocket {
         int clientId = getClientId();
         TcpSocketClient socketClient = new TcpSocketClient(mReceiverListener, clientId, socket);
         socketClients.put(clientId, socketClient);
-        mReceiverListener.onConnection(getId(), clientId, socket);
+        if (isTLS) {
+            mReceiverListener.onSecureConnection(getId(), clientId, socket);
+        } else {
+            mReceiverListener.onConnection(getId(), clientId, socket);
+        }
         socketClient.startListening();
     }
 
@@ -78,7 +101,7 @@ public final class TcpSocketServer extends TcpSocket {
                 serverSocket = null;
             }
         } catch (IOException e) {
-            mReceiverListener.onClose(getId(), e.getMessage());
+            mReceiverListener.onClose(getId(), e);
         }
     }
 
@@ -101,7 +124,7 @@ public final class TcpSocketServer extends TcpSocket {
                 }
             } catch (IOException e) {
                 if (!serverSocket.isClosed()) {
-                    receiverListener.onError(server.getId(), e.getMessage());
+                    receiverListener.onError(server.getId(), e);
                 }
             }
         }

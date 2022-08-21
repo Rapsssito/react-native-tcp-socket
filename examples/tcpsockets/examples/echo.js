@@ -5,7 +5,9 @@ const client = new net.Socket();
 
 function init() {
     server.on('connection', (socket) => {
-        socket.write('Echo server\r\n');
+        socket.on('data', () => {
+            socket.write('Echo server\r\n');
+        })
     });
 
     server.listen({ port: 0, host: '127.0.0.1', reuseAddress: true }, () => {
@@ -18,8 +20,7 @@ function init() {
                 localAddress: '127.0.0.1',
                 reuseAddress: true,
                 // localPort: 20000,
-                // interface: "wifi",
-                // tls: true
+                // interface: "wifi"
             },
             () => {
                 client.write('Hello, server! Love, Client.');

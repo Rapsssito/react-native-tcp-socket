@@ -22,7 +22,7 @@ module.exports = {
   projectRoot: __dirname,
   watchFolders: [root],
   resolver: {
-    assetExts: [...defaultConfig.resolver.assetExts, 'pem'],
+    assetExts: [...defaultConfig.resolver.assetExts, 'pem', 'p12'],
     blacklistRE: blacklist([
       new RegExp(`^${escape(path.join(root, 'node_modules'))}\\/.*$`),
     ]),
