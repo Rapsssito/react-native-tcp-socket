@@ -88,11 +88,19 @@ export default class Server extends EventEmitter<ServerEvents, any> {
      */
     private _setDisconnected;
     /**
-     * @private
+     * @protected
+     * @param {Socket} socket
+     */
+    protected _addConnection(socket: Socket): void;
+    /**
+     * @protected
      * @param {{ id: number; connection: import('./Socket').NativeConnectionInfo; }} info
      * @returns {Socket}
      */
-    private _buildSocket;
+    protected _buildSocket(info: {
+        id: number;
+        connection: import('./Socket').NativeConnectionInfo;
+    }): Socket;
 }
 export type TLSSocket = import("./TLSSocket").default;
 export type ServerEvents = {

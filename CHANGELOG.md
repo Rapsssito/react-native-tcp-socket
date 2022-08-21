@@ -1,3 +1,15 @@
+# [6.0.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.6.2...v6.0.0) (2022-08-21)
+
+
+### Features
+
+* Add complete server/client TLS support ([#158](https://github.com/Rapsssito/react-native-tcp-socket/issues/158)) ([3264f44](https://github.com/Rapsssito/react-native-tcp-socket/commit/3264f4455cc0cf04fda643818dc3bed48e2d8f38))
+
+
+### BREAKING CHANGES
+
+* TLS client API now matches NodeJS official tls API.
+
 ## [5.6.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.6.1...v5.6.2) (2022-04-26)
 
 

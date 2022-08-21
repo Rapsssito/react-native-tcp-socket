@@ -31,12 +31,13 @@
  * @property {() => void} drain
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
+ * @property {() => void} secureConnect
  *
  * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
 export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, any> {
-    /** @private */
-    private _id;
+    /** @package */
+    _id: number;
     /** @private */
     private _eventEmitter;
     /** @type {EventEmitter<'written', any>} @private */
@@ -216,9 +217,9 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     _connectListener: import("react-native").EmitterSubscription | undefined;
     _writtenListener: import("react-native").EmitterSubscription | undefined;
     /**
-     * @private
+     * @package
      */
-    private _unregisterEvents;
+    _unregisterEvents(): void;
     /**
      * @private
      * @param {string | Buffer | Uint8Array} buffer
@@ -267,6 +268,7 @@ export type SocketEvents = {
     drain: () => void;
     error: (err: Error) => void;
     timeout: () => void;
+    secureConnect: () => void;
 };
 import EventEmitter from "eventemitter3";
 import { Buffer } from "buffer";

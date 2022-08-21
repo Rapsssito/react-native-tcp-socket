@@ -1,6 +1,9 @@
 declare namespace _default {
+    export { createConnection as connect };
     export { createServer };
     export { createConnection };
+    export { createTLSServer };
+    export { connectTLS };
     export { isIP };
     export { isIPv4 };
     export { isIPv6 };
@@ -11,16 +14,30 @@ declare namespace _default {
 }
 export default _default;
 /**
- * @param {(socket: Socket) => void} connectionListener
- * @returns {Server}
- */
-declare function createServer(connectionListener: (socket: Socket) => void): Server;
-/**
  * @param {import('./Socket').ConnectionOptions} options
  * @param {() => void} callback
  * @returns {Socket}
  */
 declare function createConnection(options: import('./Socket').ConnectionOptions, callback: () => void): Socket;
+/**
+ * @param {(socket: Socket) => void} connectionListener
+ * @returns {Server}
+ */
+declare function createServer(connectionListener: (socket: Socket) => void): Server;
+/**
+ * @param {import('./TLSServer').TLSServerOptions} options
+ * @param {(socket: TLSSocket) => void} connectionListener
+ * @returns {TLSServer}
+ */
+declare function createTLSServer(options: import('./TLSServer').TLSServerOptions, connectionListener: (socket: TLSSocket) => void): TLSServer;
+/**
+ * The `callback` function, if specified, will be added as a listener for the `'secureConnect'` event.
+ *
+ * @param {import('./TLSSocket').TLSSocketOptions & import('./Socket').ConnectionOptions} options
+ * @param {() => void} [callback]
+ * @returns {TLSSocket}
+ */
+declare function connectTLS(options: import('./TLSSocket').TLSSocketOptions & import('./Socket').ConnectionOptions, callback?: (() => void) | undefined): TLSSocket;
 /**
  * Tests if input is an IP address. Returns `0` for invalid strings, returns `4` for IP version 4 addresses, and returns `6` for IP version 6 addresses.
  *

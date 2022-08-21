@@ -1,7 +1,6 @@
 /**
  * @typedef {object} TLSServerOptions
- * @property {string} cert
- * @property {string} key
+ * @property {any} keystore
  *
  * @extends {Server}
  */
@@ -23,8 +22,7 @@ export default class TLSServer extends Server {
     _secureConnectionListener: import("react-native").EmitterSubscription | undefined;
 }
 export type TLSServerOptions = {
-    cert: string;
-    key: string;
+    keystore: any;
 };
 import Server from "./Server";
 import TLSSocket from "./TLSSocket";
