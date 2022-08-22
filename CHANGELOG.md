@@ -1,3 +1,10 @@
+## [6.0.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.0...v6.0.1) (2022-08-22)
+
+
+### Bug Fixes
+
+* Server never emits close event if no connections ([#156](https://github.com/Rapsssito/react-native-tcp-socket/issues/156)) ([6eec851](https://github.com/Rapsssito/react-native-tcp-socket/commit/6eec8519a9e2e74e7ec986eca518b4142d7365be)), closes [#144](https://github.com/Rapsssito/react-native-tcp-socket/issues/144)
+
 # [6.0.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v5.6.2...v6.0.0) (2022-08-21)
 
 
