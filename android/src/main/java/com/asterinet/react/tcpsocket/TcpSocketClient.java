@@ -103,12 +103,14 @@ class TcpSocketClient extends TcpSocket {
         writeExecutor.execute(new Runnable() {
             @Override
             public void run() {
-                try {
-                    socket.getOutputStream().write(data);
-                    receiverListener.onWritten(getId(), msgId, null);
-                } catch (IOException e) {
-                    receiverListener.onWritten(getId(), msgId, e);
-                    receiverListener.onError(getId(), e);
+                if(socket != null){
+                    try {
+                        socket.getOutputStream().write(data);
+                        receiverListener.onWritten(getId(), msgId, null);
+                    } catch (IOException e) {
+                        receiverListener.onWritten(getId(), msgId, e.toString());
+                        receiverListener.onError(getId(), e.toString());
+                    }
                 }
             }
         });
