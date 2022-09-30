@@ -1,3 +1,10 @@
+## [6.0.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.1...v6.0.2) (2022-09-30)
+
+
+### Bug Fixes
+
+* Remove `timeout` from connection parameters ([16fea0b](https://github.com/Rapsssito/react-native-tcp-socket/commit/16fea0bea42274e88122d2fa70c7d29de1df8632))
+
 ## [6.0.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.0...v6.0.1) (2022-08-22)
 
 

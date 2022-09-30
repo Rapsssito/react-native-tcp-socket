@@ -10,7 +10,6 @@
  * @typedef {{
  * port: number;
  * host?: string;
- * timeout?: number,
  * localAddress?: string,
  * localPort?: number,
  * interface?: 'wifi' | 'cellular' | 'ethernet',
@@ -248,7 +247,6 @@ export type NativeConnectionInfo = {
 export type ConnectionOptions = {
     port: number;
     host?: string | undefined;
-    timeout?: number | undefined;
     localAddress?: string | undefined;
     localPort?: number | undefined;
     interface?: "wifi" | "cellular" | "ethernet" | undefined;
