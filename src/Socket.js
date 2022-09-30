@@ -18,7 +18,6 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * @typedef {{
  * port: number;
  * host?: string;
- * timeout?: number,
  * localAddress?: string,
  * localPort?: number,
  * interface?: 'wifi' | 'cellular' | 'ethernet',
@@ -163,9 +162,6 @@ export default class Socket extends EventEmitter {
         this.once('connect', () => {
             if (callback) callback();
         });
-        // Timeout
-        if (customOptions.timeout) this.setTimeout(customOptions.timeout);
-        else if (this._timeout) this._activateTimer();
         this._connecting = true;
         this._readyState = 'opening';
         Sockets.connect(this._id, customOptions.host, customOptions.port, customOptions);
