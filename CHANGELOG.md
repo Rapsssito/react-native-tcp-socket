@@ -1,3 +1,10 @@
+## [6.0.3](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.2...v6.0.3) (2022-11-21)
+
+
+### Bug Fixes
+
+* **Android:** Fix null error writing on disconnected socket ([59d3195](https://github.com/Rapsssito/react-native-tcp-socket/commit/59d3195a8c68eddb0341c8264d712ed2266d23b5))
+
 ## [6.0.2](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.1...v6.0.2) (2022-09-30)
 
 
