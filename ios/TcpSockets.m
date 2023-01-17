@@ -185,20 +185,23 @@ RCT_EXPORT_METHOD(resume : (nonnull NSNumber *)cId) {
 
 - (void)onConnect:(TcpSocketClient *)client {
     GCDAsyncSocket *socket = [client getSocket];
-    [self sendEventWithName:@"connect"
-                       body:@{
-                           @"id" : client.id,
-                           @"connection" : @{
-                               @"localAddress" : [socket localHost],
-                               @"localPort" :
-                                   [NSNumber numberWithInt:[socket localPort]],
-                               @"remoteAddress" : [socket connectedHost],
-                               @"remotePort" : [NSNumber
-                                   numberWithInt:[socket connectedPort]],
-                               @"remoteFamily" : [socket isIPv4] ? @"IPv4"
-                                                                 : @"IPv6"
-                           }
-                       }];
+    if([socket localPort] != nil && [socket connectedPort] != nil) {
+        [self sendEventWithName:@"connect"
+                           body:@{
+                               @"id" : client.id,
+                               @"connection" : @{
+                                   @"localAddress" : [socket localHost],
+                                   @"localPort" :
+                                       [NSNumber numberWithInt:[socket localPort]],
+                                   @"remoteAddress" : [socket connectedHost],
+                                   @"remotePort" : [NSNumber
+                                       numberWithInt:[socket connectedPort]],
+                                   @"remoteFamily" : [socket isIPv4] ? @"IPv4"
+                                                                     : @"IPv6"
+                               }
+                           }];
+    }
+   
 }
 
 - (void)onListen:(TcpSocketClient *)server {
