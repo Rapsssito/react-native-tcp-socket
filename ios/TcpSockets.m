@@ -283,7 +283,7 @@ RCT_EXPORT_METHOD(resume : (nonnull NSNumber *)cId) {
 }
 
 - (void)onError:(TcpSocketClient *)client withError:(NSError *)err {
-    NSString *msg = err.localizedFailureReason ?: err.localizedDescription;
+    NSString *msg = err.localizedDescription ?: err.localizedFailureReason;
     [self sendEventWithName:@"error" body:@{@"id" : client.id, @"error" : msg}];
 }
 
