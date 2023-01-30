@@ -1,3 +1,10 @@
+## [6.0.5](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.4...v6.0.5) (2023-01-30)
+
+
+### Bug Fixes
+
+* **iOS:** Throw specific error messages ([#171](https://github.com/Rapsssito/react-native-tcp-socket/issues/171)) ([8f39511](https://github.com/Rapsssito/react-native-tcp-socket/commit/8f3951199fcdd0806912e2a953d80db9466518a8))
+
 ## [6.0.4](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.3...v6.0.4) (2023-01-30)
 
 
