@@ -305,7 +305,7 @@ export default class Socket extends EventEmitter {
      * Ensures that no more I/O activity happens on this socket. Destroys the stream and closes the connection.
      */
     destroy() {
-        if (this._pending || this._destroyed) return this;
+        if (this._destroyed) return this;
         this._destroyed = true;
         this._clearTimeout();
         Sockets.destroy(this._id);
