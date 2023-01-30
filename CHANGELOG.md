@@ -1,3 +1,10 @@
+## [6.0.4](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.3...v6.0.4) (2023-01-30)
+
+
+### Bug Fixes
+
+* Allow destroying socket while connecting ([#169](https://github.com/Rapsssito/react-native-tcp-socket/issues/169)) ([54cc248](https://github.com/Rapsssito/react-native-tcp-socket/commit/54cc2486ee4201d8c62bc9535610ff75f72b820d))
+
 ## [6.0.3](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.2...v6.0.3) (2022-11-21)
 
 
