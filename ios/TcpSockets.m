@@ -200,6 +200,10 @@ RCT_EXPORT_METHOD(resume : (nonnull NSNumber *)cId) {
                                                                      : @"IPv6"
                                }
                            }];
+    } else {
+         NSString *msg =
+            [NSString stringWithFormat:@"no client found with id %@", client.id];
+        [self sendEventWithName:@"error" body:@{@"id" : client.id, @"error" : msg}];
     }
    
 }
