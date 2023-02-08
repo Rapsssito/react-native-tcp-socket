@@ -124,7 +124,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
             public void run() {
                 TcpSocketClient socketClient = getTcpClient(cId);
                 socketClient.destroy();
-                socketMap.remove(cId);
             }
         });
     }
