@@ -1,3 +1,10 @@
+## [6.0.6](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.5...v6.0.6) (2023-02-08)
+
+
+### Bug Fixes
+
+* **Android:** Avoid crash when writing on closed socket. ([466a5db](https://github.com/Rapsssito/react-native-tcp-socket/commit/466a5db0285f6ab688d32c81b682dd320999bbdc)), closes [#167](https://github.com/Rapsssito/react-native-tcp-socket/issues/167)
+
 ## [6.0.5](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.4...v6.0.5) (2023-01-30)
 
 
