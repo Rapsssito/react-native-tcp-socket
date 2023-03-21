@@ -137,9 +137,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         _certPath = certResourcePath;
         [settings setObject:[NSNumber numberWithBool:YES]
                      forKey:GCDAsyncSocketManuallyEvaluateTrust];
-    } else {
-        // Default certificates
-        [settings setObject:_host forKey:(NSString *)kCFStreamSSLPeerName];
     }
     _tls = true;
     [_tcpSocket startTLS:settings];
