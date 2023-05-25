@@ -185,7 +185,8 @@ RCT_EXPORT_METHOD(resume : (nonnull NSNumber *)cId) {
 
 - (void)onConnect:(TcpSocketClient *)client {
     GCDAsyncSocket *socket = [client getSocket];
-    if([socket localPort] != nil && [socket connectedPort] != nil) {
+    if([socket localHost] != nil && [socket connectedHost] != nil && [socket localPort] != nil
+       && [socket connectedPort] != nil) {
         [self sendEventWithName:@"connect"
                            body:@{
                                @"id" : client.id,
