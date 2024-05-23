@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.Network;
 
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableArray;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -78,13 +79,60 @@ class TcpSocketClient extends TcpSocket {
         socket = sslSocket;
     }
 
+    private boolean containsKey(ReadableArray array, String key) {
+        for (int i = 0; i < array.size(); i++) {
+            if (array.getString(i).equals(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    private ResolvableOption getResolvableOption(ReadableMap tlsOptions, String key) {
+        if (tlsOptions.hasKey(key)) {
+            String value = tlsOptions.getString(key);
+            ReadableArray resolvedKeys = tlsOptions.hasKey("resolvedKeys") ? tlsOptions.getArray("resolvedKeys") : null;
+            boolean needsResolution = resolvedKeys != null && containsKey(resolvedKeys, key);
+            return new ResolvableOption(value, needsResolution);
+        }
+        return null;
+    }
+
     private SSLSocketFactory getSSLSocketFactory(Context context, ReadableMap tlsOptions) throws GeneralSecurityException, IOException {
-        SSLSocketFactory ssf;
+        SSLSocketFactory ssf = null;
+
+        final ResolvableOption customTlsCa = getResolvableOption(tlsOptions, "ca");
+        final ResolvableOption customTlsKey = getResolvableOption(tlsOptions, "key");
+        final ResolvableOption customTlsCert = getResolvableOption(tlsOptions, "cert");
+        final String keystoreName = tlsOptions.hasKey("androidKeyStore") ? tlsOptions.getString("androidKeyStore") : "";
+        final String caAlias = tlsOptions.hasKey("caAlias") ? tlsOptions.getString("caAlias") : "";
+        final String keyAlias = tlsOptions.hasKey("keyAlias") ? tlsOptions.getString("keyAlias") : "";
+        final String certAlias = tlsOptions.hasKey("certAlias") ? tlsOptions.getString("certAlias") : "";
+        final KeystoreInfo keystoreInfo = new KeystoreInfo(keystoreName, caAlias, certAlias, keyAlias);
+
         if (tlsOptions.hasKey("rejectUnauthorized") && !tlsOptions.getBoolean("rejectUnauthorized")) {
-            ssf = SSLCertificateHelper.createBlindSocketFactory();
+            Log.d(LOG_TAG, "rejectUnauthorized is false");
+            if (customTlsKey != null && customTlsCert != null ) {
+                Log.d(LOG_TAG, "we have a key and a cert");
+                ssf = SSLCertificateHelper.createCustomTrustedSocketFactory(
+                        context,
+                        customTlsCa,
+                        customTlsKey,
+                        customTlsCert,
+                        keystoreInfo
+                );
+            } else {
+                ssf = SSLCertificateHelper.createBlindSocketFactory();
+            }
         } else {
-            final String customTlsCert = tlsOptions.hasKey("ca") ? tlsOptions.getString("ca") : null;
-            ssf = customTlsCert != null ? SSLCertificateHelper.createCustomTrustedSocketFactory(context, customTlsCert) : (SSLSocketFactory) SSLSocketFactory.getDefault();
+            ssf = (customTlsCa != null)
+                    ? SSLCertificateHelper.createCustomTrustedSocketFactory(
+                            context,
+                            customTlsCa,
+                            customTlsKey,
+                            customTlsCert,
+                            keystoreInfo
+                    )
+                    : (SSLSocketFactory) SSLSocketFactory.getDefault();
         }
         return ssf;
     }

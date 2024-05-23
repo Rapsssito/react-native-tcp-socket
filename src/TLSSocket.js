@@ -19,7 +19,10 @@ export default class TLSSocket extends Socket {
         super();
         /** @private */
         this._options = { ...options };
-        if (this._options.ca) this._options.ca = Image.resolveAssetSource(this._options.ca).uri;
+        TLSSocket.resolveAssetIfNeeded(this._options, 'ca');
+        TLSSocket.resolveAssetIfNeeded(this._options, 'key');
+        TLSSocket.resolveAssetIfNeeded(this._options, 'cert');
+        
         /** @private */
         this._socket = socket;
         // @ts-ignore
@@ -55,5 +58,25 @@ export default class TLSSocket extends Socket {
      */
     _startTLS() {
         Sockets.startTLS(this._id, this._options);
+    }
+
+    /**
+     * @private
+     * Resolves the asset source if necessary and registers the resolved key.
+     * @param {object} options The options object containing the source to be resolved.
+     * @param {string} key The key name being resolved.
+     */
+    static resolveAssetIfNeeded(options, key) {
+        console.log('resolveAssetIfNeeded: entering');
+        const source = options[key];
+        const typeSource = typeof source;
+        console.log('resolveAssetIfNeeded: typeSource= ', typeSource);
+        if (source && typeSource !== 'string') {
+            if (!options.resolvedKeys) {
+                options.resolvedKeys = [];
+            }
+            options.resolvedKeys.push(key);
+            options[key] = Image.resolveAssetSource(source).uri;
+        }
     }
 }
