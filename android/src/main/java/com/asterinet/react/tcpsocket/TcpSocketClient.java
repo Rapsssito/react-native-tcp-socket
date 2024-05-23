@@ -110,9 +110,7 @@ class TcpSocketClient extends TcpSocket {
         final KeystoreInfo keystoreInfo = new KeystoreInfo(keystoreName, caAlias, certAlias, keyAlias);
 
         if (tlsOptions.hasKey("rejectUnauthorized") && !tlsOptions.getBoolean("rejectUnauthorized")) {
-            Log.d(LOG_TAG, "rejectUnauthorized is false");
             if (customTlsKey != null && customTlsCert != null ) {
-                Log.d(LOG_TAG, "we have a key and a cert");
                 ssf = SSLCertificateHelper.createCustomTrustedSocketFactory(
                         context,
                         customTlsCa,

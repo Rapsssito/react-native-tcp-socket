@@ -2,7 +2,6 @@ package com.asterinet.react.tcpsocket;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RawRes;
@@ -36,7 +35,6 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 
 final class SSLCertificateHelper {
-    //private static KeyStore keyStore;
 
     /**
      * Creates an SSLSocketFactory instance for use with all CAs provided.
@@ -77,15 +75,6 @@ final class SSLCertificateHelper {
             throw new RuntimeException("Failed to parse private key from PEM", e);
         }
     }
-
-    /*public static TrustManager getTrustManager() {
-        KeyStore keyStore2 = keyStore;
-        try {
-            return new ClientTrustManager(keyStore2);
-        } catch (KeyStoreException | NoSuchAlgorithmException e6) {
-            return null;
-        }
-    }*/
 
     /**
      * Creates an InpuStream either from a getRawResourceStream or from raw string
@@ -149,7 +138,6 @@ final class SSLCertificateHelper {
             // Initialize the KeyManagerFactory with this cert
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(keyStore, new char[0]);
-            //TrustManager trustManager = getTrustManager();
 
             // Create an SSL context that uses the created trust manager
             SSLContext sslContext = SSLContext.getInstance("TLS");
