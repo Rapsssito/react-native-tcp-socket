@@ -297,6 +297,20 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         return (TcpSocketServer) socket;
     }
 
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public String getPeerCertificate(final int cId) {
+        final TcpSocketClient client = getTcpClient(cId);
+        return client.getPeerCertificate();
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public String getCertificate(final int cId) {
+        final TcpSocketClient client = getTcpClient(cId);
+        return client.getCertificate();
+    }
+
     private static class CurrentNetwork {
         @Nullable
         Network network = null;

@@ -2,6 +2,8 @@ package com.asterinet.react.tcpsocket;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RawRes;
@@ -10,22 +12,31 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ByteArrayInputStream;
+import java.math.BigInteger;
+import java.net.Socket;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.text.SimpleDateFormat;
+import java.util.Base64;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -33,6 +44,8 @@ import javax.net.ssl.X509TrustManager;
 
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
+import org.json.JSONObject;
+
 
 final class SSLCertificateHelper {
 
@@ -195,5 +208,119 @@ final class SSLCertificateHelper {
         @SuppressLint("TrustAllX509TrustManager")
         public void checkServerTrusted(X509Certificate[] chain, String authType) {
         }
+    }
+
+    public static String getCertificateInfo(Socket socket, boolean wantPeerCert) {
+        String peerCert = "{}";
+        Log.d("tvr", "SSLCert.getCertificateInfo()");
+        if (socket instanceof SSLSocket) {
+            Log.d("tvr", "socket instanceof SSLSocket");
+            SSLSocket sslSocket = (SSLSocket) socket;
+            try {
+                final SSLSession sslSession = sslSocket.getSession();
+                Certificate[] certificates = wantPeerCert ? sslSession.getPeerCertificates() : sslSession.getLocalCertificates();
+                Log.d("tvr", "A");
+                Log.d("tvr", String.valueOf(certificates.length));
+                Log.d("tvr", String.valueOf(certificates[0]));
+                if (certificates != null && certificates.length > 0 && certificates[0] instanceof X509Certificate) {
+                    Log.d("tvr", "B");
+                    X509Certificate cert = (X509Certificate) certificates[0];
+                    Map<String, Object> certDetails = new HashMap<>();
+                    certDetails.put("subject", parseDN(cert.getSubjectDN().getName()));
+                    certDetails.put("issuer", parseDN(cert.getIssuerDN().getName()));
+                    certDetails.put("ca", cert.getBasicConstraints() != -1);
+                    certDetails.put("modulus", getModulus(cert));
+                    certDetails.put("bits", getModulusBitLength(cert));
+                    certDetails.put("exponent", "0x" + getExponent(cert));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        certDetails.put("pubkey", Base64.getEncoder().encodeToString(cert.getPublicKey().getEncoded()));
+                    }
+                    certDetails.put("valid_from", formatDate(cert.getNotBefore()));
+                    certDetails.put("valid_to", formatDate(cert.getNotAfter()));
+                    certDetails.put("fingerprint", getFingerprint(cert, "SHA-1"));
+                    certDetails.put("fingerprint256", getFingerprint(cert, "SHA-256"));
+                    certDetails.put("fingerprint512", getFingerprint(cert, "SHA-512"));
+                    certDetails.put("serialNumber", getSerialNumber(cert));
+
+                    peerCert = new JSONObject(certDetails).toString();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        Log.d("tvr", "peerCert: " + peerCert);
+        return peerCert;
+    }
+
+    // LdapName don't seem to be available on android ....
+    // So very very dummy implementation
+    // I can see inside android/platform/libcore an implementation but don't even know if we
+    // can import it...
+    //https://android.googlesource.com/platform/libcore/+/0ebbfbdbca73d6261a77183f68e1f3e56c339f9f/ojluni/src/main/java/javax/naming/
+
+    private static Map<String, String> parseDN(String dn) {
+        Map<String, String> details = new HashMap<>();
+        String[] components = dn.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // Split by comma, but not inside quotes
+        for (String component : components) {
+            String[] keyValue = component.split("=", 2);
+            if (keyValue.length == 2) {
+                String key = keyValue[0].trim();
+                String value = keyValue[1].trim();
+                if ("2.5.4.46".equals(key)) { // OID for dnQualifier
+                    if (value.startsWith("#")) {
+                        details.put("dnQualifier", decodeHexString(value.substring(1)));
+                    } else {
+                        details.put("dnQualifier", value);
+                    }
+                } else if ("CN".equals(key)) {
+                    details.put("CN", value);
+                }
+            }
+        }
+        return details;
+    }
+    private static String decodeHexString(String hex) {
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < hex.length(); i += 2) {
+            String str = hex.substring(i, i + 2);
+            output.append((char) Integer.parseInt(str, 16));
+        }
+        // Remove the leading control character if it exists
+        return output.toString().replaceAll("^\\p{Cntrl}", "");
+    }
+
+    private static String getSerialNumber(X509Certificate cert) {
+        BigInteger serialNumber = cert.getSerialNumber();
+        return serialNumber.toString(16).toUpperCase(); // Convert to hex string and uppercase
+    }
+    private static String getModulus(X509Certificate cert) throws Exception {
+        RSAPublicKey rsaPubKey = (RSAPublicKey) cert.getPublicKey();
+        return rsaPubKey.getModulus().toString(16).toUpperCase();
+    }
+
+    private static int getModulusBitLength(X509Certificate cert) throws Exception {
+        RSAPublicKey rsaPubKey = (RSAPublicKey) cert.getPublicKey();
+        return rsaPubKey.getModulus().bitLength();
+    }
+    private static String getExponent(X509Certificate cert) throws Exception {
+        RSAPublicKey rsaPubKey = (RSAPublicKey) cert.getPublicKey();
+        return rsaPubKey.getPublicExponent().toString(16).toUpperCase();
+    }
+
+    private static String getFingerprint(X509Certificate cert, String algorithm) throws Exception {
+        byte[] encoded = cert.getEncoded();
+        java.security.MessageDigest md = java.security.MessageDigest.getInstance(algorithm);
+        byte[] digest = md.digest(encoded);
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02X:", b));
+        }
+        return sb.substring(0, sb.length() - 1); // Remove the trailing colon
+    }
+
+    private static String formatDate(Date date) {
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd HH:mm:ss yyyy 'GMT'", Locale.US);
+        sdf.setTimeZone(java.util.TimeZone.getTimeZone("GMT"));
+        return sdf.format(date);
     }
 }

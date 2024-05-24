@@ -53,6 +53,14 @@ export default class TLSSocket extends Socket {
         });
     }
 
+    getCertificate() {
+        return Sockets.getCertificate(this._id);
+    }
+
+    getPeerCertificate() {
+        return Sockets.getPeerCertificate(this._id);
+    }
+
     /**
      * @private
      */
@@ -67,11 +75,8 @@ export default class TLSSocket extends Socket {
      * @param {string} key The key name being resolved.
      */
     static resolveAssetIfNeeded(options, key) {
-        console.log('resolveAssetIfNeeded: entering');
         const source = options[key];
-        const typeSource = typeof source;
-        console.log('resolveAssetIfNeeded: typeSource= ', typeSource);
-        if (source && typeSource !== 'string') {
+        if (source && typeof source !== 'string') {
             if (!options.resolvedKeys) {
                 options.resolvedKeys = [];
             }
