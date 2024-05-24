@@ -3,7 +3,6 @@ package com.asterinet.react.tcpsocket;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RawRes;
@@ -28,12 +27,11 @@ import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
@@ -41,6 +39,11 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableMap;
+
 
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
@@ -131,15 +134,22 @@ final class SSLCertificateHelper {
             KeyStore keyStore = KeyStore.getInstance(keyStoreName);
             keyStore.load(null, null);
 
-            InputStream certInput = getResolvableinputStream(context, optionResCert);
-            Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(certInput);
-            keyStore.setCertificateEntry(keystoreInfo.getCertAlias(), cert);
+            // Check if cert and key if already registered inside our keystore
+            // If one is missing we insert again
+            boolean hasCertInStore = keyStore.isCertificateEntry(keystoreInfo.getCertAlias());
+            boolean hasKeyInStore = keyStore.isKeyEntry(keystoreInfo.getKeyAlias());
+            if (!hasCertInStore || !hasKeyInStore) {
+                InputStream certInput = getResolvableinputStream(context, optionResCert);
+                Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(certInput);
+                keyStore.setCertificateEntry(keystoreInfo.getCertAlias(), cert);
 
-            InputStream keyInput = getResolvableinputStream(context, optionResKey);
-            PrivateKey privateKey = getPrivateKeyFromPEM(keyInput);
-            keyStore.setKeyEntry(keystoreInfo.getKeyAlias(), privateKey, null, new Certificate[]{cert});
+                InputStream keyInput = getResolvableinputStream(context, optionResKey);
+                PrivateKey privateKey = getPrivateKeyFromPEM(keyInput);
+                keyStore.setKeyEntry(keystoreInfo.getKeyAlias(), privateKey, null, new Certificate[]{cert});
+            }
 
-            if (optionResCa != null) {
+            boolean hasCaInStore = keyStore.isCertificateEntry(keystoreInfo.getCaAlias());
+            if (optionResCa != null && !hasCaInStore) {
                 InputStream caInput = getResolvableinputStream(context, optionResCa);
                 // Generate the CA Certificate from the raw resource file
                 Certificate ca = CertificateFactory.getInstance("X.509").generateCertificate(caInput);
@@ -210,46 +220,43 @@ final class SSLCertificateHelper {
         }
     }
 
-    public static String getCertificateInfo(Socket socket, boolean wantPeerCert) {
-        String peerCert = "{}";
-        Log.d("tvr", "SSLCert.getCertificateInfo()");
+    public static ReadableMap getCertificateInfo(Socket socket, boolean wantPeerCert) {
+        WritableMap certInfo = Arguments.createMap();
+
         if (socket instanceof SSLSocket) {
-            Log.d("tvr", "socket instanceof SSLSocket");
             SSLSocket sslSocket = (SSLSocket) socket;
             try {
-                final SSLSession sslSession = sslSocket.getSession();
+                SSLSession sslSession = sslSocket.getSession();
                 Certificate[] certificates = wantPeerCert ? sslSession.getPeerCertificates() : sslSession.getLocalCertificates();
-                Log.d("tvr", "A");
-                Log.d("tvr", String.valueOf(certificates.length));
-                Log.d("tvr", String.valueOf(certificates[0]));
                 if (certificates != null && certificates.length > 0 && certificates[0] instanceof X509Certificate) {
-                    Log.d("tvr", "B");
                     X509Certificate cert = (X509Certificate) certificates[0];
-                    Map<String, Object> certDetails = new HashMap<>();
-                    certDetails.put("subject", parseDN(cert.getSubjectDN().getName()));
-                    certDetails.put("issuer", parseDN(cert.getIssuerDN().getName()));
-                    certDetails.put("ca", cert.getBasicConstraints() != -1);
-                    certDetails.put("modulus", getModulus(cert));
-                    certDetails.put("bits", getModulusBitLength(cert));
-                    certDetails.put("exponent", "0x" + getExponent(cert));
+                    WritableMap certDetails = Arguments.createMap();
+                    certDetails.putMap("subject", parseDN(cert.getSubjectDN().getName()));
+                    certDetails.putMap("issuer", parseDN(cert.getIssuerDN().getName()));
+                    certDetails.putBoolean("ca", cert.getBasicConstraints() != -1);
+                    certDetails.putString("modulus", getModulus(cert));
+                    certDetails.putInt("bits", getModulusBitLength(cert));
+                    certDetails.putString("exponent", "0x" + getExponent(cert));
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        certDetails.put("pubkey", Base64.getEncoder().encodeToString(cert.getPublicKey().getEncoded()));
+                        certDetails.putString("pubkey", Base64.getEncoder().encodeToString(cert.getPublicKey().getEncoded()));
                     }
-                    certDetails.put("valid_from", formatDate(cert.getNotBefore()));
-                    certDetails.put("valid_to", formatDate(cert.getNotAfter()));
-                    certDetails.put("fingerprint", getFingerprint(cert, "SHA-1"));
-                    certDetails.put("fingerprint256", getFingerprint(cert, "SHA-256"));
-                    certDetails.put("fingerprint512", getFingerprint(cert, "SHA-512"));
-                    certDetails.put("serialNumber", getSerialNumber(cert));
+                    certDetails.putString("valid_from", formatDate(cert.getNotBefore()));
+                    certDetails.putString("valid_to", formatDate(cert.getNotAfter()));
+                    certDetails.putString("fingerprint", getFingerprint(cert, "SHA-1"));
+                    certDetails.putString("fingerprint256", getFingerprint(cert, "SHA-256"));
+                    certDetails.putString("fingerprint512", getFingerprint(cert, "SHA-512"));
+                    certDetails.putString("serialNumber", getSerialNumber(cert));
 
-                    peerCert = new JSONObject(certDetails).toString();
+                    certInfo = certDetails;
                 }
-            } catch (Exception e) {
+            } catch (SSLPeerUnverifiedException e) {
                 throw new RuntimeException(e);
+            } catch (Exception e) {
+                throw new RuntimeException("Error processing certificate", e);
             }
         }
-        Log.d("tvr", "peerCert: " + peerCert);
-        return peerCert;
+
+        return certInfo;
     }
 
     // LdapName don't seem to be available on android ....
@@ -258,8 +265,8 @@ final class SSLCertificateHelper {
     // can import it...
     //https://android.googlesource.com/platform/libcore/+/0ebbfbdbca73d6261a77183f68e1f3e56c339f9f/ojluni/src/main/java/javax/naming/
 
-    private static Map<String, String> parseDN(String dn) {
-        Map<String, String> details = new HashMap<>();
+    private static WritableMap parseDN(String dn) {
+        WritableMap details = Arguments.createMap();
         String[] components = dn.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // Split by comma, but not inside quotes
         for (String component : components) {
             String[] keyValue = component.split("=", 2);
@@ -268,25 +275,27 @@ final class SSLCertificateHelper {
                 String value = keyValue[1].trim();
                 if ("2.5.4.46".equals(key)) { // OID for dnQualifier
                     if (value.startsWith("#")) {
-                        details.put("dnQualifier", decodeHexString(value.substring(1)));
+                        String dnQualifier = decodeHexString(value.substring(1));
+                        details.putString("dnQualifier", dnQualifier);
                     } else {
-                        details.put("dnQualifier", value);
+                        details.putString("dnQualifier", value);
                     }
                 } else if ("CN".equals(key)) {
-                    details.put("CN", value);
+                    details.putString("CN", value);
                 }
             }
         }
         return details;
     }
+
     private static String decodeHexString(String hex) {
         StringBuilder output = new StringBuilder();
         for (int i = 0; i < hex.length(); i += 2) {
             String str = hex.substring(i, i + 2);
             output.append((char) Integer.parseInt(str, 16));
         }
-        // Remove the leading control character if it exists
-        return output.toString().replaceAll("^\\p{Cntrl}", "");
+        // Remove leading control characters if they exist
+        return output.toString().replaceAll("^\\p{Cntrl}", "").trim();
     }
 
     private static String getSerialNumber(X509Certificate cert) {

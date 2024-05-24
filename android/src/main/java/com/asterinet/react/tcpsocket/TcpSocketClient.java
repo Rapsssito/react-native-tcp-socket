@@ -164,11 +164,11 @@ class TcpSocketClient extends TcpSocket {
         });
     }
 
-    public String getPeerCertificate() {
+    public ReadableMap getPeerCertificate() {
         return SSLCertificateHelper.getCertificateInfo(socket, true);
     }
 
-    public String getCertificate() {
+    public ReadableMap getCertificate() {
         return SSLCertificateHelper.getCertificateInfo(socket, false);
     }
 
