@@ -9,7 +9,6 @@ React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. I
 
 ## Table of Contents <!-- omit in toc -->
 
-- [Improvements on this forks](#improvements)
 - [Getting started](#getting-started)
     - [Overriding `net`](#overriding-net)
     - [Overriding `tls`](#overriding-tls)
@@ -32,12 +31,6 @@ React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. I
 - [Maintainers](#maintainers)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
-
-## Impovements on this forks
-For apps targeting Android 12 (API level 31) or higher, devices that support concurrent peer-to-peer and internet connections can maintain simultaneous Wi-Fi connections to both the peer device and the primary internet-providing network, making the user experience more seamless.
-We add support for Android concurrent connections, routing all data traffic to the peer-to-peer network connection selecting the correct network based on the host DHCP address or subnet address.
-This change is essential to open a tcp socket and send data towards ioT devices that expose a WiFi network without internet access.
-See: [https://developer.android.com/about/versions/12/behavior-changes-12#concurrent-connections](https://developer.android.com/about/versions/12/behavior-changes-12#concurrent-connections).
 
 ## Getting started
 Install the library using either Yarn:
