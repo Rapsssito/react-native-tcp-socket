@@ -4,6 +4,8 @@ package com.asterinet.react.tcpsocket;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.LinkAddress;
+import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
@@ -18,6 +20,10 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -76,7 +82,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
                     // Get the network interface
                     final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : null;
                     final String iface = options.hasKey("interface") ? options.getString("interface") : null;
-                    selectNetwork(iface, localAddress);
+                    // Get ioT device host to retreive correct network in android concurrent connections
+                    final String iotDeviceHost = options.hasKey("host") ? options.getString("host") : null;
+                    selectNetwork(iface, localAddress, iotDeviceHost);
                     TcpSocketClient client = new TcpSocketClient(tcpEvtListener, cId, null);
                     socketMap.put(cId, client);
                     ReadableMap tlsOptions = pendingTLS.get(cId);
@@ -213,23 +221,99 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         // Keep: Required for RN built in Event Emitter Calls.
     }
 
-    private void requestNetwork(final int transportType) throws InterruptedException {
+    private void requestNetwork(final int transportType, @Nullable final String iotDeviceHost) throws InterruptedException {
         final NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
         requestBuilder.addTransportType(transportType);
         final CountDownLatch awaitingNetwork = new CountDownLatch(1); // only needs to be counted down once to release waiting threads
         final ConnectivityManager cm = (ConnectivityManager) mReactContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        cm.requestNetwork(requestBuilder.build(), new ConnectivityManager.NetworkCallback() {
-            @Override
-            public void onAvailable(Network network) {
-                currentNetwork.setNetwork(network);
-                awaitingNetwork.countDown(); // Stop waiting
-            }
 
-            @Override
-            public void onUnavailable() {
+        if(iotDeviceHost==null || Objects.equals(iotDeviceHost, "localhost")) {
+            // Use old behavior if "host" param not specified on configuration array - default value "localhost" used
+            cm.requestNetwork(requestBuilder.build(), new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    currentNetwork.setNetwork(network);
+                    awaitingNetwork.countDown(); // Stop waiting
+                }
+
+                @Override
+                public void onUnavailable() {
+                    awaitingNetwork.countDown(); // Stop waiting
+                }
+            });
+        } else {
+            // smartmedev - add support for for concurrent-connections:
+            // Route all data to the ioT device network interface if exist more than one concurrent network
+            // See: https://developer.android.com/about/versions/12/behavior-changes-12#concurrent-connections
+            if (cm != null) {
+                // Get all connected networks
+                Network[] allNetworks = cm.getAllNetworks();
+                List<Network> wifiNetworks = new ArrayList<>();
+
+                // Check exist at least one newtwork
+                if (allNetworks != null && allNetworks.length > 0) {
+                    // Filter for retreive only networks based on selected transport type
+                    for (Network network : allNetworks) {
+                        NetworkCapabilities nc = cm.getNetworkCapabilities(network);
+                        if (nc != null && nc.hasTransport(transportType)) {
+                            wifiNetworks.add(network);
+                        }
+                    }
+
+                    // Check exist at least one newtwork based on selected transport type
+                    if (!wifiNetworks.isEmpty()) {
+                        boolean networkFound = false;
+                        for (Network network : wifiNetworks) {
+                            LinkProperties linkProperties = cm.getLinkProperties(network);
+                            // Ensure linkProperties is not null
+                            if (linkProperties == null)
+                                continue;
+
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                                Inet4Address foundServerAddress = linkProperties.getDhcpServerAddress();
+                                if(iotDeviceHost.equals(foundServerAddress.getHostAddress())) {
+                                    // found ioT device network
+                                    currentNetwork.setNetwork(network);
+                                    cm.bindProcessToNetwork(network);
+                                    networkFound = true;
+                                    awaitingNetwork.countDown(); // Stop waiting
+                                    break;
+                                }
+                            } else {
+                                List<LinkAddress> linkAddressList = linkProperties.getLinkAddresses();
+                                if(linkAddressList != null && !linkAddressList.isEmpty()) {
+                                    for (LinkAddress address : linkAddressList) {
+                                        int lastDotIndex = iotDeviceHost.lastIndexOf('.');
+                                        String iotSubnetAddress = iotDeviceHost;
+                                        if(lastDotIndex>=0)
+                                            iotSubnetAddress = iotDeviceHost.substring(0, lastDotIndex);
+                                        if(address.getAddress().getHostAddress().startsWith(iotSubnetAddress)) {
+                                            // found ioT device network
+                                            currentNetwork.setNetwork(network);
+                                            cm.bindProcessToNetwork(network);
+                                            networkFound = true;
+                                            awaitingNetwork.countDown(); // Stop waiting
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (!networkFound) {
+                            awaitingNetwork.countDown(); // Stop waiting if no network was found
+                        }
+                    } else {
+                        awaitingNetwork.countDown(); // Stop waiting
+                    }
+                } else {
+                    awaitingNetwork.countDown(); // Stop waiting
+                }
+            } else {
                 awaitingNetwork.countDown(); // Stop waiting
             }
-        });
+            // smartmedev - end
+        }
+
         // Timeout if there the network is unreachable
         ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1);
         exec.schedule(new Runnable() {
@@ -248,7 +332,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
      * "cellular" -> Cellular
      * etc...
      */
-    private void selectNetwork(@Nullable final String iface, @Nullable final String ipAddress) throws InterruptedException, IOException {
+    private void selectNetwork(@Nullable final String iface, @Nullable final String ipAddress, @Nullable final String iotDeviceHost) throws InterruptedException, IOException {
         currentNetwork.setNetwork(null);
         if (iface == null) return;
         if (ipAddress != null) {
@@ -260,13 +344,13 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         }
         switch (iface) {
             case "wifi":
-                requestNetwork(NetworkCapabilities.TRANSPORT_WIFI);
+                requestNetwork(NetworkCapabilities.TRANSPORT_WIFI, iotDeviceHost);
                 break;
             case "cellular":
-                requestNetwork(NetworkCapabilities.TRANSPORT_CELLULAR);
+                requestNetwork(NetworkCapabilities.TRANSPORT_CELLULAR, iotDeviceHost);
                 break;
             case "ethernet":
-                requestNetwork(NetworkCapabilities.TRANSPORT_ETHERNET);
+                requestNetwork(NetworkCapabilities.TRANSPORT_ETHERNET, iotDeviceHost);
                 break;
         }
         if (currentNetwork.getNetwork() == null) {
