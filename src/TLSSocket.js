@@ -7,6 +7,12 @@ import Socket from './Socket';
 /**
  * @typedef {object} TLSSocketOptions
  * @property {any} [ca]
+ * @property {any} [key]
+ * @property {any} [cert]
+ * @property {string} [androidKeyStore]
+ * @property {string} [certAlias]
+ * @property {string} [keyAlias]
+ * @property {string[]} [resolvedKeys]
  *
  * @extends {Socket}
  */
@@ -19,7 +25,10 @@ export default class TLSSocket extends Socket {
         super();
         /** @private */
         this._options = { ...options };
-        if (this._options.ca) this._options.ca = Image.resolveAssetSource(this._options.ca).uri;
+        TLSSocket.resolveAssetIfNeeded(this._options, 'ca');
+        TLSSocket.resolveAssetIfNeeded(this._options, 'key');
+        TLSSocket.resolveAssetIfNeeded(this._options, 'cert');
+
         /** @private */
         this._socket = socket;
         // @ts-ignore
@@ -55,5 +64,30 @@ export default class TLSSocket extends Socket {
      */
     _startTLS() {
         Sockets.startTLS(this._id, this._options);
+    }
+
+    getCertificate() {
+        return Sockets.getCertificate(this._id);
+    }
+
+    getPeerCertificate() {
+        return Sockets.getPeerCertificate(this._id);
+    }
+
+    /**
+     * @private
+     * Resolves the asset source if necessary and registers the resolved key.
+     * @param {TLSSocketOptions} options The options object containing the source to be resolved.
+     * @param {'ca' | 'key' | 'cert'} key The key name being resolved.
+     */
+    static resolveAssetIfNeeded(options, key) {
+        const source = options[key];
+        if (source && typeof source !== 'string') {
+            if (!options.resolvedKeys) {
+                options.resolvedKeys = [];
+            }
+            options.resolvedKeys.push(key);
+            options[key] = Image.resolveAssetSource(source).uri;
+        }
     }
 }
