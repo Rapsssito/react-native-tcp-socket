@@ -10,6 +10,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.util.Base64;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +19,8 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.Promise;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -379,6 +382,28 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
             throw new IllegalArgumentException("Server socket with id " + id + " is not a server");
         }
         return (TcpSocketServer) socket;
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void getPeerCertificate(final int cId, Promise promise) {
+        try {
+            final TcpSocketClient client = getTcpClient(cId);
+            promise.resolve(client.getPeerCertificate());
+        } catch (Exception e) {
+            promise.reject(e);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void getCertificate(final int cId, Promise promise) {
+        try {
+            final TcpSocketClient client = getTcpClient(cId);
+            promise.resolve(client.getCertificate());
+        } catch (Exception e) {
+            promise.reject(e);
+        }
     }
 
     private static class CurrentNetwork {
