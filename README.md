@@ -12,9 +12,9 @@ React Native TCP socket API for Android, iOS & macOS with **SSL/TLS support**. I
 - [Getting started](#getting-started)
     - [Overriding `net`](#overriding-net)
     - [Overriding `tls`](#overriding-tls)
-    - [Using React Native >= 0.60](#using-react-native--060)
-    - [Self-Signed SSL (only available for React Native > 0.60)](#self-signed-ssl-only-available-for-react-native--060)
-    - [Using React Native < 0.60](#using-react-native--060-1)
+    - [Using React Native \>= 0.60](#using-react-native--060)
+    - [Self-Signed SSL (only available for React Native \> 0.60)](#self-signed-ssl-only-available-for-react-native--060)
+    - [Using React Native \< 0.60](#using-react-native--060-1)
 - [React Native Compatibility](#react-native-compatibility)
 - [Usage](#usage)
   - [Client example](#client-example)
@@ -409,6 +409,8 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
 #### TLSSocket
 * **Methods:**
   * All methods from [`Socket`](#socket)
+  * [`getCertificate()`](https://nodejs.org/api/tls.html#tlssocketgetcertificate) _Android only_
+  * **[`getPeerCertificate()`](https://nodejs.org/api/tls.html#tlssocketgetpeercertificatedetailed)** _Android only_
 * **Properties:**
   * All properties from [`Socket`](#socket)
 * **Events:**
@@ -418,10 +420,15 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
 ##### `tls.connectTLS()` <!-- omit in toc -->
 `tls.connectTLS(options[, callback])` creates a TLS socket connection using the given `options`. The `options` parameter must be an `object` with the following properties:
 
-| Property | Type       | iOS/macOS | Android | Description                                                                                                                                                                                                                                                          |
-| -------- | ---------- | :-------: | :-----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ca`     | `<import>` |     ✅     |    ✅    | CA file (.pem format) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _Check the [documentation](#self-signed-ssl-only-available-for-react-native--060) for generating such file_. **Default**: `null`. |
-| `...`    | `<any>`    |     ✅     |    ✅    | Any other [`socket.connect()`](#netcreateconnection----omit-in-toc) options not already listed.                                                                                                                                                                      |
+| Property          | Type       | iOS/macOS | Android | Description                                                                                                                                                                                                                                                          |
+| ----------------- | ---------- | :-------: | :-----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ca`              | `<import>` |     ✅     |    ✅    | CA file (.pem format) to trust. If `null`, it will use the device's default SSL trusted list. Useful for self-signed certificates. _Check the [documentation](#self-signed-ssl-only-available-for-react-native--060) for generating such file_. **Default**: `null`. |
+| `key`             | `<import>` |     ❌     |    ✅    | Private key file (.pem format). _Check the [documentation](#self-signed-ssl-only-available-for-react-native--060) for generating such file_.                                                                                                                         |
+| `cert`            | `<import>` |     ❌     |    ✅    | Public certificate file (.pem format). _Check the [documentation](#self-signed-ssl-only-available-for-react-native--060) for generating such file_.                                                                                                                  |
+| `androidKeyStore` | `<string>` |     ❌     |    ✅    | Android KeyStore alias.                                                                                                                                                                                                                                              |
+| `certAlias`       | `<string>` |     ❌     |    ✅    | Android KeyStore certificate alias.                                                                                                                                                                                                                                  |
+| `keyAlias`        | `<string>` |     ❌     |    ✅    | Android KeyStore private key alias.                                                                                                                                                                                                                                  |
+| `...`             | `<any>`    |     ✅     |    ✅    | Any other [`socket.connect()`](#netcreateconnection----omit-in-toc) options not already listed.                                                                                                                                                                      |
 
 #### TLSServer
 __Note__: The TLS server is named `Server` in Node's tls, but it is named `TLSServer` in `react-native-tcp-socket` in order to avoid confusion with the [`Server`](#server) class.
