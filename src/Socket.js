@@ -328,7 +328,11 @@ export default class Socket extends EventEmitter {
      */
     write(buffer, encoding, cb) {
         const self = this;
-        if (this._pending || this._destroyed) throw new Error('Socket is closed.');
+        if (this._destroyed) throw new Error('Socket is closed.');
+        if (this._pending) {
+            this.once('connect', () => this.write(buffer, encoding, cb));
+            return false;
+        }
 
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
         this._writeBufferSize += generatedBuffer.byteLength;
