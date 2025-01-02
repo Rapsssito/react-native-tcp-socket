@@ -13,7 +13,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     BOOL _checkValidity;
     BOOL _paused;
     BOOL _connecting;
-    NSString *_certPath;
+    NSString *_caCertPath;
     NSString *_host;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, NSNumber *> *_pendingSends;
@@ -134,7 +134,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                      forKey:GCDAsyncSocketManuallyEvaluateTrust];
     } else if (certResourcePath != nil) {
         // Self-signed certificate
-        _certPath = certResourcePath;
+        _caCertPath = certResourcePath;
         [settings setObject:[NSNumber numberWithBool:YES]
                      forKey:GCDAsyncSocketManuallyEvaluateTrust];
     } else {
@@ -406,39 +406,39 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                                    length:(NSUInteger)serverDataSize];
 
     // Local certificate
-    NSURL *certUrl = [[NSURL alloc] initWithString:_certPath];
-    NSString *pem = [[NSString alloc] initWithContentsOfURL:certUrl
+    NSURL *caCertUrl = [[NSURL alloc] initWithString:_caCertPath];
+    NSString *pemCaCert = [[NSString alloc] initWithContentsOfURL:caCertUrl
                                                    encoding:NSUTF8StringEncoding
                                                       error:NULL];
 
     // Strip PEM header and footers. We don't support multi-certificate PEM.
-    NSMutableString *pemMutable =
-        [pem stringByTrimmingCharactersInSet:
+    NSMutableString *pemCaCertMutable =
+        [pemCaCert stringByTrimmingCharactersInSet:
                  NSCharacterSet.whitespaceAndNewlineCharacterSet]
             .mutableCopy;
 
     // Strip PEM header and footer
-    [pemMutable
+    [pemCaCertMutable
         replaceOccurrencesOfString:@"-----BEGIN CERTIFICATE-----"
                         withString:@""
                            options:(NSStringCompareOptions)(NSAnchoredSearch |
                                                             NSLiteralSearch)
-                             range:NSMakeRange(0, pemMutable.length)];
+                             range:NSMakeRange(0, pemCaCertMutable.length)];
 
-    [pemMutable
+    [pemCaCertMutable
         replaceOccurrencesOfString:@"-----END CERTIFICATE-----"
                         withString:@""
                            options:(NSStringCompareOptions)(NSAnchoredSearch |
                                                             NSBackwardsSearch |
                                                             NSLiteralSearch)
-                             range:NSMakeRange(0, pemMutable.length)];
+                             range:NSMakeRange(0, pemCaCertMutable.length)];
 
-    NSData *pemData = [[NSData alloc]
-        initWithBase64EncodedString:pemMutable
+    NSData *pemCaCertData = [[NSData alloc]
+        initWithBase64EncodedString:pemCaCertMutable
                             options:
                                 NSDataBase64DecodingIgnoreUnknownCharacters];
     SecCertificateRef localCertificate =
-        SecCertificateCreateWithData(NULL, (CFDataRef)pemData);
+        SecCertificateCreateWithData(NULL, (CFDataRef)pemCaCertData);
     if (!localCertificate) {
         [NSException raise:@"Configuration invalid"
                     format:@"Failed to parse PEM certificate"];
