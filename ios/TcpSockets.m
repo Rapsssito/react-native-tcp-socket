@@ -175,6 +175,35 @@ RCT_EXPORT_METHOD(resume : (nonnull NSNumber *)cId) {
     [client resume];
 }
 
+// Method with Promise (modern style)
+RCT_EXPORT_METHOD(getPeerCertificate:(nonnull NSNumber *)cId
+                  detailed:(BOOL)detailed
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject) {
+    TcpSocketClient *client = [self findClient:cId];
+    if (!client) {
+        reject(@"NOT_FOUND", @"Client not found", nil);
+        return;
+    }
+    
+    NSDictionary *cert = [client getPeerCertificate:detailed];
+    resolve(cert ?: [NSNull null]);
+}
+
+RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
+                  detailed:(BOOL)detailed
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject) {
+    TcpSocketClient *client = [self findClient:cId];
+    if (!client) {
+        reject(@"NOT_FOUND", @"Client not found", nil);
+        return;
+    }
+    
+    NSDictionary *cert = [client getCertificate:detailed];
+    resolve(cert ?: [NSNull null]);
+}
+
 - (void)onWrittenData:(TcpSocketClient *)client msgId:(NSNumber *)msgId {
     [self sendEventWithName:@"written"
                        body:@{

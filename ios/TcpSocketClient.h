@@ -127,4 +127,16 @@ typedef enum RCTTCPError RCTTCPError;
 
 - (void)resume;
 
+/**
+ * Get peer certificate information
+ * @return NSDictionary with certificate information or nil if not available
+ */
+- (NSDictionary *)getPeerCertificate;
+
+/**
+ * Get local certificate information
+ * @return NSDictionary with certificate information or nil if not available
+ */
+- (NSDictionary *)getCertificate;
+
 @end
