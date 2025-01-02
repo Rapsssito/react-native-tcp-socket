@@ -7,13 +7,45 @@
 
 NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
+@implementation ResolvableOption
+
+- (instancetype)initWithValue:(NSString *)value needsResolution:(BOOL)needsResolution {
+    if (self = [super init]) {
+        _value = value;
+        _needsResolution = needsResolution;
+    }
+    return self;
+}
+
++ (instancetype)optionWithValue:(NSString *)value needsResolution:(BOOL)needsResolution {
+    return [[self alloc] initWithValue:value needsResolution:needsResolution];
+}
+
+- (NSString *)resolve {
+    if (!self.needsResolution) {
+        return self.value;
+    }
+    
+    NSURL *url = [[NSURL alloc] initWithString:self.value];
+    NSError *error = nil;
+    NSString *contents = [[NSString alloc] initWithContentsOfURL:url 
+                                           encoding:NSUTF8StringEncoding
+                                           error:&error];
+    if (error) {
+        return nil;
+    }
+    return contents;
+}
+
+@end
+
 @interface TcpSocketClient () {
   @private
     BOOL _tls;
     BOOL _checkValidity;
     BOOL _paused;
     BOOL _connecting;
-    NSString *_caCertPath;
+    ResolvableOption *_resolvableCaCert;
     NSString *_host;
     GCDAsyncSocket *_tcpSocket;
     NSMutableDictionary<NSNumber *, NSNumber *> *_pendingSends;
@@ -120,10 +152,22 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return result;
 }
 
+- (ResolvableOption *)getResolvableOption:(NSDictionary *)tlsOptions forKey:(NSString *)key {
+    if (![tlsOptions objectForKey:key]) {
+        return nil;
+    }
+    
+    NSString *value = tlsOptions[key];
+    NSArray *resolvedKeys = tlsOptions[@"resolvedKeys"];
+    BOOL needsResolution = resolvedKeys != nil && [resolvedKeys containsObject:key];
+    
+    return [ResolvableOption optionWithValue:value needsResolution:needsResolution];
+}
+
 - (void)startTLS:(NSDictionary *)tlsOptions {
     if (_tls) return;
     NSMutableDictionary *settings = [NSMutableDictionary dictionary];
-    NSString *certResourcePath = tlsOptions[@"ca"];
+    _resolvableCaCert = [self getResolvableOption:tlsOptions forKey:@"ca"];
     BOOL checkValidity = (tlsOptions[@"rejectUnauthorized"]
                               ? [tlsOptions[@"rejectUnauthorized"] boolValue]
                               : true);
@@ -132,9 +176,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         _checkValidity = false;
         [settings setObject:[NSNumber numberWithBool:YES]
                      forKey:GCDAsyncSocketManuallyEvaluateTrust];
-    } else if (certResourcePath != nil) {
+    } else if (_resolvableCaCert != nil) {
         // Self-signed certificate
-        _caCertPath = certResourcePath;
         [settings setObject:[NSNumber numberWithBool:YES]
                      forKey:GCDAsyncSocketManuallyEvaluateTrust];
     } else {
@@ -406,10 +449,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                                    length:(NSUInteger)serverDataSize];
 
     // Local certificate
-    NSURL *caCertUrl = [[NSURL alloc] initWithString:_caCertPath];
-    NSString *pemCaCert = [[NSString alloc] initWithContentsOfURL:caCertUrl
-                                                   encoding:NSUTF8StringEncoding
-                                                      error:NULL];
+    NSString *pemCaCert = [_resolvableCaCert resolve];
+    if (!pemCaCert) {
+        RCTLogWarn(@"Failed to resolve CA certificate");
+        completionHandler(NO);
+        return;
+    }
 
     // Strip PEM header and footers. We don't support multi-certificate PEM.
     NSMutableString *pemCaCertMutable =

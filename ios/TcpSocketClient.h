@@ -19,6 +19,18 @@ typedef enum RCTTCPError RCTTCPError;
 
 @class TcpSocketClient;
 
+// Add ResolvableOption interface here
+@interface ResolvableOption : NSObject
+
+@property (nonatomic, strong, readonly) NSString *value;
+@property (nonatomic, readonly) BOOL needsResolution;
+
+- (instancetype)initWithValue:(NSString *)value needsResolution:(BOOL)needsResolution;
++ (instancetype)optionWithValue:(NSString *)value needsResolution:(BOOL)needsResolution;
+- (NSString *)resolve;
+
+@end
+
 @protocol SocketClientDelegate <NSObject>
 
 - (void)addClient:(TcpSocketClient *)client;
