@@ -1,3 +1,17 @@
+# [6.2.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.1.0...v6.2.0) (2024-07-08)
+
+
+### Features
+
+* **Android:** Add TLS key & cert for server ([#192](https://github.com/Rapsssito/react-native-tcp-socket/issues/192)) ([054c789](https://github.com/Rapsssito/react-native-tcp-socket/commit/054c7890dc0575acceb93c24794c0fade6c548a8))
+
+# [6.1.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.6...v6.1.0) (2024-06-20)
+
+
+### Features
+
+* **Android:** Add support for Android concurrent connections (multiple networks) ([#193](https://github.com/Rapsssito/react-native-tcp-socket/issues/193)) ([a2d1a79](https://github.com/Rapsssito/react-native-tcp-socket/commit/a2d1a794421dbd44d1ada9c05c51fffc0085a67f))
+
 ## [6.0.6](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.0.5...v6.0.6) (2023-02-08)
 
 
