@@ -5,6 +5,14 @@
 
 #import <React/RCTLog.h>
 
+#import <CommonCrypto/CommonDigest.h>
+#import <Security/Security.h>
+#import <Security/SecCertificate.h>
+#import <Security/SecItem.h>
+#import <Security/SecKey.h>
+#import <Security/SecPolicy.h>
+#import <Security/SecImportExport.h>
+
 NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 @implementation ResolvableOption
@@ -55,6 +63,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     NSLock *_lock;
     NSNumber *_serverId;
     long _sendTag;
+    SecTrustRef _peerTrust;
 }
 
 - (id)initWithClientId:(NSNumber *)clientID
@@ -172,8 +181,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     _resolvableCaCert = [self getResolvableOption:tlsOptions forKey:@"ca"];
     _resolvableKey = [self getResolvableOption:tlsOptions forKey:@"key"];
     _resolvableCert = [self getResolvableOption:tlsOptions forKey:@"cert"];
-
-    RCTLogWarn(@"startTLS: Resolved options - CA: %@, Key exists: %@, Cert exists: %@", 
+    NSString *keyAlias = tlsOptions[@"keyAlias"] ?: @"key";
+    [settings setObject:keyAlias forKey:@"keyAlias"];
+    NSString *certAlias = tlsOptions[@"certAlias"] ?: @"cert";
+    [settings setObject:certAlias forKey:@"certAlias"];
+    
+    RCTLogWarn(@"startTLS: Resolved options - CA: %@, Key exists: %@, Cert exists: %@",
                _resolvableCaCert ? @"YES" : @"NO",
                _resolvableKey ? @"YES" : @"NO",
                _resolvableCert ? @"YES" : @"NO");
@@ -209,7 +222,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                    pemKey ? @"YES" : @"NO");
         
         if (pemCert && pemKey) {
-            SecIdentityRef identity = [self createIdentityWithCert:pemCert privateKey:pemKey];
+            SecIdentityRef identity = [self createIdentityWithCert:pemCert privateKey:pemKey settings:settings];
             RCTLogWarn(@"startTLS: Identity creation %@", identity ? @"successful" : @"failed");
             if (identity) {
                 NSArray *certificates = @[(__bridge id)identity];
@@ -225,72 +238,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     RCTLogWarn(@"startTLS: Final settings: %@", settings);
     _tls = true;
     [_tcpSocket startTLS:settings];
-}
-
-- (SecIdentityRef)createIdentityWithCert:(NSString *)pemCert privateKey:(NSString *)pemKey {
-    // Strip PEM headers and convert to data
-    NSString *cleanedCert = [self stripPEMHeader:pemCert prefix:@"CERTIFICATE"];
-    NSString *cleanedKey = [self stripPEMHeader:pemKey prefix:@"PRIVATE KEY"];
-    
-    NSData *certData = [[NSData alloc] initWithBase64EncodedString:cleanedCert options:NSDataBase64DecodingIgnoreUnknownCharacters];
-    NSData *keyData = [[NSData alloc] initWithBase64EncodedString:cleanedKey options:NSDataBase64DecodingIgnoreUnknownCharacters];
-    
-    if (!certData || !keyData) {
-        return NULL;
-    }
-    
-    // Create certificate
-    SecCertificateRef cert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certData);
-    if (!cert) {
-        return NULL;
-    }
-    
-    // Import private key
-    NSDictionary *options = @{
-        (__bridge id)kSecImportExportPassphrase: @"",
-        (__bridge id)kSecImportExportKeyUsage: @YES,
-    };
-    
-    CFArrayRef items = NULL;
-    OSStatus status = SecPKCS12Import((__bridge CFDataRef)keyData,
-                                     (__bridge CFDictionaryRef)options,
-                                     &items);
-    
-    if (status != errSecSuccess) {
-        if (cert) CFRelease(cert);
-        return NULL;
-    }
-    
-    // Create identity
-    SecIdentityRef identity = NULL;
-    status = SecIdentityCreateWithCertificate(NULL, cert, &identity);
-    
-    if (cert) CFRelease(cert);
-    if (items) CFRelease(items);
-    
-    return identity;
-}
-
-- (NSString *)stripPEMHeader:(NSString *)pemData prefix:(NSString *)prefix {
-    NSMutableString *cleaned = [pemData mutableCopy];
-    
-    // Remove header
-    NSString *header = [NSString stringWithFormat:@"-----BEGIN %@-----", prefix];
-    [cleaned replaceOccurrencesOfString:header
-                            withString:@""
-                               options:NSLiteralSearch
-                                 range:NSMakeRange(0, cleaned.length)];
-    
-    // Remove footer
-    NSString *footer = [NSString stringWithFormat:@"-----END %@-----", prefix];
-    [cleaned replaceOccurrencesOfString:footer
-                            withString:@""
-                               options:NSLiteralSearch
-                                 range:NSMakeRange(0, cleaned.length)];
-    
-    // Remove whitespace and newlines
-    return [[cleaned componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
-            componentsJoinedByString:@""];
 }
 
 - (NSDictionary<NSString *, id> *)getAddress {
@@ -538,6 +485,13 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)socket:(GCDAsyncSocket *)sock
       didReceiveTrust:(SecTrustRef)trust
     completionHandler:(void (^)(BOOL shouldTrustPeer))completionHandler {
+    
+    // Store the trust reference
+    if (_peerTrust) {
+        CFRelease(_peerTrust);
+    }
+    _peerTrust = (SecTrustRef)CFRetain(trust);
+    
     // Check if we should check the validity
     if (!_checkValidity) {
         completionHandler(YES);
@@ -545,8 +499,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
 
     // Server certificate
-    SecCertificateRef serverCertificate =
-        SecTrustGetCertificateAtIndex(trust, 0);
+    SecCertificateRef serverCertificate = SecTrustGetCertificateAtIndex(trust, 0);
     CFDataRef serverCertificateData = SecCertificateCopyData(serverCertificate);
     const UInt8 *const serverData = CFDataGetBytePtr(serverCertificateData);
     const CFIndex serverDataSize = CFDataGetLength(serverCertificateData);
@@ -561,14 +514,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         return;
     }
 
-    // Strip PEM header and footers. We don't support multi-certificate PEM.
-    NSMutableString *pemCaCertMutable =
-        [pemCaCert stringByTrimmingCharactersInSet:
-                 NSCharacterSet.whitespaceAndNewlineCharacterSet]
-            .mutableCopy;
-
     // Strip PEM header and footer
-    // Use the stripPEMHeader helper method
     NSString *cleanedCaCert = [self stripPEMHeader:pemCaCert prefix:@"CERTIFICATE"];
     NSData *pemCaCertData = [[NSData alloc] initWithBase64EncodedString:cleanedCaCert
                                                                options:NSDataBase64DecodingIgnoreUnknownCharacters];
@@ -632,17 +578,225 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         withError:(!err || err.code == GCDAsyncSocketClosedError ? nil : err)];
 }
 
+// https://stackoverflow.com/questions/45997841/how-to-get-a-secidentityref-from-a-seccertificateref-and-a-seckeyref
+// We use a private API call here; it's good enough for WebKit.
+SecIdentityRef SecIdentityCreate(CFAllocatorRef allocator, SecCertificateRef certificate, SecKeyRef privateKey);
+
+- (NSData *)extractRSAKeyFromPKCS8:(NSData *)pkcs8Data {
+    // PKCS#8 format has a 26-byte header before the RSA private key
+    // For a proper solution, you should use ASN.1 parsing
+    // This is a temporary solution that works with standard RSA keys
+    if (pkcs8Data.length <= 26) {
+        return nil;
+    }
+    return [pkcs8Data subdataWithRange:NSMakeRange(26, pkcs8Data.length - 26)];
+}
+
+- (SecIdentityRef)createIdentityWithCert:(NSString *)pemCert
+                              privateKey:(NSString *)pemKey
+                                settings:(NSDictionary *)settings {
+    RCTLogWarn(@"createIdentity: Starting identity creation");
+    
+    // Strip PEM headers and convert to data
+    NSString *cleanedCert = [self stripPEMHeader:pemCert prefix:@"CERTIFICATE"];
+    NSString *cleanedPrivateKey = [self stripPEMHeader:pemKey prefix:@"PRIVATE KEY"];
+    NSString *certAlias = settings[@"certAlias"];
+    NSString *keyAlias= settings[@"keyAlias"];
+    
+    NSData *certData = [[NSData alloc] initWithBase64EncodedString:cleanedCert
+                                                           options:NSDataBase64DecodingIgnoreUnknownCharacters];
+    NSData *pkcs8KeyData = [[NSData alloc] initWithBase64EncodedString:cleanedPrivateKey
+                                                               options:NSDataBase64DecodingIgnoreUnknownCharacters];
+    
+    if (!certData || !pkcs8KeyData) {
+        RCTLogWarn(@"createIdentity: Failed to create data from base64");
+        return NULL;
+    }
+    
+    // Creates a certificate object from its DER representation
+    SecCertificateRef cert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certData);
+    if (!cert) {
+        RCTLogWarn(@"createIdentity: Failed to create certificate from data");
+        return NULL;
+    }
+    
+    // Extract RSA key from PKCS#8 - TODO use a ASN1 decoder to detect the key format ...
+    // For my own use I know it's a pem but I prefer not to trust a file extension and
+    // it's better to check from asn1 data
+    NSData *rsaKeyData = [self extractRSAKeyFromPKCS8:pkcs8KeyData];
+    if (!rsaKeyData) {
+        RCTLogWarn(@"Failed to extract RSA key from PKCS#8");
+        CFRelease(cert);
+        return NULL;
+    }
+    
+    NSDictionary *privateKeyAttributes = @{
+        //(__bridge id)kSecClass: (__bridge id)kSecClassKey,
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
+        //(__bridge id)kSecAttrLabel: kKeychainPrivateKeyLabel,
+        //(__bridge id)kSecAttrApplicationTag: [kKeychainApplicationTag dataUsingEncoding:NSUTF8StringEncoding],
+    };
+    
+    CFErrorRef error = NULL;
+    SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)rsaKeyData,
+                                                (__bridge CFDictionaryRef)privateKeyAttributes,
+                                                &error);
+    if (!privateKey) {
+        RCTLogWarn(@"createIdentity: Failed to create private key: %@", error);
+        CFRelease(cert);
+        if (error) CFRelease(error);
+        return NULL;
+    }
+    
+    NSDictionary *deleteKeyQuery = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassKey,
+        (__bridge id)kSecAttrLabel: keyAlias
+    };
+    SecItemDelete((__bridge CFDictionaryRef)deleteKeyQuery);
+    
+    // Import certificate in keychain
+    NSDictionary *deleteCertQuery = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassCertificate,
+        (__bridge id)kSecAttrLabel: certAlias
+    };
+    SecItemDelete((__bridge CFDictionaryRef)deleteCertQuery);
+    
+    NSDictionary *certAttributes = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassCertificate,
+        (__bridge id)kSecValueRef: (__bridge id)cert,
+        (__bridge id)kSecAttrLabel: certAlias
+    };
+    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)certAttributes, NULL);
+    if (status != errSecSuccess && status != errSecDuplicateItem) {
+        RCTLogWarn(@"createIdentity: Failed to store certificate, status: %d", (int)status);
+        CFRelease(cert);
+        //CFRelease(privateKey);
+        return NULL;
+    }
+    
+    // Add the private key to keychain
+    NSDictionary *keyAttributes = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassKey,
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
+        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
+        //(__bridge id)kSecValueData: keyData,
+        //(__bridge id)kSecReturnPersistentRef: @YES,
+        //(__bridge id)kSecAttrKeySizeInBits: @(keySize),
+        //(__bridge id)kSecAttrIsPermanent: @YES,
+        //(__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock,
+        (__bridge id)kSecAttrLabel: keyAlias,
+        //(__bridge id)kSecAttrApplicationTag: [kKeychainApplicationTag dataUsingEncoding:NSUTF8StringEncoding],
+    };
+    status = SecItemAdd((__bridge CFDictionaryRef)keyAttributes, NULL);
+    
+    if (status != errSecSuccess && status != errSecDuplicateItem) {
+        RCTLogWarn(@"createIdentity: Failed to store private key, status: %d", (int)status);
+        CFRelease(cert);
+        //CFRelease(privateKey);
+        return NULL;
+    }
+    
+    // Try to retrieve private key from keychain
+    //    NSDictionary *privateKeyQuery = @{
+    //        (__bridge id)kSecClass: (__bridge id)kSecClassKey,
+    //        (__bridge id)kSecMatchLimit: (__bridge id)kSecMatchLimitOne,
+    //        (__bridge id)kSecReturnRef: @YES,
+    //        (__bridge id)kSecReturnData: @YES,
+    //        (__bridge id)kSecAttrLabel: @"My PrivateKey",
+    //        //(__bridge id)kSecAttrApplicationTag: [kKeychainApplicationTag dataUsingEncoding:NSUTF8StringEncoding],
+    //        //(__bridge id)kSecUseDataProtectionKeychain: @YES
+    //    };
+    //    SecKeyRef privateKey = NULL;
+    //    status = SecItemCopyMatching((__bridge CFDictionaryRef)privateKeyQuery, (CFTypeRef *)&privateKey);
+    
+    // Add the certificate to keychain
+    //    NSDictionary *certAttributes = @{
+    //        (__bridge id)kSecClass: (__bridge id)kSecClassCertificate,
+    //        (__bridge id)kSecValueRef: (__bridge id)cert,
+    //        (__bridge id)kSecAttrLabel: kKeychainCertificateLabel
+    //    };
+    //
+    //    status = SecItemAdd((__bridge CFDictionaryRef)certAttributes, NULL);
+    //    if (status != errSecSuccess && status != errSecDuplicateItem) {
+    //        RCTLogWarn(@"createIdentity: Failed to store certificate, status: %d", (int)status);
+    //        CFRelease(cert);
+    //        CFRelease(privateKey);
+    //        return NULL;
+    //    }
+    
+    //    // Query for the identity with correct attributes
+    //    NSDictionary *identityQuery = @{
+    //        (__bridge id)kSecClass: (__bridge id)kSecClassIdentity,
+    //        (__bridge id)kSecMatchLimit: (__bridge id)kSecMatchLimitOne,
+    //        (__bridge id)kSecReturnRef: @YES,
+    //        //(__bridge id)kSecAttrLabel: @"My Certificate",
+    //        //(__bridge id)kSecUseDataProtectionKeychain: @YES
+    //    };
+    NSDictionary *identityQuery = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassIdentity,
+        (__bridge id)kSecReturnRef: @YES,
+        (__bridge id)kSecMatchItemList:@[(__bridge id)cert],
+        (__bridge id)kSecMatchLimit: (__bridge id)kSecMatchLimitOne,
+        //(__bridge id)kSecAttrLabel: @"My Certificate",
+        //(__bridge id)kSecUseDataProtectionKeychain: @YES
+    };
+    
+    
+    // Query for the identity
+    //    NSDictionary *identityQuery = @{
+    //        (__bridge id)kSecClass: (__bridge id)kSecClassIdentity,
+    //        (__bridge id)kSecReturnRef: @YES,
+    //        (__bridge id)kSecMatchLimit: (__bridge id)kSecMatchLimitOne
+    //    };
+    
+    SecIdentityRef identity = NULL;
+    identity = SecIdentityCreate(NULL, cert, privateKey);
+    //status = SecItemCopyMatching((__bridge CFDictionaryRef)identityQuery, (CFTypeRef *)&identity);
+    //
+    //    if (status != errSecSuccess || !identity) {
+    //        RCTLogWarn(@"createIdentity: Failed to find identity, status: %d", (int)status);
+    //    } else {
+    //        RCTLogWarn(@"createIdentity: Successfully found identity");
+    //    }
+    
+    // Clean up
+    CFRelease(cert);
+    CFRelease(privateKey);
+    
+    return identity;
+}
+
+- (NSString *)stripPEMHeader:(NSString *)pemData prefix:(NSString *)prefix {
+    NSMutableString *cleaned = [pemData mutableCopy];
+    
+    // Remove header
+    NSString *header = [NSString stringWithFormat:@"-----BEGIN %@-----", prefix];
+    [cleaned replaceOccurrencesOfString:header
+                            withString:@""
+                               options:NSLiteralSearch
+                                 range:NSMakeRange(0, cleaned.length)];
+    
+    // Remove footer
+    NSString *footer = [NSString stringWithFormat:@"-----END %@-----", prefix];
+    [cleaned replaceOccurrencesOfString:footer
+                            withString:@""
+                               options:NSLiteralSearch
+                                 range:NSMakeRange(0, cleaned.length)];
+    
+    // Remove whitespace and newlines
+    NSArray *components = [cleaned componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *result = [components componentsJoinedByString:@""];
+    
+    return result;
+}
+
 - (NSDictionary *)getPeerCertificate {
-    if (!_tcpSocket || !_tls) {
+    if (!_tcpSocket || !_tls || !_peerTrust) {
         return nil;
     }
     
-    SecTrustRef trust = (__bridge SecTrustRef)(_tcpSocket.sslPeerTrust);
-    if (!trust) {
-        return nil;
-    }
-    
-    SecCertificateRef certificate = SecTrustGetCertificateAtIndex(trust, 0);
+    SecCertificateRef certificate = SecTrustGetCertificateAtIndex(_peerTrust, 0);
     if (!certificate) {
         return nil;
     }
@@ -679,9 +833,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     NSMutableDictionary *certInfo = [NSMutableDictionary dictionary];
     
     // Get public key info
-    SecKeyRef publicKey = NULL;
-    OSStatus status = SecCertificateCopyPublicKey(certificate, &publicKey);
-    if (status == errSecSuccess && publicKey) {
+    SecKeyRef publicKey = SecCertificateCopyKey(certificate);
+    if (publicKey) {
         CFDictionaryRef attributes = SecKeyCopyAttributes(publicKey);
         if (attributes) {
             // Get key size (bits)
@@ -711,75 +864,83 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         CFRelease(publicKey);
     }
     
-    // Get subject DN
-    CFDictionaryRef subjectName = SecCertificateCopyNormalizedSubjectContent(certificate, &status);
+    // Get subject
+    CFStringRef subjectName = NULL;
+    OSStatus status = SecCertificateCopyCommonName(certificate, &subjectName);
     if (status == errSecSuccess && subjectName) {
-        certInfo[@"subject"] = [self parseDN:(__bridge NSDictionary *)subjectName];
-        CFRelease(subjectName);
+        certInfo[@"subject"] = @{@"CN": (__bridge_transfer NSString *)subjectName};
     }
     
-    // Get issuer DN
-    CFDictionaryRef issuerName = SecCertificateCopyNormalizedIssuerContent(certificate, &status);
-    if (status == errSecSuccess && issuerName) {
-        certInfo[@"issuer"] = [self parseDN:(__bridge NSDictionary *)issuerName];
-        CFRelease(issuerName);
-    }
-    
-    // Get validity dates
-    CFDictionaryRef values = NULL;
-    status = SecCertificateCopyValues(certificate, NULL, &values);
-    if (status == errSecSuccess && values) {
-        CFDictionaryRef validityPeriod = CFDictionaryGetValue(values, kSecOIDValidityPeriod);
-        if (validityPeriod) {
-            CFArrayRef validityArray = CFDictionaryGetValue(validityPeriod, kSecPropertyKeyValue);
-            if (validityArray && CFArrayGetCount(validityArray) == 2) {
-                CFDictionaryRef notBeforeDict = CFArrayGetValueAtIndex(validityArray, 0);
-                CFDictionaryRef notAfterDict = CFArrayGetValueAtIndex(validityArray, 1);
-                
-                CFStringRef notBefore = CFDictionaryGetValue(notBeforeDict, kSecPropertyKeyValue);
-                CFStringRef notAfter = CFDictionaryGetValue(notAfterDict, kSecPropertyKeyValue);
-                
-                if (notBefore) {
-                    NSDate *fromDate = (__bridge NSDate *)notBefore;
-                    certInfo[@"valid_from"] = [self formatDate:fromDate];
-                }
-                if (notAfter) {
-                    NSDate *toDate = (__bridge NSDate *)notAfter;
-                    certInfo[@"valid_to"] = [self formatDate:toDate];
-                }
-            }
+    // Get issuer using the normalized sequence
+    CFDataRef issuerSequence = SecCertificateCopyNormalizedIssuerSequence(certificate);
+    if (issuerSequence) {
+        CFStringRef issuerName = NULL;
+        status = SecCertificateCopyCommonName(certificate, &issuerName);
+        if (status == errSecSuccess && issuerName) {
+            certInfo[@"issuer"] = @{@"CN": (__bridge_transfer NSString *)issuerName};
         }
-        
-        // Check if it's a CA
-        CFDictionaryRef basicConstraints = CFDictionaryGetValue(values, kSecOIDBasicConstraints);
-        if (basicConstraints) {
-            CFTypeRef value = CFDictionaryGetValue(basicConstraints, kSecPropertyKeyValue);
-            if (value) {
-                certInfo[@"ca"] = @(CFBooleanGetValue(value));
-            }
-        }
-        
-        CFRelease(values);
+        CFRelease(issuerSequence);
     }
-    
-    // Get serial number
-    NSData *serialData = (__bridge_transfer NSData *)SecCertificateCopySerialNumber(certificate, NULL);
-    if (serialData) {
-        NSMutableString *serialHex = [NSMutableString string];
-        const unsigned char *bytes = serialData.bytes;
-        for (NSInteger i = 0; i < serialData.length; i++) {
-            [serialHex appendFormat:@"%02X", bytes[i]];
-        }
-        certInfo[@"serialNumber"] = serialHex;
-    }
-    
-    // Get fingerprints
-    NSData *certData = (__bridge_transfer NSData *)SecCertificateCopyData(certificate);
-    if (certData) {
-        certInfo[@"fingerprint"] = [self calculateFingerprint:certData algorithm:CC_SHA1 length:CC_SHA1_DIGEST_LENGTH];
-        certInfo[@"fingerprint256"] = [self calculateFingerprint:certData algorithm:CC_SHA256 length:CC_SHA256_DIGEST_LENGTH];
-        certInfo[@"fingerprint512"] = [self calculateFingerprint:certData algorithm:CC_SHA512 length:CC_SHA512_DIGEST_LENGTH];
-    }
+
+//    NSData *certData = (__bridge_transfer NSData *)SecCertificateCopyData(certificate);
+//    if (certData) {
+//        
+//    }
+//    // Get validity dates
+//    CFDictionaryRef values = NULL;
+//    status = SecCertificateCopyValues(certificate, NULL, &values);
+//    if (status == errSecSuccess && values) {
+//        CFDictionaryRef validityPeriod = CFDictionaryGetValue(values, kSecOIDValidityPeriod);
+//        if (validityPeriod) {
+//            CFArrayRef validityArray = CFDictionaryGetValue(validityPeriod, kSecPropertyKeyValue);
+//            if (validityArray && CFArrayGetCount(validityArray) == 2) {
+//                CFDictionaryRef notBeforeDict = CFArrayGetValueAtIndex(validityArray, 0);
+//                CFDictionaryRef notAfterDict = CFArrayGetValueAtIndex(validityArray, 1);
+//                
+//                CFStringRef notBefore = CFDictionaryGetValue(notBeforeDict, kSecPropertyKeyValue);
+//                CFStringRef notAfter = CFDictionaryGetValue(notAfterDict, kSecPropertyKeyValue);
+//                
+//                if (notBefore) {
+//                    NSDate *fromDate = (__bridge NSDate *)notBefore;
+//                    certInfo[@"valid_from"] = [self formatDate:fromDate];
+//                }
+//                if (notAfter) {
+//                    NSDate *toDate = (__bridge NSDate *)notAfter;
+//                    certInfo[@"valid_to"] = [self formatDate:toDate];
+//                }
+//            }
+//        }
+//        
+//        // Check if it's a CA
+//        CFDictionaryRef basicConstraints = CFDictionaryGetValue(values, kSecOIDBasicConstraints);
+//        if (basicConstraints) {
+//            CFTypeRef value = CFDictionaryGetValue(basicConstraints, kSecPropertyKeyValue);
+//            if (value) {
+//                certInfo[@"ca"] = @(CFBooleanGetValue(value));
+//            }
+//        }
+//        
+//        CFRelease(values);
+//    }
+//    
+//    // Get serial number
+//    NSData *serialData = (__bridge_transfer NSData *)SecCertificateCopySerialNumber(certificate, NULL);
+//    if (serialData) {
+//        NSMutableString *serialHex = [NSMutableString string];
+//        const unsigned char *bytes = serialData.bytes;
+//        for (NSInteger i = 0; i < serialData.length; i++) {
+//            [serialHex appendFormat:@"%02X", bytes[i]];
+//        }
+//        certInfo[@"serialNumber"] = serialHex;
+//    }
+//    
+//    // Get fingerprints
+//    NSData *certData = (__bridge_transfer NSData *)SecCertificateCopyData(certificate);
+//    if (certData) {
+//        certInfo[@"fingerprint"] = [self calculateFingerprint:certData algorithm:CC_SHA1 length:CC_SHA1_DIGEST_LENGTH];
+//        certInfo[@"fingerprint256"] = [self calculateFingerprint:certData algorithm:CC_SHA256 length:CC_SHA256_DIGEST_LENGTH];
+//        certInfo[@"fingerprint512"] = [self calculateFingerprint:certData algorithm:CC_SHA512 length:CC_SHA512_DIGEST_LENGTH];
+//    }
     
     return certInfo;
 }
@@ -851,27 +1012,27 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return [fingerprint substringToIndex:fingerprint.length - 1]; // Remove last colon
 }
 
-- (NSDictionary *)parseDN:(NSDictionary *)dnDict {
-    NSMutableDictionary *result = [NSMutableDictionary dictionary];
-    
-    // Map common DN fields
-    NSDictionary *mapping = @{
-        (id)kSecOIDCommonName: @"CN",
-        (id)kSecOIDDNQualifier: @"dnQualifier"
-    };
-    
-    for (id key in dnDict) {
-        NSString *mappedKey = mapping[key];
-        if (mappedKey) {
-            NSString *value = dnDict[key];
-            if ([value isKindOfClass:[NSString class]]) {
-                result[mappedKey] = value;
-            }
-        }
-    }
-    
-    return result;
-}
+//- (NSDictionary *)parseDN:(NSDictionary *)dnDict {
+//    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+//    
+//    // Map common DN fields
+//    NSDictionary *mapping = @{
+//        (id)kSecOIDCommonName: @"CN",
+//        (id)kSecOIDDNQualifier: @"dnQualifier"
+//    };
+//    
+//    for (id key in dnDict) {
+//        NSString *mappedKey = mapping[key];
+//        if (mappedKey) {
+//            NSString *value = dnDict[key];
+//            if ([value isKindOfClass:[NSString class]]) {
+//                result[mappedKey] = value;
+//            }
+//        }
+//    }
+//    
+//    return result;
+//}
 
 - (NSString *)formatDate:(NSDate *)date {
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
