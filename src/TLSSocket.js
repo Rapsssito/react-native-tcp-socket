@@ -66,6 +66,20 @@ export default class TLSSocket extends Socket {
         Sockets.startTLS(this._id, this._options);
     }
 
+    /**
+     * Checks if a certificate identity exists in the keychain
+     * @param {object} options Object containing the identity aliases
+     * @param {string} [options.certAlias] The certificate alias
+     * @param {string} [options.keyAlias] The key alias
+     * @returns {Promise<boolean>} Promise resolving to true if identity exists
+     */
+    static hasIdentity(options = {}) {
+        return Sockets.hasIdentity({
+            certAlias: options.certAlias,
+            keyAlias: options.keyAlias
+        });
+    }
+
     getCertificate() {
         return Sockets.getCertificate(this._id);
     }

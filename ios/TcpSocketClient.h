@@ -127,6 +127,8 @@ typedef enum RCTTCPError RCTTCPError;
 
 - (void)resume;
 
++ (BOOL)hasIdentity:(NSDictionary *)aliases;
+
 /**
  * Get peer certificate information
  * @return NSDictionary with certificate information or nil if not available

@@ -175,6 +175,14 @@ RCT_EXPORT_METHOD(resume : (nonnull NSNumber *)cId) {
     [client resume];
 }
 
+RCT_EXPORT_METHOD(hasIdentity:(nonnull NSDictionary *)aliases
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject) {
+    // Since this is a static check of the keychain, we don't need a client instance
+    BOOL hasIdentity = [TcpSocketClient hasIdentity:aliases];
+    resolve(@(hasIdentity));
+}
+
 RCT_EXPORT_METHOD(getPeerCertificate:(nonnull NSNumber *)cId
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject) {
