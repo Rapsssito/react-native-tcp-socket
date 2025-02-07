@@ -11,6 +11,7 @@ declare namespace _default {
     export { Socket };
     export { TLSServer };
     export { TLSSocket };
+    export const hasIdentity: typeof import("./TLSSocket").default.hasIdentity;
 }
 export default _default;
 /**

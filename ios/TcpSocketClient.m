@@ -122,17 +122,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return self;
 }
 
-- (void)dealloc {
-    if (_clientIdentity) {
-        CFRelease(_clientIdentity);
-        _clientIdentity = NULL;
-    }
-    if (_peerTrust) {
-        CFRelease(_peerTrust);
-        _peerTrust = NULL;
-    }
-}
-
 - (BOOL)connect:(NSString *)host
            port:(int)port
     withOptions:(NSDictionary *)options

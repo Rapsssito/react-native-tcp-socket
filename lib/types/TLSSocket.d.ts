@@ -12,6 +12,19 @@
  */
 export default class TLSSocket extends Socket {
     /**
+     * Checks if a certificate identity exists in the keychain
+     * @param {object} options Object containing the identity aliases
+     * @param {string} [options.androidKeyStore] The android keystore type
+     * @param {string} [options.certAlias] The certificate alias
+     * @param {string} [options.keyAlias] The key alias
+     * @returns {Promise<boolean>} Promise resolving to true if identity exists
+     */
+    static hasIdentity(options?: {
+        androidKeyStore: string | undefined;
+        certAlias: string | undefined;
+        keyAlias: string | undefined;
+    }): Promise<boolean>;
+    /**
      * @private
      * Resolves the asset source if necessary and registers the resolved key.
      * @param {TLSSocketOptions} options The options object containing the source to be resolved.
