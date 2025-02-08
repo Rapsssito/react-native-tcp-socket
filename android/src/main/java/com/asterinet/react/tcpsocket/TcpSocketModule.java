@@ -386,6 +386,16 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
 
     @SuppressWarnings("unused")
     @ReactMethod
+    public void hasIdentity(@NonNull final ReadableMap options, Promise promise) {
+        try {
+            promise.resolve(SSLCertificateHelper.hasIdentity(options));
+        } catch (Exception e) {
+            promise.reject(e);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
     public void getPeerCertificate(final int cId, Promise promise) {
         try {
             final TcpSocketClient client = getTcpClient(cId);

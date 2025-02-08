@@ -80,6 +80,30 @@ final class SSLCertificateHelper {
         return sslContext.getServerSocketFactory();
     }
 
+    static boolean hasIdentity(ReadableMap options) {
+        boolean hasId = false;
+        try {
+            final String keystoreName = options.hasKey("androidKeyStore") ?
+                    options.getString("androidKeyStore") : KeyStore.getDefaultType();
+            final String keyAlias = options.hasKey("keyAlias") ?
+                    options.getString("keyAlias") : "";
+
+            if (keyAlias.isEmpty()) {
+                return false;
+            }
+
+            // Get keystore instance
+            KeyStore keyStore = KeyStore.getInstance(keystoreName);
+            keyStore.load(null, null);
+
+            // Check if key entry exists with its certificate chain
+            hasId = keyStore.isKeyEntry(keyAlias);
+            return hasId;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
     public static PrivateKey getPrivateKeyFromPEM(InputStream keyStream) {
         try (PemReader pemReader = new PemReader(new InputStreamReader(keyStream))) {
             PemObject pemObject = pemReader.readPemObject();
