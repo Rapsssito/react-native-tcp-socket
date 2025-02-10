@@ -119,9 +119,8 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     setTimeout(timeout: number, callback?: (() => void) | undefined): Socket;
     /**
      * @private
-     * @param {number} [timeout]
      */
-    private _activateTimer;
+    private _resetTimeout;
     /**
      * @private
      */

@@ -229,11 +229,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         //RCTLogWarn(@"startTLS: Attempting client certificate authentication");
         NSString *pemCert = [resolvableCert resolve];
         NSString *pemKey = [resolvableKey resolve];
-
-//        RCTLogWarn(
-//                   @"startTLS: Resolved PEM cert exists: %@, PEM key exists: %@",
-//                   pemCert ? @"YES" : @"NO", pemKey ? @"YES" : @"NO");
-
         if (pemCert && pemKey) {
             myIdent = [self createIdentityWithCert:pemCert
                                         privateKey:pemKey
@@ -705,8 +700,6 @@ typedef NS_ENUM(NSInteger, PEMType) {
 - (SecIdentityRef)createIdentityWithCert:(NSString *)pemCert
                               privateKey:(NSString *)pemKey
                                 settings:(NSDictionary *)settings {
-    RCTLogWarn(@"createIdentity: Starting identity creation");
-
     OSStatus status = -1;
     SecIdentityRef identity = NULL;
 
@@ -732,7 +725,8 @@ typedef NS_ENUM(NSInteger, PEMType) {
     // Import certificate in keychain
     NSDictionary *deleteCertQuery = @{
         (__bridge id)kSecClass : (__bridge id)kSecClassCertificate,
-        (__bridge id)kSecAttrLabel: certAlias
+        (__bridge id)kSecAttrLabel: certAlias,
+        (__bridge id)kSecReturnRef : @YES
     };
     status = SecItemDelete((__bridge CFDictionaryRef)deleteCertQuery);
 
@@ -751,8 +745,7 @@ typedef NS_ENUM(NSInteger, PEMType) {
                                     
     NSDictionary *privateKeyAttributes = @{
         (__bridge id)kSecAttrKeyType : (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrKeyClass : (__bridge id)kSecAttrKeyClassPrivate,
-        //(__bridge id)kSecReturnPersistentRef : @YES
+        (__bridge id)kSecAttrKeyClass : (__bridge id)kSecAttrKeyClassPrivate
     };
     CFErrorRef error = NULL;
     SecKeyRef privateKey = SecKeyCreateWithData(
@@ -768,8 +761,8 @@ typedef NS_ENUM(NSInteger, PEMType) {
 
     NSDictionary *deleteKeyQuery = @{
         (__bridge id)kSecClass : (__bridge id)kSecClassKey,
-        //(__bridge id)kSecAttrKeyType : (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrLabel: keyAlias
+        (__bridge id)kSecAttrLabel: keyAlias,
+        (__bridge id)kSecReturnRef : @YES
     };
     status = SecItemDelete((__bridge CFDictionaryRef)deleteKeyQuery);
 
@@ -798,8 +791,6 @@ typedef NS_ENUM(NSInteger, PEMType) {
     if (status != errSecSuccess || !identity) {
         RCTLogWarn(@"createIdentity: Failed to find identity, status: %d",
                    (int)status);
-    } else {
-        RCTLogWarn(@"createIdentity: Successfully found identity");
     }
     
     // Clean up

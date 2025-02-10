@@ -81,7 +81,6 @@ final class SSLCertificateHelper {
     }
 
     static boolean hasIdentity(ReadableMap options) {
-        boolean hasId = false;
         try {
             final String keystoreName = options.hasKey("androidKeyStore") ?
                     options.getString("androidKeyStore") : KeyStore.getDefaultType();
@@ -92,13 +91,11 @@ final class SSLCertificateHelper {
                 return false;
             }
 
-            // Get keystore instance
             KeyStore keyStore = KeyStore.getInstance(keystoreName);
             keyStore.load(null, null);
 
             // Check if key entry exists with its certificate chain
-            hasId = keyStore.isKeyEntry(keyAlias);
-            return hasId;
+            return keyStore.isKeyEntry(keyAlias);
         } catch (Exception e) {
             return false;
         }
@@ -151,29 +148,35 @@ final class SSLCertificateHelper {
             final KeystoreInfo keystoreInfo) throws IOException, GeneralSecurityException {
 
         SSLSocketFactory ssf = null;
-        if (optionResCert != null && optionResKey != null) {
-            final String keyStoreName = keystoreInfo.getKeystoreName().isEmpty() ?
+
+        KeyStore keyStore  = null;
+        final String keyStoreName = keystoreInfo.getKeystoreName().isEmpty() ?
                     KeyStore.getDefaultType() :
                     keystoreInfo.getKeystoreName();
-            KeyStore keyStore = KeyStore.getInstance(keyStoreName);
+        String keyAlias = keystoreInfo.getKeyAlias();
+
+        // if user provides keyAlias without key it means an identity(cert+key) has already been
+        // inserted in keychain.
+        if (keyAlias != null && !keyAlias.isEmpty() && optionResKey == null) {
+            keyStore = KeyStore.getInstance(keyStoreName);
+            keyStore.load(null, null);
+            if (!keyStore.isKeyEntry(keyAlias)) {
+                keyStore = null;
+            }
+        } else if (optionResCert != null && optionResKey != null) {
+            
+            keyStore = KeyStore.getInstance(keyStoreName);
             keyStore.load(null, null);
 
-            // Check if cert and key if already registered inside our keystore
-            // If one is missing we insert again
-            boolean hasCertInStore = keyStore.isCertificateEntry(keystoreInfo.getCertAlias());
-            boolean hasKeyInStore = keyStore.isKeyEntry(keystoreInfo.getKeyAlias());
-            if (!hasCertInStore || !hasKeyInStore) {
-                InputStream certInput = getResolvableinputStream(context, optionResCert);
-                Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(certInput);
-                keyStore.setCertificateEntry(keystoreInfo.getCertAlias(), cert);
+            InputStream certInput = getResolvableinputStream(context, optionResCert);
+            Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(certInput);
+            keyStore.setCertificateEntry(keystoreInfo.getCertAlias(), cert);
 
-                InputStream keyInput = getResolvableinputStream(context, optionResKey);
-                PrivateKey privateKey = getPrivateKeyFromPEM(keyInput);
-                keyStore.setKeyEntry(keystoreInfo.getKeyAlias(), privateKey, null, new Certificate[]{cert});
-            }
+            InputStream keyInput = getResolvableinputStream(context, optionResKey);
+            PrivateKey privateKey = getPrivateKeyFromPEM(keyInput);
+            keyStore.setKeyEntry(keystoreInfo.getKeyAlias(), privateKey, null, new Certificate[]{cert});
 
-            boolean hasCaInStore = keyStore.isCertificateEntry(keystoreInfo.getCaAlias());
-            if (optionResCa != null && !hasCaInStore) {
+            if (optionResCa != null) {
                 InputStream caInput = getResolvableinputStream(context, optionResCa);
                 // Generate the CA Certificate from the raw resource file
                 Certificate ca = CertificateFactory.getInstance("X.509").generateCertificate(caInput);
@@ -181,7 +184,9 @@ final class SSLCertificateHelper {
                 // Load the key store using the CA
                 keyStore.setCertificateEntry(keystoreInfo.getCaAlias(), ca);
             }
-
+        } 
+        
+        if (keyStore != null) {
             // Initialize the KeyManagerFactory with this cert
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(keyStore, new char[0]);
@@ -190,7 +195,6 @@ final class SSLCertificateHelper {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(keyManagerFactory.getKeyManagers(), new TrustManager[]{new BlindTrustManager()}, null);
             return sslContext.getSocketFactory();
-
         } else {
             // Keep old behavior
             InputStream caInput = getResolvableinputStream(context, optionResCa);
@@ -198,7 +202,7 @@ final class SSLCertificateHelper {
             Certificate ca = CertificateFactory.getInstance("X.509").generateCertificate(caInput);
             caInput.close();
             // Load the key store using the CA
-            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(null, null);
             keyStore.setCertificateEntry("ca", ca);
 
