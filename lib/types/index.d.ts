@@ -18,18 +18,38 @@ export default _default;
  * @param {() => void} callback
  * @returns {Socket}
  */
-declare function createConnection(options: import('./Socket').ConnectionOptions, callback: () => void): Socket;
+declare function createConnection(
+    options: import('./Socket').ConnectionOptions,
+    callback: () => void
+): Socket;
 /**
- * @param {(socket: Socket) => void} connectionListener
+ * @typedef {object} ServerOptions
+ * @property {boolean} [noDelay]
+ * @property {boolean} [keepAlive]
+ * @property {number} [keepAliveInitialDelay]
+ * @property {boolean} [allowHalfOpen]
+ * @property {boolean} [pauseOnConnect]
+ */
+
+/**
+ * @param {ServerOptions | ((socket: Socket) => void)} [options]
+ * @param {(socket: Socket) => void} [connectionListener]
  * @returns {Server}
  */
-declare function createServer(connectionListener: (socket: Socket) => void): Server;
+declare function createServer(
+    options?: object | ((socket: Socket) => void),
+    connectionListener?: (socket: Socket) => void
+): Server;
+
 /**
  * @param {import('./TLSServer').TLSServerOptions} options
  * @param {(socket: TLSSocket) => void} connectionListener
  * @returns {TLSServer}
  */
-declare function createTLSServer(options: import('./TLSServer').TLSServerOptions, connectionListener: (socket: TLSSocket) => void): TLSServer;
+declare function createTLSServer(
+    options: import('./TLSServer').TLSServerOptions,
+    connectionListener: (socket: TLSSocket) => void
+): TLSServer;
 /**
  * The `callback` function, if specified, will be added as a listener for the `'secureConnect'` event.
  *
@@ -37,7 +57,10 @@ declare function createTLSServer(options: import('./TLSServer').TLSServerOptions
  * @param {() => void} [callback]
  * @returns {TLSSocket}
  */
-declare function connectTLS(options: import('./TLSSocket').TLSSocketOptions & import('./Socket').ConnectionOptions, callback?: (() => void) | undefined): TLSSocket;
+declare function connectTLS(
+    options: import('./TLSSocket').TLSSocketOptions & import('./Socket').ConnectionOptions,
+    callback?: (() => void) | undefined
+): TLSSocket;
 /**
  * Tests if input is an IP address. Returns `0` for invalid strings, returns `4` for IP version 4 addresses, and returns `6` for IP version 6 addresses.
  *
@@ -56,7 +79,7 @@ declare function isIPv4(input: string): boolean;
  * @param {string} input
  */
 declare function isIPv6(input: string): boolean;
-import Server from "./Server";
-import Socket from "./Socket";
-import TLSServer from "./TLSServer";
-import TLSSocket from "./TLSSocket";
+import Server from './Server';
+import Socket from './Socket';
+import TLSServer from './TLSServer';
+import TLSSocket from './TLSSocket';
