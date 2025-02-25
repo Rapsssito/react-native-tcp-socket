@@ -1,16 +1,28 @@
 'use strict';
 
-import Socket from './Socket';
 import Server from './Server';
+import Socket from './Socket';
 import TLSServer from './TLSServer';
 import TLSSocket from './TLSSocket';
 
 /**
- * @param {(socket: Socket) => void} connectionListener
+ * @typedef {object} ServerOptions
+ * @property {boolean} [noDelay]
+ * @property {boolean} [keepAlive]
+ * @property {number} [keepAliveInitialDelay]
+ * @property {boolean} [allowHalfOpen]
+ * @property {boolean} [pauseOnConnect]
+ */
+
+/**
+ * Creates a new TCP server.
+ * 
+ * @param {ServerOptions | ((socket: Socket) => void)} [options] An options object or a connection listener
+ * @param {(socket: Socket) => void} [connectionListener] A listener for the 'connection' event
  * @returns {Server}
  */
-function createServer(connectionListener) {
-    return new Server(connectionListener);
+function createServer(options, connectionListener) {
+    return new Server(options, connectionListener);
 }
 
 /**
