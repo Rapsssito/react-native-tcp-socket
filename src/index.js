@@ -112,6 +112,7 @@ export default {
     Socket,
     TLSServer,
     TLSSocket,
+    hasIdentity: TLSSocket.hasIdentity,
 };
 
 // @ts-ignore
@@ -128,4 +129,5 @@ module.exports = {
     Socket,
     TLSServer,
     TLSSocket,
+    hasIdentity: TLSSocket.hasIdentity,
 };

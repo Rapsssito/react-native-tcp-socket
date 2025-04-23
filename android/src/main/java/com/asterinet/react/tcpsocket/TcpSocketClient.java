@@ -87,9 +87,13 @@ class TcpSocketClient extends TcpSocket {
         }
         return false;
     }
+
     private ResolvableOption getResolvableOption(ReadableMap tlsOptions, String key) {
         if (tlsOptions.hasKey(key)) {
             String value = tlsOptions.getString(key);
+            if (value == null || value.isEmpty()) {
+                return null;
+            }
             ReadableArray resolvedKeys = tlsOptions.hasKey("resolvedKeys") ? tlsOptions.getArray("resolvedKeys") : null;
             boolean needsResolution = resolvedKeys != null && containsKey(resolvedKeys, key);
             return new ResolvableOption(value, needsResolution);
@@ -110,7 +114,8 @@ class TcpSocketClient extends TcpSocket {
         final KeystoreInfo keystoreInfo = new KeystoreInfo(keystoreName, caAlias, certAlias, keyAlias);
 
         if (tlsOptions.hasKey("rejectUnauthorized") && !tlsOptions.getBoolean("rejectUnauthorized")) {
-            if (customTlsKey != null && customTlsCert != null ) {
+            if ((customTlsKey != null && customTlsCert != null) ||
+                    (keyAlias != null && !keyAlias.isEmpty() && customTlsKey == null) ) {
                 ssf = SSLCertificateHelper.createCustomTrustedSocketFactory(
                         context,
                         customTlsCa,

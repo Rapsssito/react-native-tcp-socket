@@ -182,10 +182,11 @@ export default class Socket extends EventEmitter {
      * @param {() => void} [callback]
      */
     setTimeout(timeout, callback) {
-        if (timeout === 0) {
+        this._timeoutMsecs = timeout;
+        if (this._timeoutMsecs === 0) {
             this._clearTimeout();
         } else {
-            this._activateTimer(timeout);
+            this._resetTimeout();
         }
         if (callback) this.once('timeout', callback);
         return this;
@@ -193,15 +194,15 @@ export default class Socket extends EventEmitter {
 
     /**
      * @private
-     * @param {number} [timeout]
      */
-    _activateTimer(timeout) {
-        if (timeout !== undefined) this._timeoutMsecs = timeout;
-        this._clearTimeout();
-        this._timeout = setTimeout(() => {
+    _resetTimeout() {
+        if (this._timeoutMsecs !== 0) {
             this._clearTimeout();
-            this.emit('timeout');
-        }, this._timeoutMsecs);
+            this._timeout = setTimeout(() => {
+                this._clearTimeout();
+                this.emit('timeout');
+            }, this._timeoutMsecs);
+        }
     }
 
     /**
@@ -327,7 +328,6 @@ export default class Socket extends EventEmitter {
      * @return {boolean}
      */
     write(buffer, encoding, cb) {
-        const self = this;
         if (this._pending || this._destroyed) throw new Error('Socket is closed.');
 
         const generatedBuffer = this._generateSendBuffer(buffer, encoding);
@@ -340,7 +340,7 @@ export default class Socket extends EventEmitter {
                 this._msgEvtEmitter.removeListener('written', msgEvtHandler);
                 this._writeBufferSize -= generatedBuffer.byteLength;
                 this._lastRcvMsgId = msgId;
-                if (self._timeout) self._activateTimer();
+                this._resetTimeout();
                 if (this.writableNeedDrain && this._lastSentMsgId === msgId) {
                     this.writableNeedDrain = false;
                     this.emit('drain');
@@ -434,6 +434,7 @@ export default class Socket extends EventEmitter {
      */
     _onDeviceDataEvt = (/** @type {{ id: number; data: string; }} */ evt) => {
         if (evt.id !== this._id) return;
+        this._resetTimeout();
         if (!this._paused) {
             const bufferData = Buffer.from(evt.data, 'base64');
             this._bytesRead += bufferData.byteLength;
