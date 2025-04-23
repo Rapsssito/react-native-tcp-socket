@@ -16,7 +16,7 @@ import TLSSocket from './TLSSocket';
 
 /**
  * Creates a new TCP server.
- * 
+ *
  * @param {ServerOptions | ((socket: Socket) => void)} [options] An options object or a connection listener
  * @param {(socket: Socket) => void} [connectionListener] A listener for the 'connection' event
  * @returns {Server}

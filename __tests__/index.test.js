@@ -12,35 +12,38 @@ test('create-client', () => {
         // interface: "wifi"
     };
 
-    const socket = net.createConnection(options, () => { });
+    const socket = net.createConnection(options, () => {});
     expect(socket).toBeInstanceOf(net.Socket);
 });
 
 test('create-server', () => {
-    const server = net.createServer(() => { });
+    const server = net.createServer(() => {});
     expect(server).toBeInstanceOf(net.Server);
 });
 
 test('create-server-with-options', () => {
-    const server = net.createServer({
-        noDelay: true,
-        keepAlive: true
-    }, () => {
-        console.info('server started')
-    });
+    const server = net.createServer(
+        {
+            noDelay: true,
+            keepAlive: true,
+        },
+        () => {
+            console.info('server started');
+        }
+    );
     expect(server).toBeInstanceOf(net.Server);
 });
 
 test('create-server-options-no-calback', () => {
     const server = net.createServer({
         noDelay: true,
-        keepAlive: true
+        keepAlive: true,
     });
     server.on('connection', () => {
         console.info('connection received');
     });
+    expect(server).toBeInstanceOf(net.Server);
 });
-
 
 test('isIP', () => {
     expect(net.isIP('127.9.8.9')).toBe(4);
