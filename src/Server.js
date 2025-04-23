@@ -1,12 +1,21 @@
 'use strict';
 
-import { NativeModules } from 'react-native';
+import { getNextId, nativeEventEmitter } from './Globals';
+
 import EventEmitter from 'eventemitter3';
-const Sockets = NativeModules.TcpSockets;
+import { NativeModules } from 'react-native';
 import Socket from './Socket';
-import { nativeEventEmitter, getNextId } from './Globals';
+
+const Sockets = NativeModules.TcpSockets;
 
 /**
+ * @typedef {object} ServerOptions
+ * @property {boolean} [noDelay]
+ * @property {boolean} [keepAlive]
+ * @property {number} [keepAliveInitialDelay]
+ * @property {boolean} [allowHalfOpen]
+ * @property {boolean} [pauseOnConnect]
+ *
  * @typedef {import('./TLSSocket').default} TLSSocket
  *
  * @typedef {object} ServerEvents
@@ -20,9 +29,10 @@ import { nativeEventEmitter, getNextId } from './Globals';
  */
 export default class Server extends EventEmitter {
     /**
+     * @param {ServerOptions | ((socket: Socket) => void)} [options] Server options or connection listener
      * @param {(socket: Socket) => void} [connectionCallback] Automatically set as a listener for the `'connection'` event.
      */
-    constructor(connectionCallback) {
+    constructor(options, connectionCallback) {
         super();
         /** @protected @readonly */
         this._id = getNextId();
@@ -36,9 +46,24 @@ export default class Server extends EventEmitter {
         this._localPort = undefined;
         /** @private */
         this._localFamily = undefined;
+        /** @private @type {ServerOptions} */
+        this._serverOptions = {};
         this.listening = false;
+
+        // Handle optional options argument
+        if (typeof options === 'function') {
+            /** @type {(socket: Socket) => void} */
+            const callback = options;
+            this.on('connection', callback);
+            options = {};
+        } else if (options && typeof options === 'object') {
+            this._serverOptions = { ...options };
+            if (typeof connectionCallback === 'function') {
+                this.on('connection', connectionCallback);
+            }
+        }
+
         this._registerEvents();
-        if (connectionCallback) this.on('connection', connectionCallback);
         this.on('close', this._setDisconnected, this);
     }
 
@@ -52,19 +77,53 @@ export default class Server extends EventEmitter {
      * `server.listen()` call or `server.close()` has been called. Otherwise, an `ERR_SERVER_ALREADY_LISTEN`
      * error will be thrown.
      *
-     * @param {{ port: number; host: string; reuseAddress?: boolean}} options
-     * @param {() => void} [callback]
+     * @param {{ port: number; host?: string; reuseAddress?: boolean} | number} options Options or port
+     * @param {string | (() => void)} [callback_or_host] Callback or host string
+     * @param {() => void} [callback] Callback function
      * @returns {Server}
      */
-    listen(options, callback) {
+    listen(options, callback_or_host, callback) {
         if (this._localAddress !== undefined) throw new Error('ERR_SERVER_ALREADY_LISTEN');
-        const gotOptions = { ...options };
-        gotOptions.host = gotOptions.host || '0.0.0.0';
+
+        /** @type {{ port: number; host: string; reuseAddress?: boolean }} */
+        let listenOptions = { port: 0, host: '0.0.0.0' };
+        /** @type {(() => void) | undefined} */
+        let cb;
+
+        // Handle different argument patterns
+        if (typeof options === 'number') {
+            // listen(port, [host], [callback])
+            listenOptions.port = options;
+            if (typeof callback_or_host === 'string') {
+                listenOptions.host = callback_or_host;
+                cb = callback;
+            } else if (typeof callback_or_host === 'function') {
+                cb = callback_or_host;
+            }
+        } else if (typeof options === 'object') {
+            // listen(options, [callback])
+            listenOptions = {
+                port: options.port,
+                host: options.host || '0.0.0.0',
+                reuseAddress: options.reuseAddress,
+            };
+            if (typeof callback_or_host === 'function') {
+                cb = callback_or_host;
+            }
+        } else {
+            throw new TypeError('options must be an object or a number');
+        }
+
+        // Add callback as a listener for the listening event
+        if (typeof cb === 'function') {
+            this.once('listening', cb);
+        }
+
         this.once('listening', () => {
             this.listening = true;
-            if (callback) callback();
         });
-        Sockets.listen(this._id, gotOptions);
+
+        Sockets.listen(this._id, listenOptions);
         return this;
     }
 
@@ -179,6 +238,35 @@ export default class Server extends EventEmitter {
         const newSocket = new Socket();
         newSocket._setId(info.id);
         newSocket._setConnected(info.connection);
+
+        // Apply server options to the socket if they exist
+        if (this._serverOptions) {
+            if (this._serverOptions.noDelay !== undefined) {
+                newSocket.setNoDelay(this._serverOptions.noDelay);
+            }
+
+            if (this._serverOptions.keepAlive !== undefined) {
+                const keepAliveDelay = this._serverOptions.keepAliveInitialDelay || 0;
+                newSocket.setKeepAlive(this._serverOptions.keepAlive, keepAliveDelay);
+            }
+        }
+
         return newSocket;
+    }
+
+    /**
+     * Apply server socket options to a newly connected socket
+     * @param {Socket} socket
+     * @private
+     */
+    _applySocketOptions(socket) {
+        if (this._serverOptions.noDelay !== undefined) {
+            socket.setNoDelay(this._serverOptions.noDelay);
+        }
+
+        if (this._serverOptions.keepAlive !== undefined) {
+            const keepAliveDelay = this._serverOptions.keepAliveInitialDelay || 0;
+            socket.setKeepAlive(this._serverOptions.keepAlive, keepAliveDelay);
+        }
     }
 }
