@@ -1,3 +1,17 @@
+# [6.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.2.0...v6.3.0) (2025-04-23)
+
+
+### Bug Fixes
+
+* Fix createServer() to properly handle Node.js-compatible options parameter ([#210](https://github.com/Rapsssito/react-native-tcp-socket/issues/210)) ([ace0e1c](https://github.com/Rapsssito/react-native-tcp-socket/commit/ace0e1c072e4d5529815a6ba4dc4785240169e1f))
+* Upgrade bouncycastle dependency to 1.78.1 ([#205](https://github.com/Rapsssito/react-native-tcp-socket/issues/205)) ([f33522e](https://github.com/Rapsssito/react-native-tcp-socket/commit/f33522e9d4b0f50983551b9a399599bf849e4d05))
+
+
+### Features
+
+* **iOS:** Add more NodeJS TLS options ([#208](https://github.com/Rapsssito/react-native-tcp-socket/issues/208)) ([6d2fcae](https://github.com/Rapsssito/react-native-tcp-socket/commit/6d2fcae65c27fb47953a04aa8a0b5f8bddc3b7a7))
+* Added compatibility for concurrenct connections for Android 15 ([#206](https://github.com/Rapsssito/react-native-tcp-socket/issues/206)) ([4284f91](https://github.com/Rapsssito/react-native-tcp-socket/commit/4284f91e23f621b8767ec2cf3d31e434aa26bd5a))
+
 # [6.2.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.1.0...v6.2.0) (2024-07-08)
 
 
