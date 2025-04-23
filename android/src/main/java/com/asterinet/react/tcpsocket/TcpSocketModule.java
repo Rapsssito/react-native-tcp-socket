@@ -24,8 +24,15 @@ import com.facebook.react.bridge.Promise;
 
 import java.io.IOException;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -263,51 +270,134 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
                         }
                     }
 
+                    // Create networkMap to select correct network via NetworkInterface (fallback) 
+                    Map<String, Network> networkMap = new HashMap<>();
+                    for (Network network : wifiNetworks) {
+                        NetworkCapabilities nc = cm.getNetworkCapabilities(network);
+                        LinkProperties lp = cm.getLinkProperties(network);
+                        if (lp != null) {
+                            for (LinkAddress address : lp.getLinkAddresses()) {
+                                InetAddress inetAddress = address.getAddress();
+                                if (inetAddress instanceof Inet4Address || inetAddress instanceof Inet6Address) {
+                                    networkMap.put(inetAddress.getHostAddress(), network);
+                                }
+                            }
+                        }
+                    }
+
                     // Check exist at least one newtwork based on selected transport type
                     if (!wifiNetworks.isEmpty()) {
                         boolean networkFound = false;
-                        for (Network network : wifiNetworks) {
-                            LinkProperties linkProperties = cm.getLinkProperties(network);
-                            // Ensure linkProperties is not null
-                            if (linkProperties == null)
-                                continue;
 
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                                Inet4Address foundServerAddress = linkProperties.getDhcpServerAddress();
-                                if(iotDeviceHost.equals(foundServerAddress.getHostAddress())) {
-                                    // found ioT device network
-                                    currentNetwork.setNetwork(network);
-                                    cm.bindProcessToNetwork(network);
-                                    networkFound = true;
-                                    awaitingNetwork.countDown(); // Stop waiting
-                                    break;
-                                }
-                            } else {
+                        if (wifiNetworks.size() == 1) {
+                            // Single network scenario --> // Use that network in any case
+                            Network network = wifiNetworks.get(0);
+                            currentNetwork.setNetwork(network);
+                            cm.bindProcessToNetwork(network);
+                            networkFound = true;
+                        } else {
+                            // Multiple network scenario
+                            for (Network network : wifiNetworks) {
+                                LinkProperties linkProperties = cm.getLinkProperties(network);
+                                // Ensure linkProperties is not null
+                                if (linkProperties == null)
+                                    continue;
+
                                 List<LinkAddress> linkAddressList = linkProperties.getLinkAddresses();
-                                if(linkAddressList != null && !linkAddressList.isEmpty()) {
-                                    for (LinkAddress address : linkAddressList) {
-                                        int lastDotIndex = iotDeviceHost.lastIndexOf('.');
-                                        String iotSubnetAddress = iotDeviceHost;
-                                        if(lastDotIndex>=0)
-                                            iotSubnetAddress = iotDeviceHost.substring(0, lastDotIndex);
-                                        if(address.getAddress().getHostAddress().startsWith(iotSubnetAddress)) {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                                    // Android version >= 11
+                                    Inet4Address foundServerAddress = linkProperties.getDhcpServerAddress();
+                                    if(foundServerAddress != null) {
+                                        String foundAddress = foundServerAddress.getHostAddress();
+                                        if (foundAddress != null && foundAddress.contains(iotDeviceHost)) {
                                             // found ioT device network
                                             currentNetwork.setNetwork(network);
                                             cm.bindProcessToNetwork(network);
                                             networkFound = true;
-                                            awaitingNetwork.countDown(); // Stop waiting
                                             break;
+                                        }
+                                    } else if (linkAddressList != null && !linkAddressList.isEmpty()) {
+                                        // Fallback to linkAddresses if DHCP server address is null
+                                        for (LinkAddress address : linkAddressList) {
+                                            int lastDotIndex = iotDeviceHost.lastIndexOf('.');
+                                            String iotSubnetAddress = iotDeviceHost;
+                                            if (lastDotIndex >= 0)
+                                                iotSubnetAddress = iotDeviceHost.substring(0, lastDotIndex);
+                                            if (address.getAddress().getHostAddress().startsWith(iotSubnetAddress)) {
+                                                // Found IoT device network
+                                                currentNetwork.setNetwork(network);
+                                                cm.bindProcessToNetwork(network);
+                                                networkFound = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Android version < 11
+                                    if(linkAddressList != null && !linkAddressList.isEmpty()) {
+                                        for (LinkAddress address : linkAddressList) {
+                                            int lastDotIndex = iotDeviceHost.lastIndexOf('.');
+                                            String iotSubnetAddress = iotDeviceHost;
+                                            if(lastDotIndex>=0)
+                                                iotSubnetAddress = iotDeviceHost.substring(0, lastDotIndex);
+                                            if(address.getAddress().getHostAddress().startsWith(iotSubnetAddress)) {
+                                                // found ioT device network
+                                                currentNetwork.setNetwork(network);
+                                                cm.bindProcessToNetwork(network);
+                                                networkFound = true;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                        if (!networkFound) {
-                            awaitingNetwork.countDown(); // Stop waiting if no network was found
+
+                        // Fallback 1 -> if no matching network is found try selecting via NetworkInterface
+                        if (!networkFound && wifiNetworks.size() > 1) {
+                            try {
+                                Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+                                while (networkInterfaces.hasMoreElements()) {
+                                    NetworkInterface networkInterface = networkInterfaces.nextElement();
+                                    if (!networkInterface.isUp() || networkInterface.isLoopback()) continue;
+
+                                    Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
+                                    while (inetAddresses.hasMoreElements()) {
+                                        InetAddress inetAddress = inetAddresses.nextElement();
+                                        if (inetAddress instanceof Inet4Address) {
+                                            if(inetAddress != null && iotDeviceHost.equals(inetAddress.getHostAddress())) {
+                                                // Cerca la rete corrispondente nell'HashMap
+                                                Network matchedNetwork = networkMap.get(inetAddress.getHostAddress());
+                                                if (matchedNetwork != null) {
+                                                    // Found IoT device network
+                                                    currentNetwork.setNetwork(matchedNetwork);
+                                                    cm.bindProcessToNetwork(matchedNetwork);
+                                                    networkFound = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (SocketException e) {
+                                // Fallback 2 -> if no matching network is found try select last wifiNetwork in the list
+                                if (!networkFound && wifiNetworks.size() > 1) {
+                                    Network fallbackNetwork = wifiNetworks.get(wifiNetworks.size() - 1); // Get last network from the list
+                                    currentNetwork.setNetwork(fallbackNetwork);
+                                    cm.bindProcessToNetwork(fallbackNetwork);
+                                }
+                            }
                         }
-                    } else {
-                        awaitingNetwork.countDown(); // Stop waiting
+
+                        // Fallback 2 -> if no matching network is found try select last wifiNetwork in the list
+                        if (!networkFound && wifiNetworks.size() > 1) {
+                            Network fallbackNetwork = wifiNetworks.get(wifiNetworks.size() - 1); // Get last network from the list
+                            currentNetwork.setNetwork(fallbackNetwork);
+                            cm.bindProcessToNetwork(fallbackNetwork);
+                        }
                     }
+
+                    awaitingNetwork.countDown(); // Stop waiting
                 } else {
                     awaitingNetwork.countDown(); // Stop waiting
                 }
@@ -326,8 +416,6 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         }, 5, TimeUnit.SECONDS);
         awaitingNetwork.await();
     }
-
-    // REQUEST NETWORK
 
     /**
      * Returns a network given its interface name:
