@@ -219,20 +219,28 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
 
 - (void)onConnect:(TcpSocketClient *)client {
     GCDAsyncSocket *socket = [client getSocket];
-    [self sendEventWithName:@"connect"
-                       body:@{
-                           @"id" : client.id,
-                           @"connection" : @{
-                               @"localAddress" : [socket localHost],
-                               @"localPort" :
-                                   [NSNumber numberWithInt:[socket localPort]],
-                               @"remoteAddress" : [socket connectedHost],
-                               @"remotePort" : [NSNumber
-                                   numberWithInt:[socket connectedPort]],
-                               @"remoteFamily" : [socket isIPv4] ? @"IPv4"
-                                                                 : @"IPv6"
-                           }
-                       }];
+    if([socket localHost] != nil && [socket connectedHost] != nil && [socket localPort] != nil
+       && [socket connectedPort] != nil) {
+        [self sendEventWithName:@"connect"
+                           body:@{
+                               @"id" : client.id,
+                               @"connection" : @{
+                                   @"localAddress" : [socket localHost],
+                                   @"localPort" :
+                                       [NSNumber numberWithInt:[socket localPort]],
+                                   @"remoteAddress" : [socket connectedHost],
+                                   @"remotePort" : [NSNumber
+                                       numberWithInt:[socket connectedPort]],
+                                   @"remoteFamily" : [socket isIPv4] ? @"IPv4"
+                                                                     : @"IPv6"
+                               }
+                           }];
+    } else {
+         NSString *msg =
+            [NSString stringWithFormat:@"no client found with id %@", client.id];
+        [self sendEventWithName:@"error" body:@{@"id" : client.id, @"error" : msg}];
+    }
+   
 }
 
 - (void)onListen:(TcpSocketClient *)server {

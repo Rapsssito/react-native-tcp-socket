@@ -199,9 +199,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         // Self-signed certificate
         [settings setObject:[NSNumber numberWithBool:YES]
                      forKey:GCDAsyncSocketManuallyEvaluateTrust];
-    } else {
-        // Default certificates
-        [settings setObject:_host forKey:(NSString *)kCFStreamSSLPeerName];
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////:
     // Handle client certificate authentication
