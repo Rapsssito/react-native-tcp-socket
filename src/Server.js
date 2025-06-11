@@ -114,17 +114,20 @@ export default class Server extends EventEmitter {
             throw new TypeError('options must be an object or a number');
         }
 
-        // Add callback as a listener for the listening event
-        if (typeof cb === 'function') {
-            this.once('listening', cb);
-        }
+       // Add callback as a listener for the listening event
+if (typeof cb === 'function') {
+  this.once('listening', cb);
+}
 
-        this.once('listening', () => {
-            this.listening = true;
-        });
+this.once('listening', () => {
+  this.listening = true;
+});
 
-        Sockets.listen(this._id, listenOptions);
-        return this;
+// Register internal events (e.g. 'connection', 'error', etc.)
+this._registerEvents();
+
+Sockets.listen(this._id, listenOptions);
+return this; 
     }
 
     /**
@@ -187,25 +190,32 @@ export default class Server extends EventEmitter {
      * @private
      */
     _registerEvents() {
-        this._listeningListener = this._eventEmitter.addListener('listening', (evt) => {
-            if (evt.id !== this._id) return;
-            this._localAddress = evt.connection.localAddress;
-            this._localPort = evt.connection.localPort;
-            this._localFamily = evt.connection.localFamily;
-            this.emit('listening');
-        });
-        this._errorListener = this._eventEmitter.addListener('error', (evt) => {
-            if (evt.id !== this._id) return;
-            this.close();
-            this.emit('error', evt.error);
-        });
-        this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
-            if (evt.id !== this._id) return;
-            const newSocket = this._buildSocket(evt.info);
-            this._addConnection(newSocket);
-            this.emit('connection', newSocket);
-        });
-    }
+    this._listeningListener = this._eventEmitter.addListener('listening', (evt) => {
+      if (evt.id !== this._id) return;
+      this._localAddress = evt.connection.localAddress;
+      this._localPort = evt.connection.localPort;
+      this._localFamily = evt.connection.localFamily;
+      this.emit('listening');
+
+      // 🔧 Patch: Call the callback from listen() async
+      if (typeof this._listenCallback === 'function') {
+        setTimeout(this._listenCallback, 0);
+      }
+    });
+
+    this._errorListener = this._eventEmitter.addListener('error', (evt) => {
+      if (evt.id !== this._id) return;
+      this.close();
+      this.emit('error', evt.error);
+    });
+
+    this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
+      if (evt.id !== this._id) return;
+      const newSocket = this._buildSocket(evt.info);
+      this._addConnection(newSocket);
+      this.emit('connection', newSocket);
+    });
+  }
 
     /**
      * @private
