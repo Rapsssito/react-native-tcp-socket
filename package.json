@@ -1,8 +1,8 @@
 {
-  "name": "react-native-tcp-socket",
+  "name": "@iostls/react-native-tcp-socket",
   "title": "React Native Tcp Socket",
-  "version": "6.3.0",
-  "description": "React Native TCP socket API for Android & iOS with SSL/TLS support",
+  "version": "6.3.0-iostls.0",
+  "description": "React Native TCP socket API for Android & iOS with SSL/TLS support.TLS-fixed fork of react-native-tcp-socket with iOS mutual auth support",
   "main": "src/index.js",
   "types": "lib/types/index.d.ts",
   "scripts": {
@@ -26,7 +26,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Rapsssito/react-native-tcp-socket.git",
+    "url": "https://github.com/manoaxcend/react-native-tcp-socket",
     "baseUrl": "https://github.com/Rapsssito/react-native-tcp-socket"
   },
   "keywords": [
