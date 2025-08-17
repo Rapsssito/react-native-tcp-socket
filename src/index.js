@@ -4,6 +4,9 @@ import Server from './Server';
 import Socket from './Socket';
 import TLSServer from './TLSServer';
 import TLSSocket from './TLSSocket';
+// NEW: libp2p compatibility imports
+import { LibP2PStreamAdapter } from './LibP2PStreamAdapter';
+import { BinaryProtocolHandler } from './BinaryProtocolHandler';
 
 /**
  * @typedef {object} ServerOptions
@@ -62,6 +65,21 @@ function createConnection(options, callback) {
     return tcpSocket.connect(options, callback);
 }
 
+/**
+ * NEW: Creates a libp2p-compatible stream connection.
+ * Combines socket creation, connection, and stream adapter in one call.
+ * 
+ * @param {import('./Socket').ConnectionOptions} options - Connection options (host, port, etc.)
+ * @param {Object} [streamOptions] - Stream adapter configuration options
+ * @returns {LibP2PStreamAdapter} libp2p-compatible stream adapter
+ */
+function createLibP2PConnection(options, streamOptions = {}) {
+    const socket = new Socket();
+    const stream = socket.createLibP2PStream(streamOptions);
+    socket.connect(options);
+    return stream;
+}
+
 // IPv4 Segment
 const v4Seg = '(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])';
 const v4Str = `(${v4Seg}[.]){3}${v4Seg}`;
@@ -112,6 +130,7 @@ function isIP(input) {
 }
 
 export default {
+    // Original API (unchanged for backward compatibility)
     connect: createConnection,
     createServer,
     createConnection,
@@ -125,10 +144,16 @@ export default {
     TLSServer,
     TLSSocket,
     hasIdentity: TLSSocket.hasIdentity,
+    
+    // NEW: libp2p compatibility API
+    createLibP2PConnection,
+    LibP2PStreamAdapter,
+    BinaryProtocolHandler,
 };
 
 // @ts-ignore
 module.exports = {
+    // Original API (unchanged for backward compatibility)
     connect: createConnection,
     createServer,
     createConnection,
@@ -142,4 +167,9 @@ module.exports = {
     TLSServer,
     TLSSocket,
     hasIdentity: TLSSocket.hasIdentity,
+    
+    // NEW: libp2p compatibility API  
+    createLibP2PConnection,
+    LibP2PStreamAdapter,
+    BinaryProtocolHandler,
 };

@@ -35,6 +35,7 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * @property {(had_error: boolean) => void} close
  * @property {() => void} connect
  * @property {(data: Buffer | string) => void} data
+ * @property {(data: Buffer) => void} binaryData
  * @property {() => void} drain
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
@@ -390,6 +391,19 @@ export default class Socket extends EventEmitter {
     }
 
     /**
+     * Creates a libp2p-compatible stream adapter over this socket.
+     * Provides Node.js Stream interface required by libp2p and it-* libraries.
+     * 
+     * @param {Object} [options] - Configuration options for the stream adapter
+     * @returns {LibP2PStreamAdapter} Stream adapter instance
+     */
+    createLibP2PStream(options = {}) {
+        // Dynamic import to avoid circular dependency issues
+        const { LibP2PStreamAdapter } = require('./LibP2PStreamAdapter');
+        return new LibP2PStreamAdapter(this, options);
+    }
+
+    /**
      * @private
      */
     async _recoverDataEventsAfterPause() {
@@ -438,8 +452,14 @@ export default class Socket extends EventEmitter {
         if (!this._paused) {
             const bufferData = Buffer.from(evt.data, 'base64');
             this._bytesRead += bufferData.byteLength;
+            
+            // Existing behavior - maintained for backward compatibility
             const finalData = this._encoding ? bufferData.toString(this._encoding) : bufferData;
             this.emit('data', finalData);
+            
+            // NEW: Emit binary data event for libp2p compatibility
+            // This provides clean Buffer data for protocol-sensitive applications
+            this.emit('binaryData', bufferData);
         } else {
             // If the socket is paused, save the data events for later
             this._pausedDataEvents.push(evt);
