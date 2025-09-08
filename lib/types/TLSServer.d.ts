@@ -23,6 +23,7 @@ export default class TLSServer extends Server {
 }
 export type TLSServerOptions = {
     keystore: any;
+    passphrase?: string;
 };
 import Server from "./Server";
 import TLSSocket from "./TLSSocket";
