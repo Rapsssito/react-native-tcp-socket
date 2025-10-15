@@ -69,6 +69,10 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     private _pending;
     /** @private */
     private _destroyed;
+    /** @private */
+    private _writableEnded;
+    /** @private */
+    private _readableEnded;
     /** @type {'opening' | 'open' | 'readOnly' | 'writeOnly'} @private */
     private _readyState;
     /** @type {{ id: number; data: string; }[]} @private */
