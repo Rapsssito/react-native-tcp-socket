@@ -95,6 +95,7 @@ export default class Socket extends EventEmitter {
         this.remoteAddress = undefined;
         this.remotePort = undefined;
         this.remoteFamily = undefined;
+        this.allowHalfOpen = false; // Default per Node.js spec
         this._registerEvents();
     }
 
@@ -457,6 +458,15 @@ export default class Socket extends EventEmitter {
             this.destroy();
             this.emit('error', evt.error);
         });
+        this._endListener = this._eventEmitter.addListener('end', (evt) => {
+            if (evt.id !== this._id) return;
+            this._readyState = 'readOnly'; // Can still write but not read
+            this.emit('end');
+            // If allowHalfOpen is false, auto-close the writable side
+            if (!this.allowHalfOpen) {
+                this.end();
+            }
+        });
         this._closeListener = this._eventEmitter.addListener('close', (evt) => {
             if (evt.id !== this._id) return;
             this._setDisconnected();
@@ -479,6 +489,7 @@ export default class Socket extends EventEmitter {
     _unregisterEvents() {
         this._dataListener?.remove();
         this._errorListener?.remove();
+        this._endListener?.remove();
         this._closeListener?.remove();
         this._connectListener?.remove();
         this._writtenListener?.remove();

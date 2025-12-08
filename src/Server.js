@@ -249,6 +249,10 @@ export default class Server extends EventEmitter {
                 const keepAliveDelay = this._serverOptions.keepAliveInitialDelay || 0;
                 newSocket.setKeepAlive(this._serverOptions.keepAlive, keepAliveDelay);
             }
+
+            if (this._serverOptions.allowHalfOpen !== undefined) {
+                newSocket.allowHalfOpen = this._serverOptions.allowHalfOpen;
+            }
         }
 
         return newSocket;

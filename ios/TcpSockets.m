@@ -22,7 +22,7 @@ RCT_EXPORT_MODULE()
 - (NSArray<NSString *> *)supportedEvents {
     return @[
         @"connect", @"listening", @"connection", @"secureConnection", @"data",
-        @"close", @"error", @"written"
+        @"close", @"error", @"written", @"end"
     ];
 }
 
@@ -214,6 +214,13 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
                        body:@{
                            @"id" : client.id,
                            @"msgId" : msgId,
+                       }];
+}
+
+- (void)onEnd:(NSNumber *)clientID {
+    [self sendEventWithName:@"end"
+                       body:@{
+                           @"id" : clientID
                        }];
 }
 
