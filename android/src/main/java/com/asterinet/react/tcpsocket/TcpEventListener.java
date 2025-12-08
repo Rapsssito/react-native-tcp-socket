@@ -117,6 +117,12 @@ public class TcpEventListener {
         sendEvent("close", eventParams);
     }
 
+    public void onEnd(int id) {
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        sendEvent("end", eventParams);
+    }
+
     public void onError(int id, Exception e) {
         Log.e(TcpSocketModule.TAG, "Exception on socket " + id, e);
         String error = e.getMessage();

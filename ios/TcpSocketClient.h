@@ -43,6 +43,7 @@ typedef enum RCTTCPError RCTTCPError;
 - (void)onClose:(TcpSocketClient *)client withError:(NSError *)err;
 - (void)onError:(TcpSocketClient *)client withError:(NSError *)err;
 - (void)onWrittenData:(TcpSocketClient *)client msgId:(NSNumber *)msgId;
+- (void)onEnd:(NSNumber *)clientID;
 - (NSNumber *)getNextId;
 
 @end
