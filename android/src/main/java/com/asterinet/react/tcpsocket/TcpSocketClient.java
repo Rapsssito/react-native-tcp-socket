@@ -216,11 +216,15 @@ class TcpSocketClient extends TcpSocket {
     }
 
     public void pause() {
-        receiverTask.pause();
+        if (receiverTask != null) {
+            receiverTask.pause();
+        }
     }
 
     public void resume() {
-        receiverTask.resume();
+        if (receiverTask != null) {
+            receiverTask.resume();
+        }
     }
 
     /**
@@ -246,6 +250,13 @@ class TcpSocketClient extends TcpSocket {
         public void run() {
             int socketId = clientSocket.getId();
             Socket socket = clientSocket.getSocket();
+
+            // Guard against null socket - can happen if destroy() is called
+            // before the receiver task starts, or if socket creation failed
+            if (socket == null) {
+                return;
+            }
+
             byte[] buffer = new byte[16384];
             try {
                 BufferedInputStream in = new BufferedInputStream(socket.getInputStream());
@@ -259,7 +270,7 @@ class TcpSocketClient extends TcpSocket {
                     }
                 }
             } catch (IOException | InterruptedException ioe) {
-                if (receiverListener != null && !socket.isClosed() && !clientSocket.closed) {
+                if (receiverListener != null && socket != null && !socket.isClosed() && !clientSocket.closed) {
                     receiverListener.onError(socketId, ioe);
                 }
             }
