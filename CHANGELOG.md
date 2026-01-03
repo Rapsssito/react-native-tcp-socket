@@ -1,3 +1,10 @@
+## [6.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.3.0...v6.3.1) (2026-01-03)
+
+
+### Bug Fixes
+
+* **Android:** prevent NullPointerException in TcpReceiverTask ([#227](https://github.com/Rapsssito/react-native-tcp-socket/issues/227)) ([27203eb](https://github.com/Rapsssito/react-native-tcp-socket/commit/27203ebc4d9e57ad47de0752660e3dc5aa8e7389))
+
 # [6.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.2.0...v6.3.0) (2025-04-23)
 
 
