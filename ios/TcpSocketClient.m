@@ -144,11 +144,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     NSString *localAddress = options[@"localAddress"];
     NSNumber *localPort = options[@"localPort"];
+    int connectTimeout = options[@"connectTimeout"] ? [options[@"connectTimeout"] intValue] / 1000 : -1;
 
     _host = host;
     _connecting = true;
     if (!localAddress && !localPort) {
-        result = [_tcpSocket connectToHost:host onPort:port error:error];
+        result = [_tcpSocket connectToHost:host onPort:port withTimeout:connectTimeout error:error];
     } else {
         NSMutableArray *interface = [NSMutableArray arrayWithCapacity:2];
         [interface addObject:localAddress ? localAddress : @""];
@@ -159,7 +160,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
             [_tcpSocket connectToHost:host
                                onPort:port
                          viaInterface:[interface componentsJoinedByString:@":"]
-                          withTimeout:-1
+                          withTimeout:connectTimeout
                                 error:error];
     }
     if (result && tlsOptions) {
