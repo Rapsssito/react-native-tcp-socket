@@ -1,15 +1,34 @@
 'use strict';
 
 import { NativeModules } from 'react-native';
+/**
+ * Provide a local JSDoc alias for stream.Transform so the JS file's type
+ * annotations don't require @types/node at the project root. This keeps the
+ * IntelliSense/types consistent while avoiding a hard dependency on Node types
+ * for React Native consumers.
+ * @typedef {import('stream').Transform} _Transform
+ */
 import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
 import { nativeEventEmitter, getNextId } from './Globals';
+import { FrameEncoder, FrameDecoder } from './FrameCodec';
 
 /**
  * @typedef {"ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex"} BufferEncoding
  *
  * @typedef {import('react-native').NativeEventEmitter} NativeEventEmitter
+ *
+ * Minimal interface for the frame encoder/decoder streams used in this
+ * module. We declare only the members the Socket uses so the JSDoc types
+ * don't require @types/node.
+ * @typedef {{
+ *   write: (chunk: Buffer | Uint8Array) => boolean;
+ *   end: () => void;
+ *   once: (event: string, cb: (...args: any[]) => void) => void;
+ *   on: (event: string, cb: (...args: any[]) => void) => void;
+ *   pipe?: (dest: any) => any;
+ * }} FrameStream
  *
  * @typedef {{address: string, family: string, port: number}} AddressInfo
  *
@@ -25,6 +44,7 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * tls?: boolean,
  * tlsCheckValidity?: boolean,
  * tlsCert?: any,
+ * frameMode?: boolean,
  * }} ConnectionOptions
  *
  * @typedef {object} ReadableEvents
@@ -39,6 +59,7 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
  * @property {() => void} secureConnect
+ * @property {() => void} end
  *
  * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
@@ -82,10 +103,13 @@ export default class Socket extends EventEmitter {
         this._pending = true;
         /** @private */
         this._destroyed = false;
-        // TODO: Add readOnly and writeOnly states
+        /** @private */
+        this._writableEnded = false;
+        /** @private */
+        this._readableEnded = false;
         /** @type {'opening' | 'open' | 'readOnly' | 'writeOnly'} @private */
         this._readyState = 'open'; // Incorrect, but matches NodeJS behavior
-        /** @type {{ id: number; data: string; }[]} @private */
+        /** @type {{ id: number; buffer: Buffer; }[]} @private */
         this._pausedDataEvents = [];
         this.readableHighWaterMark = 16384;
         this.writableHighWaterMark = 16384;
@@ -95,6 +119,12 @@ export default class Socket extends EventEmitter {
         this.remoteAddress = undefined;
         this.remotePort = undefined;
         this.remoteFamily = undefined;
+        /** @type {boolean} @private */
+        this._frameMode = false;
+    /** @type {any | null} @private */
+    this._frameEncoder = null;
+    /** @type {any | null} @private */
+    this._frameDecoder = null;
         this._registerEvents();
     }
 
@@ -142,6 +172,8 @@ export default class Socket extends EventEmitter {
     _setConnected(connectionInfo) {
         this._connecting = false;
         this._readyState = 'open';
+        this._writableEnded = false;
+        this._readableEnded = false;
         this._pending = false;
         this.localAddress = connectionInfo.localAddress;
         this.localPort = connectionInfo.localPort;
@@ -159,6 +191,15 @@ export default class Socket extends EventEmitter {
         // Normalize args
         customOptions.host = customOptions.host || 'localhost';
         customOptions.port = Number(customOptions.port) || 0;
+
+        // Enable frame mode if requested
+        if (customOptions.frameMode) {
+            this._frameMode = true;
+            this._frameEncoder = /** @type {any} */ (new FrameEncoder());
+            this._frameDecoder = /** @type {any} */ (new FrameDecoder());
+            this._setupFrameCodec();
+        }
+
         this.once('connect', () => {
             if (callback) callback();
         });
@@ -293,12 +334,16 @@ export default class Socket extends EventEmitter {
             this.write(data, encoding, () => {
                 Sockets.end(this._id);
             });
-            return this;
-        }
-        if (this._pending || this._destroyed) return this;
+        } else {
+            if (this._pending || this._destroyed) return this;
 
-        this._clearTimeout();
-        Sockets.end(this._id);
+            this._clearTimeout();
+            Sockets.end(this._id);
+        }
+        this._writableEnded = true;
+        if (!this._readableEnded) {
+            this._readyState = 'readOnly';
+        }
         return this;
     }
 
@@ -309,6 +354,42 @@ export default class Socket extends EventEmitter {
         if (this._destroyed) return this;
         this._destroyed = true;
         this._clearTimeout();
+        this._writableEnded = true;
+        this._readableEnded = true;
+        if (this._readyState !== 'readOnly') {
+            this._readyState = 'writeOnly';
+        }
+
+    // Clean up frame codec references
+    this._frameDecoder = null;
+    this._frameEncoder = null;
+
+        Sockets.destroy(this._id);
+        return this;
+    }
+
+    /**
+     * Half-closes the socket after writing queued data. libp2p compat.
+     */
+    destroySoon() {
+        if (this._writeBufferSize === 0) {
+            this.destroy();
+        } else {
+            this.once('drain', () => this.destroy());
+        }
+    }
+
+    /**
+     * Immediately reset connection without graceful shutdown. libp2p compat.
+     */
+    resetAndDestroy() {
+        this._clearTimeout();
+        this._destroyed = true;
+        this._writableEnded = true;
+        this._readableEnded = true;
+        if (this._readyState !== 'readOnly') {
+            this._readyState = 'writeOnly';
+        }
         Sockets.destroy(this._id);
         return this;
     }
@@ -330,7 +411,15 @@ export default class Socket extends EventEmitter {
     write(buffer, encoding, cb) {
         if (this._pending || this._destroyed) throw new Error('Socket is closed.');
 
-        const generatedBuffer = this._generateSendBuffer(buffer, encoding);
+        let generatedBuffer = this._generateSendBuffer(buffer, encoding);
+
+        // Apply frame encoding if in frame mode
+        if (this._frameMode) {
+            // Use varint encoding for libp2p compatibility
+            const varint = this._encodeVarint(generatedBuffer.byteLength);
+            generatedBuffer = Buffer.concat([varint, generatedBuffer]);
+        }
+
         this._writeBufferSize += generatedBuffer.byteLength;
         const currentMsgId = this._msgId;
         this._msgId = (this._msgId + 1) % Number.MAX_SAFE_INTEGER;
@@ -401,14 +490,15 @@ export default class Socket extends EventEmitter {
             let readBytes = 0;
             let i = 0;
             for (; i < this._pausedDataEvents.length; i++) {
-                const evtData = Buffer.from(this._pausedDataEvents[i].data, 'base64');
+                const evtData = this._pausedDataEvents[i].buffer;
                 readBytes += evtData.byteLength;
                 if (readBytes <= this.readableHighWaterMark) {
                     buffArray.push(evtData);
                 } else {
                     const buffOffset = this.readableHighWaterMark - readBytes;
                     buffArray.push(evtData.slice(0, buffOffset));
-                    this._pausedDataEvents[i].data = evtData.slice(buffOffset).toString('base64');
+                    // Store remaining buffer directly (no base64 conversion)
+                    this._pausedDataEvents[i].buffer = evtData.slice(buffOffset);
                     break;
                 }
             }
@@ -432,17 +522,42 @@ export default class Socket extends EventEmitter {
     /**
      * @private
      */
+    _setupFrameCodec() {
+        if (!this._frameDecoder || !this._frameEncoder) return;
+
+        // Wire up decoder to emit framed data
+        this._frameDecoder.on('data', (/** @type {Buffer} */ frame) => {
+            this.emit('data', this._encoding ? frame.toString(this._encoding) : frame);
+        });
+
+        this._frameDecoder.on('error', (/** @type {Error} */ err) => {
+            this.emit('error', err);
+        });
+    }
+
+    /**
+     * @private
+     */
     _onDeviceDataEvt = (/** @type {{ id: number; data: string; }} */ evt) => {
         if (evt.id !== this._id) return;
         this._resetTimeout();
         if (!this._paused) {
             const bufferData = Buffer.from(evt.data, 'base64');
             this._bytesRead += bufferData.byteLength;
-            const finalData = this._encoding ? bufferData.toString(this._encoding) : bufferData;
-            this.emit('data', finalData);
+
+            if (this._frameMode && this._frameDecoder) {
+                // Feed raw data into frame decoder
+                this._frameDecoder.write(bufferData);
+            } else {
+                const finalData = this._encoding ? bufferData.toString(this._encoding) : bufferData;
+                this.emit('data', finalData);
+            }
         } else {
-            // If the socket is paused, save the data events for later
-            this._pausedDataEvents.push(evt);
+            // If the socket is paused, save the decoded buffer to avoid repeated base64 decoding
+            this._pausedDataEvents.push({
+                id: evt.id,
+                buffer: Buffer.from(evt.data, 'base64')
+            });
         }
     };
 
@@ -459,7 +574,15 @@ export default class Socket extends EventEmitter {
         });
         this._closeListener = this._eventEmitter.addListener('close', (evt) => {
             if (evt.id !== this._id) return;
+            this._readableEnded = true;
+            if (!this._destroyed) {
+                this._readyState = this._writableEnded ? 'readOnly' : 'writeOnly';
+            } else if (this._readyState !== 'readOnly') {
+                this._readyState = 'writeOnly';
+            }
+            this._writableEnded = true;
             this._setDisconnected();
+            this.emit('end'); // libp2p expects 'end' before 'close'
             this.emit('close', evt.error);
         });
         this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
@@ -505,8 +628,26 @@ export default class Socket extends EventEmitter {
 
     /**
      * @private
+     * @param {number} n
+     */
+    _encodeVarint(n) {
+        if (n < 0) throw new RangeError('varint unsigned only');
+        const o = [];
+        do {
+            let b = n & 0x7f;
+            n = Math.floor(n / 128);
+            if (n > 0) b |= 0x80;
+            o.push(b);
+        } while (n > 0);
+        return Buffer.from(o);
+    }
+
+    /**
+     * @private
      */
     _setDisconnected() {
+        this._readableEnded = true;
+        this._writableEnded = true;
         this._unregisterEvents();
     }
 }
