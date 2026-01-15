@@ -253,6 +253,7 @@ export type ConnectionOptions = {
     tls?: boolean | undefined;
     tlsCheckValidity?: boolean | undefined;
     tlsCert?: any;
+    connectTimeout?: number;
 };
 export type ReadableEvents = {
     pause: () => void;
