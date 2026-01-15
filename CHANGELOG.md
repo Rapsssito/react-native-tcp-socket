@@ -1,3 +1,10 @@
+# [6.4.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.3.1...v6.4.0) (2026-01-15)
+
+
+### Features
+
+* support connectTimeout ([#228](https://github.com/Rapsssito/react-native-tcp-socket/issues/228)) ([8747daa](https://github.com/Rapsssito/react-native-tcp-socket/commit/8747daaf369ab2fbd88b061c860ab7283e002021))
+
 ## [6.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.3.0...v6.3.1) (2026-01-03)
 
 

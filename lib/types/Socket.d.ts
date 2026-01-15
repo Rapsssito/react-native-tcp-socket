@@ -17,6 +17,7 @@
  * tls?: boolean,
  * tlsCheckValidity?: boolean,
  * tlsCert?: any,
+ * connectTimeout?: number,
  * }} ConnectionOptions
  *
  * @typedef {object} ReadableEvents
@@ -253,7 +254,7 @@ export type ConnectionOptions = {
     tls?: boolean | undefined;
     tlsCheckValidity?: boolean | undefined;
     tlsCert?: any;
-    connectTimeout?: number;
+    connectTimeout?: number | undefined;
 };
 export type ReadableEvents = {
     pause: () => void;
