@@ -165,7 +165,12 @@ export default class Socket extends EventEmitter {
         });
         this._connecting = true;
         this._readyState = 'opening';
-        NativeModules.TcpSockets.connect(this._id, customOptions.host, customOptions.port, customOptions);
+        NativeModules.TcpSockets.connect(
+            this._id,
+            customOptions.host,
+            customOptions.port,
+            customOptions
+        );
         return this;
     }
 
