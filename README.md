@@ -192,6 +192,7 @@ const options = {
   host: '127.0.0.1',
   localAddress: '127.0.0.1',
   reuseAddress: true,
+  // connectTimeout: 5000,
   // localPort: 20000,
   // interface: "wifi",
 };
@@ -250,6 +251,7 @@ const options = {
   host: '127.0.0.1',
   localAddress: '127.0.0.1',
   reuseAddress: true,
+  // connectTimeout: 5000,
   // localPort: 20000,
   // interface: "wifi",
   ca: require('server-cert.pem'),
@@ -370,6 +372,7 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
 | `host`         | `<string>`  |     ✅     |    ✅    | Host the socket should connect to. IP address in IPv4 format or `'localhost'`. **Default**: `'localhost'`.                                                                                       |
 | `localAddress` | `<string>`  |     ✅     |    ✅    | Local address the socket should connect from. If not specified, the OS will decide. It is **highly recommended** to specify a `localAddress` to prevent overload errors and improve performance. |
 | `localPort`    | `<number>`  |     ✅     |    ✅    | Local port the socket should connect from. If not specified, the OS will decide.                                                                                                                 |
+| `connectTimeout`    | `<number>`  |     ✅     |    ✅    | Connects the socket to a server with a configurable connection timeout (in milliseconds).<br>If the timeout expires before the connection is established, the operation fails. <br>When no timeout is specified, the connection will block indefinitely until it either succeeds or an error occurs. |
 | `interface`    | `<string>`  |     ❌     |    ✅    | Interface the socket should connect from. If not specified, it will use the current active connection. The options are: `'wifi', 'ethernet', 'cellular'`.                                        |
 | `reuseAddress` | `<boolean>` |     ❌     |    ✅    | Enable/disable the reuseAddress socket option. **Default**: `true`.                                                                                                                              |
 
