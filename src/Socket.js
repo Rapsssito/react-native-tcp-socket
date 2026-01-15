@@ -3,7 +3,6 @@
 import { NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
-const Sockets = NativeModules.TcpSockets;
 import { nativeEventEmitter, getNextId } from './Globals';
 
 /**
@@ -30,6 +29,7 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * @typedef {object} ReadableEvents
  * @property {() => void} pause
  * @property {() => void} resume
+ * @property {() => void} end
  *
  * @typedef {object} SocketEvents
  * @property {(had_error: boolean) => void} close
@@ -95,6 +95,7 @@ export default class Socket extends EventEmitter {
         this.remoteAddress = undefined;
         this.remotePort = undefined;
         this.remoteFamily = undefined;
+        this.allowHalfOpen = false;
         this._registerEvents();
     }
 
@@ -164,7 +165,7 @@ export default class Socket extends EventEmitter {
         });
         this._connecting = true;
         this._readyState = 'opening';
-        Sockets.connect(this._id, customOptions.host, customOptions.port, customOptions);
+        NativeModules.TcpSockets.connect(this._id, customOptions.host, customOptions.port, customOptions);
         return this;
     }
 
@@ -243,7 +244,7 @@ export default class Socket extends EventEmitter {
             this.once('connect', () => this.setNoDelay(noDelay));
             return this;
         }
-        Sockets.setNoDelay(this._id, noDelay);
+        NativeModules.TcpSockets.setNoDelay(this._id, noDelay);
         return this;
     }
 
@@ -267,7 +268,7 @@ export default class Socket extends EventEmitter {
             );
         }
 
-        Sockets.setKeepAlive(this._id, enable, Math.floor(initialDelay));
+        NativeModules.TcpSockets.setKeepAlive(this._id, enable, Math.floor(initialDelay));
         return this;
     }
 
@@ -291,14 +292,14 @@ export default class Socket extends EventEmitter {
     end(data, encoding) {
         if (data) {
             this.write(data, encoding, () => {
-                Sockets.end(this._id);
+                NativeModules.TcpSockets.end(this._id);
             });
             return this;
         }
         if (this._pending || this._destroyed) return this;
 
         this._clearTimeout();
-        Sockets.end(this._id);
+        NativeModules.TcpSockets.end(this._id);
         return this;
     }
 
@@ -309,7 +310,7 @@ export default class Socket extends EventEmitter {
         if (this._destroyed) return this;
         this._destroyed = true;
         this._clearTimeout();
-        Sockets.destroy(this._id);
+        NativeModules.TcpSockets.destroy(this._id);
         return this;
     }
 
@@ -357,7 +358,7 @@ export default class Socket extends EventEmitter {
         if (!ok) this.writableNeedDrain = true;
         this._lastSentMsgId = currentMsgId;
         this._bytesWritten += generatedBuffer.byteLength;
-        Sockets.write(this._id, generatedBuffer.toString('base64'), currentMsgId);
+        NativeModules.TcpSockets.write(this._id, generatedBuffer.toString('base64'), currentMsgId);
         return ok;
     }
 
@@ -365,10 +366,11 @@ export default class Socket extends EventEmitter {
      * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
      */
     pause() {
-        if (this._paused) return;
+        if (this._paused) return this;
         this._paused = true;
-        Sockets.pause(this._id);
+        NativeModules.TcpSockets.pause(this._id);
         this.emit('pause');
+        return this;
     }
 
     /**
@@ -426,7 +428,7 @@ export default class Socket extends EventEmitter {
             }
         }
         this._resuming = false;
-        Sockets.resume(this._id);
+        NativeModules.TcpSockets.resume(this._id);
     }
 
     /**
@@ -462,6 +464,13 @@ export default class Socket extends EventEmitter {
             this._setDisconnected();
             this.emit('close', evt.error);
         });
+        this._endListener = this._eventEmitter.addListener('end', (evt) => {
+            if (evt.id !== this._id) return;
+            if (!this.allowHalfOpen) {
+                this.end();
+            }
+            this.emit('end');
+        });
         this._connectListener = this._eventEmitter.addListener('connect', (evt) => {
             if (evt.id !== this._id) return;
             this._setConnected(evt.connection);
@@ -480,6 +489,7 @@ export default class Socket extends EventEmitter {
         this._dataListener?.remove();
         this._errorListener?.remove();
         this._closeListener?.remove();
+        this._endListener?.remove();
         this._connectListener?.remove();
         this._writtenListener?.remove();
     }

@@ -22,7 +22,7 @@ RCT_EXPORT_MODULE()
 - (NSArray<NSString *> *)supportedEvents {
     return @[
         @"connect", @"listening", @"connection", @"secureConnection", @"data",
-        @"close", @"error", @"written"
+        @"close", @"error", @"written", @"end"
     ];
 }
 
@@ -294,7 +294,17 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
 - (void)onData:(NSNumber *)clientID data:(NSData *)data {
     NSString *base64String = [data base64EncodedStringWithOptions:0];
     [self sendEventWithName:@"data"
-                       body:@{@"id" : clientID, @"data" : base64String}];
+                       body:@{
+                           @"id" : clientID,
+                           @"data" : base64String
+                       }];
+}
+
+- (void)onEnd:(NSNumber *)clientID {
+    [self sendEventWithName:@"end"
+                       body:@{
+                           @"id" : clientID
+                       }];
 }
 
 - (void)onClose:(NSNumber *)clientID withError:(NSError *)err {
