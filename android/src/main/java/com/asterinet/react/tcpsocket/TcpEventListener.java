@@ -92,6 +92,12 @@ public class TcpEventListener {
         sendEvent("data", eventParams);
     }
 
+    public void onEnd(int id) {
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        sendEvent("end", eventParams);
+    }
+
     public void onWritten(int id, int msgId, @Nullable Exception e) {
         String error = null;
         if (e != null) {

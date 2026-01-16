@@ -267,7 +267,8 @@ class TcpSocketClient extends TcpSocket {
                     if (bufferCount > 0) {
                         receiverListener.onData(socketId, Arrays.copyOfRange(buffer, 0, bufferCount));
                     } else if (bufferCount == -1) {
-                        clientSocket.destroy();
+                        receiverListener.onEnd(socketId);
+                        break;
                     }
                 }
             } catch (IOException | InterruptedException ioe) {

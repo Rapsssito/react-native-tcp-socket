@@ -38,6 +38,7 @@ export default class Server extends EventEmitter {
         this._id = getNextId();
         /** @protected @readonly */
         this._eventEmitter = nativeEventEmitter;
+        // console.log('Server eventEmitter:', this._eventEmitter);
         /** @private @type {Set<Socket>} */
         this._connections = new Set();
         /** @private */
@@ -248,6 +249,14 @@ export default class Server extends EventEmitter {
             if (this._serverOptions.keepAlive !== undefined) {
                 const keepAliveDelay = this._serverOptions.keepAliveInitialDelay || 0;
                 newSocket.setKeepAlive(this._serverOptions.keepAlive, keepAliveDelay);
+            }
+
+            if (this._serverOptions.allowHalfOpen !== undefined) {
+                newSocket.allowHalfOpen = this._serverOptions.allowHalfOpen;
+            }
+
+            if (this._serverOptions.pauseOnConnect) {
+                newSocket.pause();
             }
         }
 
