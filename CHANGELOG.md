@@ -1,3 +1,10 @@
+## [6.4.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.4.0...v6.4.1) (2026-01-16)
+
+
+### Bug Fixes
+
+* resolve allowHalfOpen behavior ([#230](https://github.com/Rapsssito/react-native-tcp-socket/issues/230)) ([dafe6f4](https://github.com/Rapsssito/react-native-tcp-socket/commit/dafe6f46a924a717331817ba2d6eec53cae03755))
+
 # [6.4.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.3.1...v6.4.0) (2026-01-15)
 
 
