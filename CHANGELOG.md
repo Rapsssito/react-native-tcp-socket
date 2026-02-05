@@ -1,3 +1,24 @@
+## [6.4.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.4.0...v6.4.1) (2026-01-16)
+
+
+### Bug Fixes
+
+* resolve allowHalfOpen behavior ([#230](https://github.com/Rapsssito/react-native-tcp-socket/issues/230)) ([dafe6f4](https://github.com/Rapsssito/react-native-tcp-socket/commit/dafe6f46a924a717331817ba2d6eec53cae03755))
+
+# [6.4.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.3.1...v6.4.0) (2026-01-15)
+
+
+### Features
+
+* support connectTimeout ([#228](https://github.com/Rapsssito/react-native-tcp-socket/issues/228)) ([8747daa](https://github.com/Rapsssito/react-native-tcp-socket/commit/8747daaf369ab2fbd88b061c860ab7283e002021))
+
+## [6.3.1](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.3.0...v6.3.1) (2026-01-03)
+
+
+### Bug Fixes
+
+* **Android:** prevent NullPointerException in TcpReceiverTask ([#227](https://github.com/Rapsssito/react-native-tcp-socket/issues/227)) ([27203eb](https://github.com/Rapsssito/react-native-tcp-socket/commit/27203ebc4d9e57ad47de0752660e3dc5aa8e7389))
+
 # [6.3.0](https://github.com/Rapsssito/react-native-tcp-socket/compare/v6.2.0...v6.3.0) (2025-04-23)
 
 

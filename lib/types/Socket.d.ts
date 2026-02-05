@@ -17,11 +17,13 @@
  * tls?: boolean,
  * tlsCheckValidity?: boolean,
  * tlsCert?: any,
+ * connectTimeout?: number,
  * }} ConnectionOptions
  *
  * @typedef {object} ReadableEvents
  * @property {() => void} pause
  * @property {() => void} resume
+ * @property {() => void} end
  *
  * @typedef {object} SocketEvents
  * @property {(had_error: boolean) => void} close
@@ -81,6 +83,7 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     remoteAddress: string | undefined;
     remotePort: number | undefined;
     remoteFamily: string | undefined;
+    allowHalfOpen: boolean;
     get readyState(): "opening" | "open" | "readOnly" | "writeOnly";
     get destroyed(): boolean;
     get pending(): boolean;
@@ -190,7 +193,7 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     /**
      * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
      */
-    pause(): void;
+    pause(): Socket;
     /**
      * Resumes reading after a call to `socket.pause()`.
      */
@@ -212,6 +215,7 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     _dataListener: import("react-native").EmitterSubscription | undefined;
     _errorListener: import("react-native").EmitterSubscription | undefined;
     _closeListener: import("react-native").EmitterSubscription | undefined;
+    _endListener: import("react-native").EmitterSubscription | undefined;
     _connectListener: import("react-native").EmitterSubscription | undefined;
     _writtenListener: import("react-native").EmitterSubscription | undefined;
     /**
@@ -253,11 +257,12 @@ export type ConnectionOptions = {
     tls?: boolean | undefined;
     tlsCheckValidity?: boolean | undefined;
     tlsCert?: any;
-    connectTimeout?: number;
+    connectTimeout?: number | undefined;
 };
 export type ReadableEvents = {
     pause: () => void;
     resume: () => void;
+    end: () => void;
 };
 export type SocketEvents = {
     close: (had_error: boolean) => void;

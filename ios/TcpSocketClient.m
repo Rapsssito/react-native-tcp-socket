@@ -580,9 +580,9 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 }
 
 - (void)socketDidCloseReadStream:(GCDAsyncSocket *)sock {
-    // TODO : investigate for half-closed sockets
-    // for now close the stream completely
-    [sock disconnect];
+    if (_clientDelegate) {
+        [_clientDelegate onEnd:[sock userData]];
+    }
 }
 
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err {
