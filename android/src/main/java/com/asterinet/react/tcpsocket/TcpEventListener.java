@@ -14,8 +14,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import javax.annotation.Nullable;
-
 public class TcpEventListener {
 
     private final DeviceEventManagerModule.RCTDeviceEventEmitter rctEvtEmitter;
@@ -84,13 +82,12 @@ public class TcpEventListener {
         sendEvent("listening", eventParams);
     }
 
-    public void onData(int id, byte[] data) {
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));
-
-        sendEvent("data", eventParams);
-    }
+    // VENHO Phase 1: the read loop no longer calls onData OR a legacy
+    // "readable" emit. Bytes go into the C++ TcpInboundRegistry via JNI;
+    // the readable signal is delivered through the JSI CallInvoker
+    // (TcpDataBridge::signalReadable), NOT this RCTDeviceEventEmitter.
+    // Milestone-1d proved ANY per-chunk legacy-bridge crossing OOMs
+    // (invokeJavaMethod → folly::dynamic backlog), even a tiny {id} map.
 
     public void onEnd(int id) {
         WritableMap eventParams = Arguments.createMap();
@@ -98,19 +95,14 @@ public class TcpEventListener {
         sendEvent("end", eventParams);
     }
 
-    public void onWritten(int id, int msgId, @Nullable Exception e) {
-        String error = null;
-        if (e != null) {
-            Log.e(TcpSocketModule.TAG, "Exception on socket " + id, e);
-            error = e.getMessage();
-        }
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        eventParams.putInt("msgId", msgId);
-        eventParams.putString("err", error);
-
-        sendEvent("written", eventParams);
-    }
+    // VENHO Phase 1: onWritten() is REMOVED. It ran once PER WRITE and
+    // built a WritableMap → RCTDeviceEventEmitter.emit("written",…),
+    // accumulating an unbounded nested folly::dynamic in the bridgeless
+    // event-emitter queue under libp2p volume — Scenario-C OOM #2 (same
+    // class of bug milestone-1d hit on the readable side). The per-write
+    // ACK now goes through the JSI CallInvoker
+    // (TcpDataBridge::signalWritten via TcpSenderTask), never this
+    // legacy bridge. pre-Alpha = clean break, not a stub.
 
     public void onClose(int id, Exception e) {
         if (e != null) {

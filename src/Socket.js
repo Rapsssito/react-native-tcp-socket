@@ -3,7 +3,17 @@
 import { NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
-import { nativeEventEmitter, getNextId } from './Globals';
+import {
+    nativeEventEmitter,
+    getNextId,
+    getTcpDataBridge,
+    registerReadableHandler,
+    unregisterReadableHandler,
+    registerWriteDrainHandler,
+    unregisterWriteDrainHandler,
+    registerWrittenHandler,
+    unregisterWrittenHandler,
+} from './Globals';
 
 /**
  * @typedef {"ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex"} BufferEncoding
@@ -83,11 +93,16 @@ export default class Socket extends EventEmitter {
         this._pending = true;
         /** @private */
         this._destroyed = false;
+        // Set once the local write side has been finished via end()/FIN.
+        // Drives destroySoon()'s "already flushed?" decision (Node parity).
+        /** @private */
+        this._writableEnded = false;
         // TODO: Add readOnly and writeOnly states
         /** @type {'opening' | 'open' | 'readOnly' | 'writeOnly'} @private */
         this._readyState = 'open'; // Incorrect, but matches NodeJS behavior
-        /** @type {{ id: number; data: string; }[]} @private */
-        this._pausedDataEvents = [];
+        // VENHO Phase 1: the old unbounded JS pause buffer is gone. Inbound
+        // bytes live in the bounded native C++ queue; pausing just stops
+        // draining it (real TCP backpressure via the native high watermark).
         this.readableHighWaterMark = 16384;
         this.writableHighWaterMark = 16384;
         this.writableNeedDrain = false;
@@ -133,6 +148,10 @@ export default class Socket extends EventEmitter {
      * @param {number} id
      */
     _setId(id) {
+        // VENHO Phase 1: the readable handler is keyed by socket id. Drop
+        // the old id's registration BEFORE the id changes, else it leaks in
+        // the Globals handler map (server-accepted sockets re-id here).
+        this._unregisterEvents();
         this._id = id;
         this._registerEvents();
     }
@@ -145,6 +164,7 @@ export default class Socket extends EventEmitter {
         this._connecting = false;
         this._readyState = 'open';
         this._pending = false;
+        this._writableEnded = false;
         this.localAddress = connectionInfo.localAddress;
         this.localPort = connectionInfo.localPort;
         this.remoteAddress = connectionInfo.remoteAddress;
@@ -157,21 +177,62 @@ export default class Socket extends EventEmitter {
      * @param {() => void} [callback]
      */
     connect(options, callback) {
-        const customOptions = { ...options };
-        // Normalize args
-        customOptions.host = customOptions.host || 'localhost';
-        customOptions.port = Number(customOptions.port) || 0;
+        // VENHO Phase 1 — Scenario-C OOM ROOT-CAUSE FIX.
+        //
+        // The upstream code did `const customOptions = { ...options }` and
+        // forwarded that whole object as the 4th arg of the
+        // `TcpSockets.connect` (codegen) TurboModule. Callers like
+        // `@libp2p/tcp` spread their ENTIRE dial-options object into the
+        // `net.connect()` argument — including `signal` (an AbortSignal),
+        // `upgrader` (which references the entire libp2p components/registry
+        // graph), `onProgress`, etc. RN's `jsi::dynamicFromValue` then
+        // recursively walks that deeply-nested, partially CYCLIC object
+        // graph into nested `folly::dynamic`, exploding into millions of
+        // unfreed `<dynamic,dynamic>` map nodes in seconds (the entire
+        // Scenario-C Scudo OOM / recursive `folly::dynamic::destroy`
+        // stack-overflow — proven by direct primitive-counter measurement:
+        // no JS primitive fired, ~4M folly/5s from ONE connect() on a
+        // blackhole dial). The native side (`TcpSocketClient.connect` /
+        // `TcpSocketModule`) only ever reads a fixed set of SCALAR option
+        // keys and a `tls`/`tlsOptions` map — it never touches `signal`,
+        // `upgrader`, or any caller internals. So we cross ONLY those
+        // allow-listed primitives; arbitrary caller objects never reach the
+        // bridge. (Upstream-worthy hardening — part of the #209 fork PR.)
+        const host = options?.host || 'localhost';
+        const port = Number(options?.port) || 0;
+        /** @type {Record<string, string|number|boolean|object>} */
+        const customOptions = { host, port };
+        // Exactly the keys the native connect path consumes (scalars +
+        // the tls sub-config map). Copied individually with type coercion;
+        // never a blanket spread of the caller's object.
+        if (typeof options?.localAddress === 'string')
+            customOptions.localAddress = options.localAddress;
+        if (options?.localPort != null) customOptions.localPort = Number(options.localPort);
+        if (typeof options?.interface === 'string') customOptions.interface = options.interface;
+        if (typeof options?.reuseAddress === 'boolean')
+            customOptions.reuseAddress = options.reuseAddress;
+        if (options?.connectTimeout != null)
+            customOptions.connectTimeout = Number(options.connectTimeout);
+        if (typeof options?.tls === 'boolean') customOptions.tls = options.tls;
+        if (typeof options?.tlsCheckValidity === 'boolean')
+            customOptions.tlsCheckValidity = options.tlsCheckValidity;
+        // tlsCert may be a string (PEM) or a small RN-asset descriptor
+        // object; pass through only if present (it is bounded, not a
+        // caller-internals graph).
+        if (options?.tlsCert != null) customOptions.tlsCert = options.tlsCert;
+        // `allowHalfOpen` is a connect/constructor option in Node's net API
+        // and `@libp2p/tcp` passes it straight through `net.connect(cOpts)`
+        // (it sets `options.allowHalfOpen ?? false` then spreads it). It is
+        // a JS-side socket-lifecycle flag (governs whether an inbound FIN
+        // auto-ends our side) — it must NOT cross to native, so it is read
+        // here, not added to `customOptions`. (#209 / #183 parity.)
+        if (typeof options?.allowHalfOpen === 'boolean') this.allowHalfOpen = options.allowHalfOpen;
         this.once('connect', () => {
             if (callback) callback();
         });
         this._connecting = true;
         this._readyState = 'opening';
-        NativeModules.TcpSockets.connect(
-            this._id,
-            customOptions.host,
-            customOptions.port,
-            customOptions
-        );
+        NativeModules.TcpSockets.connect(this._id, host, port, customOptions);
         return this;
     }
 
@@ -296,28 +357,75 @@ export default class Socket extends EventEmitter {
      * @param {BufferEncoding} [encoding]
      */
     end(data, encoding) {
+        if (this._pending || this._destroyed) return this;
         if (data) {
+            this._writableEnded = true;
             this.write(data, encoding, () => {
                 NativeModules.TcpSockets.end(this._id);
             });
             return this;
         }
-        if (this._pending || this._destroyed) return this;
 
         this._clearTimeout();
+        this._writableEnded = true;
         NativeModules.TcpSockets.end(this._id);
         return this;
     }
 
     /**
      * Ensures that no more I/O activity happens on this socket. Destroys the stream and closes the connection.
+     *
+     * @param {Error} [error] Optional error; if given, emitted as an `'error'` event before `'close'`.
      */
-    destroy() {
+    destroy(error) {
         if (this._destroyed) return this;
         this._destroyed = true;
         this._clearTimeout();
         NativeModules.TcpSockets.destroy(this._id);
+        if (error) this.emit('error', error);
         return this;
+    }
+
+    /**
+     * Half-closes the socket (sends FIN) and destroys it once the write
+     * side has finished flushing. Mirrors Node's `net.Socket.destroySoon`:
+     * if the socket is already finished writing it is destroyed at once,
+     * otherwise it is `end()`-ed and torn down on `'finish'`/`'close'`.
+     *
+     * `@libp2p/tcp` calls this on every graceful connection close
+     * (`sendClose` → `socket.destroySoon()` then awaits `'close'`); the
+     * method MUST exist or every libp2p connection teardown throws
+     * `TypeError: socket.destroySoon is not a function`. (#209)
+     *
+     * @returns {this}
+     */
+    destroySoon() {
+        if (this._destroyed) return this;
+        // Already flushed (writable finished) → tear down immediately.
+        if (this._writableEnded && this._writeBufferSize === 0) {
+            this.destroy();
+            return this;
+        }
+        // Otherwise FIN now, then destroy when the OS reports the socket
+        // closed (native emits 'close' after the FIN/peer-close completes).
+        this.once('close', () => this.destroy());
+        this.end();
+        return this;
+    }
+
+    /**
+     * Closes the TCP connection by sending an RST packet and destroying
+     * the stream. The underlying native module exposes only a graceful
+     * close, so this maps to `destroy()` — the closest available teardown
+     * (an abortive RST is not separately expressible on the native side).
+     * Present for Node `net.Socket` API parity: `@libp2p/tcp`'s
+     * `sendReset` calls `socket.resetAndDestroy()`. (#209)
+     *
+     * @returns {this}
+     */
+    resetAndDestroy() {
+        if (this._destroyed) return this;
+        return this.destroy();
     }
 
     /**
@@ -360,11 +468,41 @@ export default class Socket extends EventEmitter {
         };
         // Callback equivalent with better performance
         this._msgEvtEmitter.on('written', msgEvtHandler, this);
-        const ok = this._writeBufferSize < this.writableHighWaterMark;
-        if (!ok) this.writableNeedDrain = true;
+        let ok = this._writeBufferSize < this.writableHighWaterMark;
         this._lastSentMsgId = currentMsgId;
         this._bytesWritten += generatedBuffer.byteLength;
-        NativeModules.TcpSockets.write(this._id, generatedBuffer.toString('base64'), currentMsgId);
+        // VENHO Phase 1: zero-(legacy-)copy outbound. Push the bytes through
+        // the JSI data bridge instead of NativeModules.TcpSockets.write(id,
+        // base64, msgId) — that base64 String arg crossed the Java
+        // TurboModule's jsi::dynamicFromValue per write and was the residual
+        // Scenario-C Scudo OOM. The host fn copies the bytes ONCE off this
+        // ArrayBuffer into the bounded C++ outbound queue (no base64, no
+        // folly::dynamic); it returns false at the queue's high watermark,
+        // which (in addition to the JS-side _writeBufferSize check) latches
+        // backpressure until the native write loop drains and the
+        // write-drain handler clears it.
+        const bridge = typeof getTcpDataBridge === 'function' ? getTcpDataBridge() : null;
+        if (bridge && typeof bridge.write === 'function') {
+            // Hermes Buffer is a Uint8Array view; hand the exact byte range as
+            // its own ArrayBuffer (sliced — the host copies synchronously, so
+            // a tight buffer is correct and avoids leaking the pool).
+            const ab = generatedBuffer.buffer.slice(
+                generatedBuffer.byteOffset,
+                generatedBuffer.byteOffset + generatedBuffer.byteLength
+            );
+            const nativeOk = bridge.write(this._id, ab, currentMsgId);
+            if (nativeOk === false) ok = false;
+        } else {
+            // No JSI data bridge means the native install() did not run — a
+            // hard wiring error, not a recoverable state. Fail loud rather
+            // than silently dropping outbound bytes (which previously
+            // masqueraded as a mystery leak).
+            throw new Error(
+                '[react-native-tcp-socket] JSI TcpDataBridge unavailable — ' +
+                    'native install() did not run (clean rebuild needed?)'
+            );
+        }
+        if (!ok) this.writableNeedDrain = true;
         return ok;
     }
 
@@ -386,7 +524,10 @@ export default class Socket extends EventEmitter {
         if (!this._paused) return;
         this._paused = false;
         this.emit('resume');
-        this._recoverDataEventsAfterPause();
+        // VENHO Phase 1: nothing buffered in JS anymore. Tell native to
+        // resume its read loop, then drain whatever the C++ queue holds.
+        NativeModules.TcpSockets.resume(this._id);
+        this._drainInbound();
     }
 
     ref() {
@@ -398,68 +539,73 @@ export default class Socket extends EventEmitter {
     }
 
     /**
+     * VENHO Phase 1 — zero-copy inbound drain.
+     *
+     * Invoked (by socket id) from the single JSI readable callback that
+     * the C++ TcpDataBridge hops onto the JS thread via the CallInvoker —
+     * NOT a device event. Native pushed the bytes into the bounded C++
+     * TcpInboundRegistry; here we pull them zero-copy: each `read(id)`
+     * returns an ArrayBuffer whose storage IS the received bytes (no
+     * base64, no folly::dynamic, no per-chunk legacy-bridge crossing —
+     * milestone 1d proved any such crossing OOMs). Buffer.from(ab) wraps
+     * without copying (@craftzdog/react-native-buffer).
+     *
+     * Backpressure: while `_paused` we STOP draining; bytes stay in the
+     * bounded native queue, which pauses the socket read at its high
+     * watermark (real TCP backpressure). The old unbounded
+     * `_pausedDataEvents` array is gone.
+     *
      * @private
      */
-    async _recoverDataEventsAfterPause() {
-        if (this._resuming) return;
-        this._resuming = true;
-        while (this._pausedDataEvents.length > 0) {
-            // Concat all buffered events for better performance
-            const buffArray = [];
-            let readBytes = 0;
-            let i = 0;
-            for (; i < this._pausedDataEvents.length; i++) {
-                const evtData = Buffer.from(this._pausedDataEvents[i].data, 'base64');
-                readBytes += evtData.byteLength;
-                if (readBytes <= this.readableHighWaterMark) {
-                    buffArray.push(evtData);
-                } else {
-                    const buffOffset = this.readableHighWaterMark - readBytes;
-                    buffArray.push(evtData.slice(0, buffOffset));
-                    this._pausedDataEvents[i].data = evtData.slice(buffOffset).toString('base64');
-                    break;
-                }
-            }
-            // Generate new event with the concatenated events
-            const evt = {
-                id: this._pausedDataEvents[0].id,
-                data: Buffer.concat(buffArray).toString('base64'),
-            };
-            // Clean the old events
-            this._pausedDataEvents = this._pausedDataEvents.slice(i);
-            this._onDeviceDataEvt(evt);
-            if (this._paused) {
-                this._resuming = false;
-                return;
-            }
-        }
-        this._resuming = false;
-        NativeModules.TcpSockets.resume(this._id);
-    }
-
-    /**
-     * @private
-     */
-    _onDeviceDataEvt = (/** @type {{ id: number; data: string; }} */ evt) => {
-        if (evt.id !== this._id) return;
+    _drainInbound() {
+        if (this._paused || this._destroyed) return;
+        const bridge = getTcpDataBridge();
+        if (!bridge) return;
         this._resetTimeout();
-        if (!this._paused) {
-            const bufferData = Buffer.from(evt.data, 'base64');
+        // Drain everything currently queued for this socket id.
+        for (;;) {
+            if (this._paused || this._destroyed) return;
+            const ab = bridge.read(this._id);
+            if (ab == null) return;
+            const bufferData = Buffer.from(ab);
             this._bytesRead += bufferData.byteLength;
             const finalData = this._encoding ? bufferData.toString(this._encoding) : bufferData;
             this.emit('data', finalData);
-        } else {
-            // If the socket is paused, save the data events for later
-            this._pausedDataEvents.push(evt);
         }
-    };
+    }
 
     /**
      * @private
      */
     _registerEvents() {
         this._unregisterEvents();
-        this._dataListener = this._eventEmitter.addListener('data', this._onDeviceDataEvt);
+        // VENHO Phase 1: the readable signal arrives via the JSI bridge (a
+        // single C++→JS CallInvoker callback dispatched by socket id), NOT a
+        // device event — milestone 1d proved any per-chunk legacy-bridge
+        // crossing OOMs. Register this socket's drain handler; bytes are
+        // then pulled zero-copy via the JSI read(id) in _drainInbound.
+        // Ensures the bridge (and its single setReadable cb) is installed.
+        // Guarded: the Jest env mocks ./Globals with only a subset of
+        // exports — degrade to a no-op there (the suite asserts control
+        // plane, not the JSI data path).
+        if (typeof getTcpDataBridge === 'function') getTcpDataBridge();
+        if (typeof registerReadableHandler === 'function') {
+            registerReadableHandler(this._id, () => this._drainInbound());
+        }
+        // VENHO Phase 1: the native write loop fires this (via the JSI
+        // CallInvoker, NOT a device event) when the C++ outbound queue
+        // drained below its low watermark. Release backpressure: clear the
+        // need-drain latch and emit `drain` so libp2p/Node streams resume
+        // writing. (The per-write `written` ack still flows through the
+        // event path below — that's a tiny {id,msgId} map, not the leak.)
+        if (typeof registerWriteDrainHandler === 'function') {
+            registerWriteDrainHandler(this._id, () => {
+                if (this.writableNeedDrain) {
+                    this.writableNeedDrain = false;
+                    this.emit('drain');
+                }
+            });
+        }
         this._errorListener = this._eventEmitter.addListener('error', (evt) => {
             if (evt.id !== this._id) return;
             this.destroy();
@@ -468,7 +614,13 @@ export default class Socket extends EventEmitter {
         this._closeListener = this._eventEmitter.addListener('close', (evt) => {
             if (evt.id !== this._id) return;
             this._setDisconnected();
-            this.emit('close', evt.error);
+            // Node's net.Socket 'close' passes a BOOLEAN `hadError`, not the
+            // error object (the error itself is delivered via 'error', emitted
+            // first). `@libp2p/tcp` relies on this exact shape:
+            // `socket.once('close', hadError => { if (hadError) abort(...) })`.
+            // Previously this emitted the raw error and only worked by
+            // truthiness — now spec-correct. (#209 Node-parity)
+            this.emit('close', Boolean(evt.error));
         });
         this._endListener = this._eventEmitter.addListener('end', (evt) => {
             if (evt.id !== this._id) return;
@@ -482,22 +634,48 @@ export default class Socket extends EventEmitter {
             this._setConnected(evt.connection);
             this.emit('connect');
         });
-        this._writtenListener = this._eventEmitter.addListener('written', (evt) => {
-            if (evt.id !== this._id) return;
-            this._msgEvtEmitter.emit('written', evt);
-        });
+        // VENHO Phase 1: the per-write `written` ACK now arrives via the JSI
+        // CallInvoker (single C++→JS callback keyed by socket id), NOT the
+        // legacy RCTDeviceEventEmitter `written` device event — that
+        // per-write emit accumulated an unbounded folly::dynamic in the
+        // bridgeless event-emitter queue (Scenario-C OOM #2). The handler
+        // feeds the SAME in-JS `_msgEvtEmitter` the per-write `msgEvtHandler`
+        // already listens on, so all the existing ack/drain/callback
+        // accounting is unchanged. Guarded for the Jest mock env.
+        if (typeof registerWrittenHandler === 'function') {
+            registerWrittenHandler(this._id, (msgId, err) => {
+                this._msgEvtEmitter.emit('written', {
+                    id: this._id,
+                    msgId,
+                    // C++ passes '' for success; normalise to undefined so the
+                    // existing `if (err)` checks behave exactly as before.
+                    err: err ? err : undefined,
+                });
+            });
+        }
     }
 
     /**
      * @package
      */
     _unregisterEvents() {
-        this._dataListener?.remove();
+        // VENHO Phase 1: readable is a JSI handler keyed by socket id, not a
+        // device-event subscription. Guarded for the Jest mock env.
+        if (typeof unregisterReadableHandler === 'function') {
+            unregisterReadableHandler(this._id);
+        }
+        if (typeof unregisterWriteDrainHandler === 'function') {
+            unregisterWriteDrainHandler(this._id);
+        }
+        // VENHO Phase 1: `written` is a JSI handler keyed by socket id, not
+        // a device-event subscription. Guarded for the Jest mock env.
+        if (typeof unregisterWrittenHandler === 'function') {
+            unregisterWrittenHandler(this._id);
+        }
         this._errorListener?.remove();
         this._closeListener?.remove();
         this._endListener?.remove();
         this._connectListener?.remove();
-        this._writtenListener?.remove();
     }
 
     /**

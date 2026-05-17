@@ -9,7 +9,6 @@ import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
-import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -124,14 +123,14 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         }
     }
 
-    @SuppressLint("StaticFieldLeak")
-    @SuppressWarnings("unused")
-    @ReactMethod
-    public void write(final int cId, @NonNull final String base64String, final int msgId) {
-        TcpSocketClient socketClient = getTcpClient(cId);
-        byte[] data = Base64.decode(base64String, Base64.NO_WRAP);
-        socketClient.write(msgId, data);
-    }
+    // VENHO Phase 1: the @ReactMethod write(int, String base64, int) is
+    // REMOVED. Its base64 String arg crossed the Java TurboModule's
+    // jsi::dynamicFromValue per write — the residual Scenario-C Scudo
+    // OOM after inbound was fixed. Outbound now flows entirely through
+    // the JSI data plane: Socket.js → global.__TcpDataBridge.write(id,
+    // ArrayBuffer, msgId) → bounded C++ outbound queue → TcpSenderTask
+    // (one copy off the JS heap, no base64, no folly::dynamic). Nothing
+    // calls this method anymore; pre-Alpha = clean break, not a stub.
 
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")

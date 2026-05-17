@@ -77,5 +77,18 @@
   "dependencies": {
     "buffer": "^5.4.3",
     "eventemitter3": "^4.0.7"
+  },
+  "codegenConfig": {
+    "name": "RNTcpSocketsSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "outputDir": {
+      "ios": "ios/generated",
+      "android": "android/generated"
+    },
+    "android": {
+      "javaPackageName": "com.asterinet.react.tcpsocket"
+    },
+    "includesGeneratedCode": true
   }
 }
