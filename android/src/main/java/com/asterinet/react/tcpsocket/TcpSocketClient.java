@@ -155,12 +155,13 @@ class TcpSocketClient extends TcpSocket {
         writeExecutor.execute(new Runnable() {
             @Override
             public void run() {
-                if (socket == null) {
+                final Socket s = socket;
+                if (s == null) {
                     receiverListener.onError(getId(), new IOException("Attempted to write to closed socket"));
                     return;
                 }
                 try {
-                    socket.getOutputStream().write(data);
+                    s.getOutputStream().write(data);
                     receiverListener.onWritten(getId(), msgId, null);
                 } catch (IOException e) {
                     receiverListener.onWritten(getId(), msgId, e);
