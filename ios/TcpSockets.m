@@ -219,20 +219,35 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
 
 - (void)onConnect:(TcpSocketClient *)client {
     GCDAsyncSocket *socket = [client getSocket];
-    [self sendEventWithName:@"connect"
-                       body:@{
-                           @"id" : client.id,
-                           @"connection" : @{
-                               @"localAddress" : [socket localHost],
-                               @"localPort" :
-                                   [NSNumber numberWithInt:[socket localPort]],
-                               @"remoteAddress" : [socket connectedHost],
-                               @"remotePort" : [NSNumber
-                                   numberWithInt:[socket connectedPort]],
-                               @"remoteFamily" : [socket isIPv4] ? @"IPv4"
-                                                                 : @"IPv6"
-                           }
-                       }];
+    NSString *localAddress = [socket localHost];
+    NSString *remoteAddress = [socket connectedHost];
+    // The socket can disconnect between this callback being queued and run,
+    // in which case the address getters return nil. Building the connection
+    // dictionary with a nil value throws NSInvalidArgumentException and
+    // crashes the app, so emit an error instead of the connect event -
+    // skipping silently would hang the JS side waiting for a callback.
+    if (localAddress != nil && remoteAddress != nil) {
+        [self sendEventWithName:@"connect"
+                           body:@{
+                               @"id" : client.id,
+                               @"connection" : @{
+                                   @"localAddress" : localAddress,
+                                   @"localPort" :
+                                       [NSNumber numberWithInt:[socket localPort]],
+                                   @"remoteAddress" : remoteAddress,
+                                   @"remotePort" : [NSNumber
+                                       numberWithInt:[socket connectedPort]],
+                                   @"remoteFamily" : [socket isIPv4] ? @"IPv4"
+                                                                     : @"IPv6"
+                               }
+                           }];
+    } else {
+        [self sendEventWithName:@"error"
+                           body:@{
+                               @"id" : client.id,
+                               @"error" : @"Socket disconnected before connect could be reported"
+                           }];
+    }
 }
 
 - (void)onListen:(TcpSocketClient *)server {
