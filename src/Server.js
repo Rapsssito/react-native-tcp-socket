@@ -104,9 +104,8 @@ export default class Server extends EventEmitter {
         } else if (typeof options === 'object') {
             // listen(options, [callback])
             listenOptions = {
-                port: options.port,
+                ...options,
                 host: options.host || '0.0.0.0',
-                reuseAddress: options.reuseAddress,
             };
             if (typeof callback_or_host === 'function') {
                 cb = callback_or_host;
