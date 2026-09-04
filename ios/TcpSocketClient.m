@@ -74,6 +74,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
              andConfig:(id<SocketClientDelegate>)aDelegate
              andSocket:(GCDAsyncSocket *)tcpSocket
              andServer:(NSNumber *)serverID;
+- (NSDictionary *)tlsSettingsForOptions:(NSDictionary *)tlsOptions;
 
 @end
 
@@ -147,6 +148,14 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     int connectTimeout = options[@"connectTimeout"] ? [options[@"connectTimeout"] intValue] / 1000 : -1;
 
     _host = host;
+    // Arm TLS before the connect starts. Building the client identity touches the keychain and can
+    // outlast a LAN connect, and `didConnectToHost` reads `_tls` to decide whether to announce a
+    // plain connect: set after `connectToHost`, it reported a socket whose handshake had not begun.
+    NSDictionary *tlsSettings = nil;
+    if (tlsOptions) {
+        tlsSettings = [self tlsSettingsForOptions:tlsOptions];
+        _tls = true;
+    }
     _connecting = true;
     if (!localAddress && !localPort) {
         result = [_tcpSocket connectToHost:host onPort:port withTimeout:connectTimeout error:error];
@@ -163,8 +172,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                           withTimeout:connectTimeout
                                 error:error];
     }
-    if (result && tlsOptions) {
-        [self startTLS:tlsOptions];
+    if (result && tlsSettings) {
+        // Queued right behind the connect; GCDAsyncSocket starts the handshake once connected.
+        [_tcpSocket startTLS:tlsSettings];
+    } else if (!result) {
+        _tls = false;
     }
     return result;
 }
@@ -186,6 +198,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)startTLS:(NSDictionary *)tlsOptions {
     if (_tls)
         return;
+    NSDictionary *settings = [self tlsSettingsForOptions:tlsOptions];
+    _tls = true;
+    [_tcpSocket startTLS:settings];
+}
+
+- (NSDictionary *)tlsSettingsForOptions:(NSDictionary *)tlsOptions {
     NSMutableDictionary *settings = [NSMutableDictionary dictionary];
     _resolvableCaCert = [self getResolvableOption:tlsOptions forKey:@"ca"];
     BOOL checkValidity = (tlsOptions[@"rejectUnauthorized"]
@@ -249,8 +267,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
 
     //RCTLogWarn(@"startTLS: Final settings: %@", settings);
-    _tls = true;
-    [_tcpSocket startTLS:settings];
+    return settings;
 }
 
 - (NSDictionary<NSString *, id> *)getAddress {
@@ -572,9 +589,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         return;
     }
 
-    // Show up if SSL handsake is done
+    // Show up if SSL handshake is done
     if (!_tls) {
+        // A later `startTLS` upgrade otherwise finds `_connecting` still set and
+        // announces a second connect from `socketDidSecure`.
         [_clientDelegate onConnect:self];
+        _connecting = false;
     }
     [sock readDataWithTimeout:-1 tag:_id.longValue];
 }
