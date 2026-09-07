@@ -7,6 +7,13 @@
  * @property {string} [certAlias]
  * @property {string} [keyAlias]
  * @property {string[]} [resolvedKeys]
+ * @property {boolean} [rejectUnauthorized] Default `true`. `false` turns off both the certificate
+ * chain check and the hostname check, as it does in Node.
+ * @property {string} [servername] The name to verify the server's certificate against, and to
+ * send in SNI, when it is not the host being connected to.
+ * @property {boolean} [checkServerIdentity] Default `true`. `false` keeps the chain check and
+ * drops only the hostname check - for a self-signed certificate whose subject does not name the
+ * address it is reached at.
  *
  * @extends {Socket}
  */
@@ -59,5 +66,21 @@ export type TLSSocketOptions = {
     certAlias?: string | undefined;
     keyAlias?: string | undefined;
     resolvedKeys?: string[] | undefined;
+    /**
+     * Default `true`. `false` turns off both the certificate
+     * chain check and the hostname check, as it does in Node.
+     */
+    rejectUnauthorized?: boolean | undefined;
+    /**
+     * The name to verify the server's certificate against, and to
+     * send in SNI, when it is not the host being connected to.
+     */
+    servername?: string | undefined;
+    /**
+     * Default `true`. `false` keeps the chain check and
+     * drops only the hostname check - for a self-signed certificate whose subject does not name the
+     * address it is reached at.
+     */
+    checkServerIdentity?: boolean | undefined;
 };
 import Socket from "./Socket";

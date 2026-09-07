@@ -18,6 +18,8 @@
  * tlsCheckValidity?: boolean,
  * tlsCert?: any,
  * connectTimeout?: number,
+ * servername?: string,
+ * checkServerIdentity?: boolean,
  * }} ConnectionOptions
  *
  * @typedef {object} ReadableEvents
@@ -258,6 +260,8 @@ export type ConnectionOptions = {
     tlsCheckValidity?: boolean | undefined;
     tlsCert?: any;
     connectTimeout?: number | undefined;
+    servername?: string | undefined;
+    checkServerIdentity?: boolean | undefined;
 };
 export type ReadableEvents = {
     pause: () => void;

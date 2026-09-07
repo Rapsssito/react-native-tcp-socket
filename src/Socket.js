@@ -25,6 +25,8 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * tlsCheckValidity?: boolean,
  * tlsCert?: any,
  * connectTimeout?: number,
+ * servername?: string,
+ * checkServerIdentity?: boolean,
  * }} ConnectionOptions
  *
  * @typedef {object} ReadableEvents
