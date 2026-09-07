@@ -206,8 +206,17 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         [settings setObject:[NSNumber numberWithBool:YES]
                      forKey:GCDAsyncSocketManuallyEvaluateTrust];
     } else {
-        // Default certificates
+        // Default certificates. Both keys are set, and the second relaxes nothing:
+        // kCFStreamSSLPeerName still reaches SSLSetPeerDomainName, so the name travels with the
+        // handshake as SNI; GCDAsyncSocketManuallyEvaluateTrust is the only way the peer's
+        // SecTrustRef is handed to -socket:didReceiveTrust:completionHandler:, which is the only
+        // place this class can capture it. Without it _peerTrust stays NULL for every ordinary
+        // CA-signed server and -getPeerCertificate returns nil. What the trust is evaluated
+        // against is unchanged - see -socket:didReceiveTrust:.
+        _checkValidity = true;
         [settings setObject:_host forKey:(NSString *)kCFStreamSSLPeerName];
+        [settings setObject:[NSNumber numberWithBool:YES]
+                     forKey:GCDAsyncSocketManuallyEvaluateTrust];
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////:
     // Handle client certificate authentication
@@ -516,6 +525,33 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     // Check if we should check the validity
     if (!_checkValidity) {
         completionHandler(YES);
+        return;
+    }
+
+    if (_resolvableCaCert == nil) {
+        // No pinned CA: the platform trust store. Evaluated here because the trust has to be
+        // taken manually for -getPeerCertificate to have anything to report. Chain and hostname
+        // both, via an SSL server policy bound to _host - the same policy kCFStreamSSLPeerName
+        // would have driven.
+        SecPolicyRef policy = SecPolicyCreateSSL(true, (__bridge CFStringRef)_host);
+        if (!policy) {
+            completionHandler(NO);
+            return;
+        }
+        OSStatus policyStatus = SecTrustSetPolicies(trust, policy);
+        CFRelease(policy);
+        if (policyStatus != errSecSuccess) {
+            completionHandler(NO);
+            return;
+        }
+        CFErrorRef trustError = NULL;
+        BOOL trusted = SecTrustEvaluateWithError(trust, &trustError);
+        if (trustError) {
+            RCTLogWarn(@"TLS trust evaluation failed for %@: %@", _host,
+                       (__bridge NSError *)trustError);
+            CFRelease(trustError);
+        }
+        completionHandler(trusted);
         return;
     }
 
