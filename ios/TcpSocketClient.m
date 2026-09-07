@@ -110,6 +110,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         _clientDelegate = aDelegate;
         _paused = false;
         _connecting = false;
+        // Default YES. This was only ever ASSIGNED in the `rejectUnauthorized: false` branch of
+        // -startTLS:, so on the custom-`ca` branch it kept its zero-initialised NO - and
+        // -socket:didReceiveTrust: early-exits with completionHandler(YES) when it is NO. A
+        // caller who pinned a certificate got no validation at all (#184).
+        _checkValidity = true;
         _pendingSends = [NSMutableDictionary dictionary];
         _lock = [[NSLock alloc] init];
         _tcpSocket = tcpSocket;
