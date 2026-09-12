@@ -2,6 +2,9 @@ package com.asterinet.react.tcpsocket;
 
 import android.content.Context;
 import android.net.Network;
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableArray;
@@ -13,9 +16,17 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -26,6 +37,8 @@ class TcpSocketClient extends TcpSocket {
     private TcpReceiverTask receiverTask;
     private Socket socket;
     private boolean closed = true;
+    /** The host the caller asked for, so that a later startTLS() can verify against it. */
+    private String requestedHost;
 
     TcpSocketClient(TcpEventListener receiverListener, Integer id, Socket socket) {
         super(id);
@@ -41,43 +54,131 @@ class TcpSocketClient extends TcpSocket {
 
     public void connect(Context context, String address, final Integer port, ReadableMap options, Network network, ReadableMap tlsOptions) throws IOException, GeneralSecurityException {
         if (socket != null) throw new IOException("Already connected");
-        if (tlsOptions != null) {
-            SSLSocketFactory ssf = getSSLSocketFactory(context, tlsOptions);
-            socket = ssf.createSocket();
-            ((SSLSocket) socket).setUseClientMode(true);
-        } else {
-            socket = new Socket();
-        }
+        requestedHost = address;
+        // Always a plain socket first, even for TLS: the bind, the Network binding and the
+        // connect belong to the TCP socket, and the SSLSocket is then layered over the connected
+        // one so that it can be given the peer name. See upgradeToTls().
+        final Socket plainSocket = new Socket();
         // Get the addresses
         final String localAddress = options.hasKey("localAddress") ? options.getString("localAddress") : "0.0.0.0";
         final InetAddress localInetAddress = InetAddress.getByName(localAddress);
         final InetAddress remoteInetAddress = InetAddress.getByName(address);
         if (network != null)
-            network.bindSocket(socket);
+            network.bindSocket(plainSocket);
         // setReuseAddress
         if (options.hasKey("reuseAddress")) {
             boolean reuseAddress = options.getBoolean("reuseAddress");
-            socket.setReuseAddress(reuseAddress);
+            plainSocket.setReuseAddress(reuseAddress);
         } else {
             // Default to true
-            socket.setReuseAddress(true);
+            plainSocket.setReuseAddress(true);
         }
         final int localPort = options.hasKey("localPort") ? options.getInt("localPort") : 0;
         // bind
-        socket.bind(new InetSocketAddress(localInetAddress, localPort));
+        plainSocket.bind(new InetSocketAddress(localInetAddress, localPort));
         final int connectTimeout = options.hasKey("connectTimeout") ? options.getInt("connectTimeout") : 0; 
-        socket.connect(new InetSocketAddress(remoteInetAddress, port), connectTimeout);
-        if (socket instanceof SSLSocket) ((SSLSocket) socket).startHandshake();
+        plainSocket.connect(new InetSocketAddress(remoteInetAddress, port), connectTimeout);
+        socket = (tlsOptions != null)
+                ? upgradeToTls(context, plainSocket, address, port, tlsOptions)
+                : plainSocket;
         startListening();
     }
 
     public void startTLS(Context context, ReadableMap tlsOptions) throws IOException, GeneralSecurityException {
         if (socket instanceof SSLSocket) return;
-        SSLSocketFactory ssf = getSSLSocketFactory(context, tlsOptions);
-        SSLSocket sslSocket = (SSLSocket) ssf.createSocket(socket, socket.getInetAddress().getHostAddress(), socket.getPort(), true);
+        // requestedHost, not socket.getInetAddress().getHostAddress(): the second is the resolved
+        // IP literal, and a certificate that names the server does not name its address.
+        final String fallbackHost = (requestedHost != null)
+                ? requestedHost
+                : socket.getInetAddress().getHostAddress();
+        socket = upgradeToTls(context, socket, fallbackHost, socket.getPort(), tlsOptions);
+    }
+
+    /**
+     * Layer TLS over a connected socket, verifying that the certificate belongs to the host that
+     * was asked for.
+     *
+     * createSocket(socket, host, port, autoClose) is the form that carries the peer NAME onto the
+     * SSLSocket. The no-argument createSocket() used before carries none, and an SSLSocket with
+     * no peer name neither sends SNI nor has anything to identify the endpoint against - the
+     * handshake validated the certificate chain and nothing else, so any certificate from any
+     * trusted CA was accepted for any host. JSSE does not verify hostnames on a bare SSLSocket by
+     * default (that is HttpsURLConnection's job), so it has to be asked for, which is what
+     * SSLParameters.setEndpointIdentificationAlgorithm("HTTPS") does.
+     *
+     * Skipped only when the caller has said it does not want the check: `rejectUnauthorized:
+     * false`, which in Node turns off chain and name alike, or an explicit `checkServerIdentity:
+     * false` for a self-signed certificate whose subject does not name the address it is reached
+     * at (see #190).
+     *
+     * `tlsOptions` is the map TLSSocket sent to startTLS. connectTLS() passes one options object
+     * to both `new TLSSocket(socket, options)` and `socket.connect(options)` and TLSSocket
+     * spreads it whole, so `servername` and `checkServerIdentity` arrive here even though they
+     * read like connect options.
+     */
+    private SSLSocket upgradeToTls(Context context, Socket connected, String fallbackHost, int port, ReadableMap tlsOptions) throws IOException, GeneralSecurityException {
+        final String peerName = serverNameFor(tlsOptions, fallbackHost);
+        final SSLSocketFactory ssf = getSSLSocketFactory(context, tlsOptions);
+        final SSLSocket sslSocket = (SSLSocket) ssf.createSocket(connected, peerName, port, true);
         sslSocket.setUseClientMode(true);
+        final boolean verifyIdentity = shouldVerifyServerIdentity(tlsOptions);
+        if (verifyIdentity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            applyEndpointIdentification(sslSocket, peerName);
+        }
         sslSocket.startHandshake();
-        socket = sslSocket;
+        if (verifyIdentity && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            // No SSLParameters.setEndpointIdentificationAlgorithm before API 24, so the same
+            // check runs after the handshake with the platform's own verifier - later, but still
+            // before any application byte has been written. Needed because android/build.gradle
+            // still falls back to minSdkVersion 21.
+            final HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
+            if (!verifier.verify(peerName, sslSocket.getSession())) {
+                try {
+                    sslSocket.close();
+                } catch (IOException ignored) {
+                    // Refusing is the point; how the refused socket closed is not.
+                }
+                throw new SSLPeerUnverifiedException("Certificate presented for " + peerName + " does not name it");
+            }
+        }
+        return sslSocket;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private static void applyEndpointIdentification(SSLSocket sslSocket, String peerName) {
+        final SSLParameters params = sslSocket.getSSLParameters();
+        params.setEndpointIdentificationAlgorithm("HTTPS");
+        if (!isInetAddressLiteral(peerName)) {
+            // Conscrypt derives SNI from the peer name on its own, but setting it explicitly also
+            // covers a caller that overrode the name with `servername`. An IP literal is excluded
+            // because RFC 6066 3 forbids one in server_name.
+            final SNIServerName sni = new SNIHostName(peerName);
+            params.setServerNames(Collections.singletonList(sni));
+        }
+        sslSocket.setSSLParameters(params);
+    }
+
+    /** Node's `servername`: the name to verify and to send in SNI, when it is not the host. */
+    private static String serverNameFor(ReadableMap tlsOptions, String fallbackHost) {
+        if (tlsOptions != null && tlsOptions.hasKey("servername")) {
+            final String servername = tlsOptions.getString("servername");
+            if (servername != null && !servername.isEmpty()) return servername;
+        }
+        return fallbackHost;
+    }
+
+    private static boolean shouldVerifyServerIdentity(ReadableMap tlsOptions) {
+        if (tlsOptions == null) return true;
+        if (tlsOptions.hasKey("rejectUnauthorized") && !tlsOptions.getBoolean("rejectUnauthorized")) return false;
+        return !tlsOptions.hasKey("checkServerIdentity") || tlsOptions.getBoolean("checkServerIdentity");
+    }
+
+    /** IPv4/IPv6 literal test; `1and1.com` is a hostname, `1.2.3.4` is not. */
+    private static final Pattern INET_ADDRESS_LITERAL =
+            Pattern.compile("([0-9a-fA-F]*:[0-9a-fA-F:.]*)|([\\d.]+)");
+
+    private static boolean isInetAddressLiteral(String host) {
+        return host != null && INET_ADDRESS_LITERAL.matcher(host).matches();
     }
 
     private boolean containsKey(ReadableArray array, String key) {
