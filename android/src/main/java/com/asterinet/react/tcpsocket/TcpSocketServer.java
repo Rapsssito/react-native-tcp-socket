@@ -40,8 +40,9 @@ public final class TcpSocketServer extends TcpSocket {
         if (tlsOptions != null) {
             String keystoreResourceUri = tlsOptions.getString("keystore");
             assert keystoreResourceUri != null;
+            String passphrase = tlsOptions.hasKey("passphrase") ? tlsOptions.getString("passphrase") : null;
 
-            SSLServerSocketFactory ssf = SSLCertificateHelper.createServerSocketFactory(context, keystoreResourceUri);
+            SSLServerSocketFactory ssf = SSLCertificateHelper.createServerSocketFactory(context, keystoreResourceUri, passphrase);
             serverSocket = ssf.createServerSocket(port, 50, localInetAddress);
             isTLS = true;
             // ((SSLServerSocket) serverSocket).setNeedClientAuth(true);

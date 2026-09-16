@@ -7,6 +7,7 @@ import TLSSocket from './TLSSocket';
 /**
  * @typedef {object} TLSServerOptions
  * @property {any} keystore
+ * @property {string} [passphrase] - Optional passphrase for keystore
  *
  * @extends {Server}
  */

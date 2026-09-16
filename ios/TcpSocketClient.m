@@ -350,7 +350,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     NSURL *keystoreUrl = [[NSURL alloc] initWithString:keystoreResourcePath];
     NSData *pkcs12data = [[NSData alloc] initWithContentsOfURL:keystoreUrl];
     CFDataRef inPCKS12Data = (CFDataRef)CFBridgingRetain(pkcs12data);
-    CFStringRef password = CFSTR("");
+    NSString *passphrase = tlsOptions[@"passphrase"] ?: @"";
+    CFStringRef password = (__bridge CFStringRef)passphrase;
     const void *keys[] = {kSecImportExportPassphrase};
     const void *values[] = {password};
     CFDictionaryRef options = CFDictionaryCreate(NULL, keys, values, 1, NULL, NULL);
@@ -359,7 +360,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     OSStatus securityError = SecPKCS12Import(inPCKS12Data, options, &items);
     CFRelease(options);
-    CFRelease(password);
 
     if (securityError != errSecSuccess) {
         return false;

@@ -63,8 +63,8 @@ final class SSLCertificateHelper {
         return ctx.getSocketFactory();
     }
 
-    static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String keyStoreResourceUri) throws GeneralSecurityException, IOException {
-        char[] password = "".toCharArray();
+    static SSLServerSocketFactory createServerSocketFactory(Context context, @NonNull final String keyStoreResourceUri, final String passphrase) throws GeneralSecurityException, IOException {
+        char[] password = (passphrase != null) ? passphrase.toCharArray() : "".toCharArray();
 
         InputStream keyStoreInput = getRawResourceStream(context, keyStoreResourceUri);
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
