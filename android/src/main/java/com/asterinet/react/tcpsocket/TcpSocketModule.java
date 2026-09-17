@@ -140,7 +140,18 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                TcpSocketClient socketClient = getTcpClient(cId);
+                TcpSocket socket = socketMap.get(cId);
+                if (socket == null) {
+                    return;
+                }
+                if (!(socket instanceof TcpSocketClient)) {
+                    tcpEvtListener.onError(cId, new IllegalArgumentException("Socket with id " + cId + " is not a client"));
+                    return;
+                }
+                TcpSocketClient socketClient = (TcpSocketClient) socket;
+                if (!socketMap.remove(cId, socketClient)) {
+                    return;
+                }
                 socketClient.destroy();
             }
         });

@@ -15,6 +15,7 @@ import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -152,23 +153,29 @@ class TcpSocketClient extends TcpSocket {
      * @param data data to be sent
      */
     public void write(final int msgId, final byte[] data) {
-        writeExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                final Socket s = socket;
-                if (s == null) {
-                    receiverListener.onError(getId(), new IOException("Attempted to write to closed socket"));
-                    return;
+        try {
+            writeExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    final Socket s = socket;
+                    if (s == null) {
+                        receiverListener.onError(getId(), new IOException("Attempted to write to closed socket"));
+                        return;
+                    }
+                    try {
+                        s.getOutputStream().write(data);
+                        receiverListener.onWritten(getId(), msgId, null);
+                    } catch (IOException e) {
+                        receiverListener.onWritten(getId(), msgId, e);
+                        receiverListener.onError(getId(), e);
+                    }
                 }
-                try {
-                    s.getOutputStream().write(data);
-                    receiverListener.onWritten(getId(), msgId, null);
-                } catch (IOException e) {
-                    receiverListener.onWritten(getId(), msgId, e);
-                    receiverListener.onError(getId(), e);
-                }
-            }
-        });
+            });
+        } catch (RejectedExecutionException e) {
+            final IOException closed = new IOException("Attempted to write to closed socket");
+            receiverListener.onWritten(getId(), msgId, closed);
+            receiverListener.onError(getId(), closed);
+        }
     }
 
     public ReadableMap getPeerCertificate() {
@@ -193,6 +200,9 @@ class TcpSocketClient extends TcpSocket {
             }
         } catch (IOException e) {
             receiverListener.onClose(getId(), e);
+        } finally {
+            listenExecutor.shutdown();
+            writeExecutor.shutdown();
         }
     }
 
