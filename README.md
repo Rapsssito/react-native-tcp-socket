@@ -333,6 +333,8 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
   * [`setNoDelay([noDelay])`](https://nodejs.org/api/net.html#net_socket_setnodelay_nodelay)
   * [`setTimeout(timeout[, callback])`](https://nodejs.org/api/net.html#net_socket_settimeout_timeout_callback)
   * [`write(data[, encoding][, callback])`](https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback)
+  * **[`sendFile(path, offset, length)`](#socketsendfile----omit-in-toc)**
+  * **[`receiveHttpBodyToFile(path)`](#socketreceivehttpbodytofile----omit-in-toc)**
   * [`pause()`](https://nodejs.org/api/net.html#net_socket_pause)
   * `ref()` - _Will not have any effect_
   * [`resume()`](https://nodejs.org/api/net.html#net_socket_resume)
@@ -362,6 +364,8 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
   * [`'drain'`](https://nodejs.org/api/net.html#net_event_drain)
   * [`'error'`](https://nodejs.org/api/net.html#net_event_error_1)
   * [`'timeout'`](https://nodejs.org/api/net.html#net_event_timeout)
+  * **[`'fileProgress'`](#socketsendfile----omit-in-toc)**
+  * **[`'fileEnd'`](#socketreceivehttpbodytofile----omit-in-toc)**
 
 ##### `net.createConnection()` <!-- omit in toc -->
 `net.createConnection(options[, callback])` creates a TCP connection using the given `options`. The `options` parameter must be an `object` with the following properties:
@@ -377,6 +381,54 @@ Here are listed all methods implemented in `react-native-tcp-socket` that imitat
 | `reuseAddress` | `<boolean>` |     ❌     |    ✅    | Enable/disable the reuseAddress socket option. **Default**: `true`.                                                                                                                              |
 
 **Note**: The platforms marked as ❌ use the default value.
+
+##### `Socket.sendFile()` <!-- omit in toc -->
+`socket.sendFile(path, offset, length)` sends `length` bytes of the file at `path`, starting at `offset`. The file is read and written to the socket natively: its bytes never go through JS, so a large file is sent much faster than with `write()` and without loading it in memory. It works on iOS/macOS and Android, on client sockets and on the sockets of a server.
+
+| Parameter    | Type       | Description                                                          |
+| ------------ | ---------- | -------------------------------------------------------------------- |
+| **`path`**   | `<string>` | Absolute path of the file, with or without the `file://` scheme.     |
+| **`offset`** | `<number>` | Position of the first byte to send.                                  |
+| **`length`** | `<number>` | Number of bytes to send.                                             |
+
+It returns a `Promise` resolved once the bytes are written out, and rejected if the file cannot be read or if the socket fails or closes before the end. The file is sent after the pending `write()` calls. Wait for the promise before writing to the socket or sending another file.
+
+While the file is sent, `'fileProgress'` is emitted about every 250 ms with `(bytes, total)`: the number of bytes sent and `length`.
+
+```js
+server.on('connection', async (socket) => {
+  socket.write(`HTTP/1.1 200 OK\r\nContent-Length: ${size}\r\nConnection: close\r\n\r\n`);
+  await socket.sendFile(path, 0, size);
+  socket.end();
+});
+```
+
+##### `Socket.receiveHttpBodyToFile()` <!-- omit in toc -->
+`socket.receiveHttpBodyToFile(path)` writes the body of an HTTP response to the file at `path`, natively. From this call on, the incoming bytes are parsed as one HTTP response instead of being emitted as `'data'` events: call it before sending the request. It works on iOS/macOS and Android.
+
+| Response status | Behaviour                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `200`           | The file is created, or replaced if it exists.                                             |
+| `206`           | The body is appended to the file, to resume a download with a `Range` request.             |
+| Any other       | The transfer fails and the file is left untouched.                                         |
+
+The body ends after `Content-Length` bytes, or with the connection when the response has no `Content-Length`. It is written as received: `Transfer-Encoding: chunked` and compressed bodies are not decoded. Only one response is read per socket, the bytes following the body are ignored.
+
+* `'fileProgress'` is emitted about every 250 ms with `(bytes, total)`: the number of body bytes written by this call and the `Content-Length`, or `-1` when the response has none.
+* `'fileEnd'` is emitted once with `(bytes, error)`. `error` is `null` when the whole body is written, or a message such as `'HTTP 404'` or `'Incomplete: 1000/2000 bytes'`.
+
+```js
+const socket = net.createConnection({ host, port }, () => {
+  socket.receiveHttpBodyToFile(path);
+  socket.write(`GET /model.bin HTTP/1.1\r\nHost: ${host}\r\nConnection: close\r\n\r\n`);
+});
+
+socket.on('fileProgress', (bytes, total) => console.log(`${bytes}/${total}`));
+socket.on('fileEnd', (bytes, error) => {
+  socket.destroy();
+  if (error) console.warn(`Download failed after ${bytes} bytes: ${error}`);
+});
+```
 
 #### Server
 * **Methods:**

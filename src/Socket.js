@@ -40,6 +40,8 @@ import { nativeEventEmitter, getNextId } from './Globals';
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
  * @property {() => void} secureConnect
+ * @property {(bytes: number, total: number) => void} fileProgress
+ * @property {(bytes: number, error: string | null) => void} fileEnd
  *
  * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
@@ -369,6 +371,85 @@ export default class Socket extends EventEmitter {
     }
 
     /**
+     * Sends `length` bytes of the file at `path`, starting at `offset`. The file is read and written
+     * to the socket natively: its bytes never go through JS.
+     *
+     * The data is sent after the pending `socket.write()` calls. Wait for the returned promise
+     * before writing to the socket or sending another file.
+     *
+     * `'fileProgress'` is emitted with `(bytes, total)` while the file is sent.
+     *
+     * @param {string} path Absolute path of the file, with or without the `file://` scheme
+     * @param {number} offset Position of the first byte to send
+     * @param {number} length Number of bytes to send
+     *
+     * @return {Promise<void>} Resolved once the bytes are written out
+     */
+    sendFile(path, offset, length) {
+        if (this._pending || this._destroyed) return Promise.reject(new Error('Socket is closed.'));
+
+        const currentMsgId = this._msgId;
+        this._msgId = (this._msgId + 1) % Number.MAX_SAFE_INTEGER;
+        return new Promise((resolve, reject) => {
+            const removeListeners = () => {
+                this._msgEvtEmitter.removeListener('written', msgEvtHandler);
+                this.removeListener('error', errorHandler);
+                this.removeListener('close', closeHandler);
+            };
+            const msgEvtHandler = (
+                /** @type {{id: number, msgId: number, err?: string}} */ evt
+            ) => {
+                const { msgId, err } = evt;
+                if (msgId !== currentMsgId) return;
+                removeListeners();
+                this._lastRcvMsgId = msgId;
+                this._resetTimeout();
+                if (this.writableNeedDrain && this._lastSentMsgId === msgId) {
+                    this.writableNeedDrain = false;
+                    this.emit('drain');
+                }
+                if (err) reject(new Error(err));
+                else resolve();
+            };
+            // A failed transfer is only reported as `'error'` on iOS
+            const errorHandler = (/** @type {Error | string} */ err) => {
+                removeListeners();
+                reject(err instanceof Error ? err : new Error(err));
+            };
+            const closeHandler = () => {
+                removeListeners();
+                reject(new Error('Socket closed before the file was sent.'));
+            };
+            this._msgEvtEmitter.on('written', msgEvtHandler, this);
+            this.on('error', errorHandler);
+            this.on('close', closeHandler);
+            this._lastSentMsgId = currentMsgId;
+            this._bytesWritten += length;
+            NativeModules.TcpSockets.sendFile(this._id, path, offset, length, currentMsgId);
+        });
+    }
+
+    /**
+     * From now on, the incoming bytes are parsed natively as one HTTP response and its body is
+     * written to the file at `path`, instead of being emitted as `'data'` events. Call it before
+     * sending the request.
+     *
+     * A `200` response replaces the file. A `206` response is appended to it, to resume a download
+     * with a `Range` request. Any other status fails.
+     *
+     * `'fileProgress'` is emitted with `(bytes, total)` while the body is received, then `'fileEnd'`
+     * with `(bytes, error)`, `error` being `null` on success.
+     *
+     * @param {string} path Absolute path of the file, with or without the `file://` scheme
+     */
+    receiveHttpBodyToFile(path) {
+        if (this._pending || this._destroyed) throw new Error('Socket is closed.');
+
+        NativeModules.TcpSockets.receiveHttpBodyToFile(this._id, path);
+        return this;
+    }
+
+    /**
      * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
      */
     pause() {
@@ -486,6 +567,15 @@ export default class Socket extends EventEmitter {
             if (evt.id !== this._id) return;
             this._msgEvtEmitter.emit('written', evt);
         });
+        this._fileProgressListener = this._eventEmitter.addListener('fileProgress', (evt) => {
+            if (evt.id !== this._id) return;
+            this._resetTimeout();
+            this.emit('fileProgress', evt.bytes, evt.total);
+        });
+        this._fileEndListener = this._eventEmitter.addListener('fileEnd', (evt) => {
+            if (evt.id !== this._id) return;
+            this.emit('fileEnd', evt.bytes, evt.error || null);
+        });
     }
 
     /**
@@ -498,6 +588,8 @@ export default class Socket extends EventEmitter {
         this._endListener?.remove();
         this._connectListener?.remove();
         this._writtenListener?.remove();
+        this._fileProgressListener?.remove();
+        this._fileEndListener?.remove();
     }
 
     /**

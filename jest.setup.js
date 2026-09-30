@@ -13,6 +13,8 @@ jest.mock('react-native', () => {
                 end: jest.fn(),
                 destroy: jest.fn(),
                 write: jest.fn(),
+                sendFile: jest.fn(),
+                receiveHttpBodyToFile: jest.fn(),
                 listen: jest.fn(),
                 pause: jest.fn(),
                 resume: jest.fn(),

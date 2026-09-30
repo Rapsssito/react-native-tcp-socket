@@ -112,6 +112,22 @@ public class TcpEventListener {
         sendEvent("written", eventParams);
     }
 
+    public void onFileProgress(int id, long bytes, long total) {
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        eventParams.putDouble("bytes", bytes);
+        eventParams.putDouble("total", total);
+        sendEvent("fileProgress", eventParams);
+    }
+
+    public void onFileEnd(int id, long bytes, @Nullable String error) {
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        eventParams.putDouble("bytes", bytes);
+        eventParams.putString("error", error);
+        sendEvent("fileEnd", eventParams);
+    }
+
     public void onClose(int id, Exception e) {
         if (e != null) {
             onError(id, e);

@@ -67,6 +67,22 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     SecTrustRef _peerTrust;
     SecIdentityRef _clientIdentity;
     NSDictionary *_tlsOptionsPending;
+    // Native file sending
+    NSFileHandle *_sendFileHandle;
+    NSNumber *_sendFileMsgId;
+    unsigned long long _sendFileLength;
+    unsigned long long _sendFileSent;
+    NSTimeInterval _sendFileLastProgress;
+    // Native HTTP body receiving
+    BOOL _receivingFile;
+    BOOL _receiveDone;
+    BOOL _receivePartialContent;
+    NSString *_receivePath;
+    NSMutableData *_receiveHeader;
+    NSFileHandle *_receiveFileHandle;
+    long long _receiveExpected;
+    unsigned long long _receiveReceived;
+    NSTimeInterval _receiveLastProgress;
 }
 
 - (id)initWithClientId:(NSNumber *)clientID
@@ -416,7 +432,286 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
 }
 
+static const long kSendFileTag = -4242;
+static const NSUInteger kSendFileChunk = 256 * 1024;
+static const NSTimeInterval kFileProgressInterval = 0.25;
+static const NSUInteger kMaxHttpHeaderBytes = 64 * 1024;
+
+static NSString *TcpStripFileScheme(NSString *path) {
+    return [path hasPrefix:@"file://"] ? [path substringFromIndex:7] : path;
+}
+
+static NSError *TcpFileError(NSException *exception) {
+    return [NSError errorWithDomain:RCTTCPErrorDomain
+                               code:RCTTCPOtherError
+                           userInfo:@{
+                               NSLocalizedDescriptionKey : exception.reason
+                                   ?: exception.name
+                           }];
+}
+
+// The NSFileHandle methods reporting an NSError need iOS 13 / macOS 10.15 /
+// tvOS 13. The older ones raise an exception instead.
+static BOOL TcpSeekFile(NSFileHandle *handle, unsigned long long offset,
+                        NSError **error) {
+    if (@available(iOS 13.0, macOS 10.15, tvOS 13.0, *)) {
+        return [handle seekToOffset:offset error:error];
+    }
+    @try {
+        [handle seekToFileOffset:offset];
+        return YES;
+    } @catch (NSException *exception) {
+        *error = TcpFileError(exception);
+        return NO;
+    }
+}
+
+static NSData *TcpReadFile(NSFileHandle *handle, NSUInteger length,
+                           NSError **error) {
+    if (@available(iOS 13.0, macOS 10.15, tvOS 13.0, *)) {
+        return [handle readDataUpToLength:length error:error];
+    }
+    @try {
+        return [handle readDataOfLength:length];
+    } @catch (NSException *exception) {
+        *error = TcpFileError(exception);
+        return nil;
+    }
+}
+
+static BOOL TcpWriteFile(NSFileHandle *handle, NSData *data, NSError **error) {
+    if (@available(iOS 13.0, macOS 10.15, tvOS 13.0, *)) {
+        return [handle writeData:data error:error];
+    }
+    @try {
+        [handle writeData:data];
+        return YES;
+    } @catch (NSException *exception) {
+        *error = TcpFileError(exception);
+        return NO;
+    }
+}
+
+#pragma mark - Native file sending
+
+- (void)sendFile:(NSString *)path
+          offset:(unsigned long long)offset
+          length:(unsigned long long)length
+           msgId:(NSNumber *)msgId {
+    dispatch_async([self methodQueue], ^{
+      NSError *error = nil;
+      NSFileHandle *handle =
+          [NSFileHandle fileHandleForReadingAtPath:TcpStripFileScheme(path)];
+      if (!handle || !TcpSeekFile(handle, offset, &error)) {
+          [self failSendFile:error ? error.localizedDescription
+                                   : @"Cannot open the file to send"];
+          return;
+      }
+      self->_sendFileHandle = handle;
+      self->_sendFileMsgId = msgId;
+      self->_sendFileLength = length;
+      self->_sendFileSent = 0;
+      self->_sendFileLastProgress = 0;
+      [self sendNextFileChunk];
+    });
+}
+
+- (void)sendNextFileChunk {
+    if (!_sendFileHandle) {
+        return;
+    }
+    if (_sendFileSent >= _sendFileLength) {
+        [_sendFileHandle closeFile];
+        _sendFileHandle = nil;
+        [_clientDelegate onFileProgress:_id
+                                  bytes:_sendFileSent
+                                  total:(long long)_sendFileLength];
+        [_clientDelegate onWrittenData:self msgId:_sendFileMsgId];
+        return;
+    }
+    NSError *error = nil;
+    NSUInteger toRead = (NSUInteger)MIN((unsigned long long)kSendFileChunk,
+                                        _sendFileLength - _sendFileSent);
+    NSData *chunk = TcpReadFile(_sendFileHandle, toRead, &error);
+    if (!chunk || chunk.length == 0) {
+        [self failSendFile:error ? error.localizedDescription
+                                 : @"Unexpected end of file"];
+        return;
+    }
+    _sendFileSent += chunk.length;
+    [_tcpSocket writeData:chunk withTimeout:-1 tag:kSendFileTag];
+}
+
+- (void)failSendFile:(NSString *)message {
+    [_sendFileHandle closeFile];
+    _sendFileHandle = nil;
+    [_clientDelegate
+          onError:self
+        withError:[NSError
+                      errorWithDomain:RCTTCPErrorDomain
+                                 code:RCTTCPSendFailedError
+                             userInfo:@{NSLocalizedDescriptionKey : message}]];
+}
+
+#pragma mark - Native HTTP body receiving
+
+- (void)receiveHttpBodyToFile:(NSString *)path {
+    dispatch_async([self methodQueue], ^{
+      self->_receivePath = TcpStripFileScheme(path);
+      self->_receiveHeader = [NSMutableData data];
+      self->_receiveFileHandle = nil;
+      self->_receiveExpected = -1;
+      self->_receiveReceived = 0;
+      self->_receiveLastProgress = 0;
+      self->_receiveDone = NO;
+      self->_receivePartialContent = NO;
+      self->_receivingFile = YES;
+    });
+}
+
+- (void)finishReceive:(NSString *)error {
+    _receiveDone = YES;
+    [_receiveFileHandle closeFile];
+    _receiveFileHandle = nil;
+    [_clientDelegate onFileEnd:_id bytes:_receiveReceived error:error];
+}
+
+- (BOOL)parseReceiveHeader:(NSString *)head {
+    NSArray<NSString *> *lines = [head componentsSeparatedByString:@"\r\n"];
+    NSArray<NSString *> *statusParts =
+        [lines.firstObject componentsSeparatedByString:@" "];
+    NSInteger status =
+        statusParts.count > 1 ? [statusParts[1] integerValue] : -1;
+    if (status != 200 && status != 206) {
+        [self finishReceive:[NSString
+                                stringWithFormat:@"HTTP %ld", (long)status]];
+        return NO;
+    }
+    _receivePartialContent = status == 206;
+    for (NSString *line in lines) {
+        if ([line.lowercaseString hasPrefix:@"content-length:"]) {
+            NSString *value = [[line substringFromIndex:15]
+                stringByTrimmingCharactersInSet:[NSCharacterSet
+                                                    whitespaceCharacterSet]];
+            _receiveExpected = [value longLongValue];
+        }
+    }
+    return YES;
+}
+
+- (void)writeReceivedBody:(NSData *)body {
+    NSData *toWrite = body;
+    if (_receiveExpected >= 0) {
+        unsigned long long remaining =
+            (unsigned long long)_receiveExpected - _receiveReceived;
+        if (body.length > remaining) {
+            toWrite =
+                [body subdataWithRange:NSMakeRange(0, (NSUInteger)remaining)];
+        }
+    }
+    if (toWrite.length > 0) {
+        NSError *error = nil;
+        if (!TcpWriteFile(_receiveFileHandle, toWrite, &error)) {
+            [self finishReceive:error.localizedDescription
+                                    ?: @"Cannot write the file"];
+            return;
+        }
+        _receiveReceived += toWrite.length;
+    }
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    if (now - _receiveLastProgress >= kFileProgressInterval) {
+        _receiveLastProgress = now;
+        [_clientDelegate onFileProgress:_id
+                                  bytes:_receiveReceived
+                                  total:_receiveExpected];
+    }
+    if (_receiveExpected >= 0 &&
+        _receiveReceived >= (unsigned long long)_receiveExpected) {
+        [self finishReceive:nil];
+    }
+}
+
+- (void)handleReceivedFileData:(NSData *)data {
+    if (_receiveDone) {
+        return;
+    }
+    if (_receiveFileHandle) {
+        [self writeReceivedBody:data];
+        return;
+    }
+    [_receiveHeader appendData:data];
+    NSData *headerEnd = [@"\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding];
+    NSRange range =
+        [_receiveHeader rangeOfData:headerEnd
+                            options:0
+                              range:NSMakeRange(0, _receiveHeader.length)];
+    if (range.location == NSNotFound) {
+        if (_receiveHeader.length > kMaxHttpHeaderBytes) {
+            [self finishReceive:@"HTTP header too large"];
+        }
+        return;
+    }
+    NSString *head = [[NSString alloc]
+        initWithData:[_receiveHeader
+                         subdataWithRange:NSMakeRange(0, range.location)]
+            encoding:NSISOLatin1StringEncoding];
+    if (![self parseReceiveHeader:head]) {
+        return;
+    }
+    // 206 Partial Content answers a Range request: resume by appending to the
+    // partial file. A 200 response starts the file again.
+    BOOL append = _receivePartialContent && [[NSFileManager defaultManager]
+                                                fileExistsAtPath:_receivePath];
+    if (!append) {
+        [[NSFileManager defaultManager] createFileAtPath:_receivePath
+                                                contents:nil
+                                              attributes:nil];
+    }
+    _receiveFileHandle = [NSFileHandle fileHandleForWritingAtPath:_receivePath];
+    if (!_receiveFileHandle) {
+        [self finishReceive:@"Cannot create the destination file"];
+        return;
+    }
+    if (append) {
+        [_receiveFileHandle seekToEndOfFile];
+    }
+    NSUInteger bodyStart = range.location + range.length;
+    NSData *body = [_receiveHeader
+        subdataWithRange:NSMakeRange(bodyStart,
+                                     _receiveHeader.length - bodyStart)];
+    _receiveHeader = nil;
+    [self writeReceivedBody:body];
+}
+
+- (void)endReceiveOnDisconnect {
+    if (!_receivingFile || _receiveDone) {
+        return;
+    }
+    if (!_receiveFileHandle) {
+        [self finishReceive:@"Connection closed before the HTTP header"];
+    } else if (_receiveExpected >= 0 &&
+               _receiveReceived < (unsigned long long)_receiveExpected) {
+        [self finishReceive:[NSString
+                                stringWithFormat:@"Incomplete: %llu/%lld bytes",
+                                                 _receiveReceived,
+                                                 _receiveExpected]];
+    } else {
+        [self finishReceive:nil];
+    }
+}
+
 - (void)socket:(GCDAsyncSocket *)sock didWriteDataWithTag:(long)msgTag {
+    if (msgTag == kSendFileTag) {
+        NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+        if (now - _sendFileLastProgress >= kFileProgressInterval) {
+            _sendFileLastProgress = now;
+            [_clientDelegate onFileProgress:_id
+                                      bytes:_sendFileSent
+                                      total:(long long)_sendFileLength];
+        }
+        [self sendNextFileChunk];
+        return;
+    }
     NSNumber *tagNum = [NSNumber numberWithLong:msgTag];
     NSNumber *msgId = [self getPendingSend:tagNum];
     if (msgId) {
@@ -460,7 +755,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         return;
     }
 
-    [_clientDelegate onData:@(tag) data:data];
+    if (_receivingFile) {
+        [self handleReceivedFileData:data];
+    } else {
+        [_clientDelegate onData:@(tag) data:data];
+    }
     if (!_paused) {
         [sock readDataWithTimeout:-1 tag:tag];
     }
@@ -598,6 +897,10 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                    [sock userData]);
         return;
     }
+
+    [self endReceiveOnDisconnect];
+    [_sendFileHandle closeFile];
+    _sendFileHandle = nil;
 
     [_clientDelegate
           onClose:[sock userData]
@@ -1033,7 +1336,19 @@ typedef NS_ENUM(NSInteger, PEMType) {
 }
 
 - (dispatch_queue_t)methodQueue {
-    return dispatch_get_main_queue();
+    return [TcpSocketClient sharedQueue];
+}
+
++ (dispatch_queue_t)sharedQueue {
+    // A private serial queue: native file transfers read and write the disk
+    // from the socket callbacks, which must not run on the main thread.
+    static dispatch_queue_t queue;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+      queue = dispatch_queue_create("com.asterinet.react.tcpsocket.delegate",
+                                    DISPATCH_QUEUE_SERIAL);
+    });
+    return queue;
 }
 
 @end

@@ -19,10 +19,16 @@
 
 RCT_EXPORT_MODULE()
 
+// Same serial queue as the socket delegate callbacks: `_clients` is only
+// touched from it
+- (dispatch_queue_t)methodQueue {
+    return [TcpSocketClient sharedQueue];
+}
+
 - (NSArray<NSString *> *)supportedEvents {
     return @[
         @"connect", @"listening", @"connection", @"secureConnection", @"data",
-        @"close", @"error", @"written", @"end"
+        @"close", @"error", @"written", @"end", @"fileProgress", @"fileEnd"
     ];
 }
 
@@ -99,6 +105,28 @@ RCT_EXPORT_METHOD(write
     NSData *data = [[NSData alloc] initWithBase64EncodedString:base64String
                                                        options:0];
     [client writeData:data msgId:msgId];
+}
+
+RCT_EXPORT_METHOD(sendFile : (nonnull NSNumber *)cId path : (nonnull NSString *)
+                      path offset : (double)offset length : (double)
+                          length msgId : (nonnull NSNumber *)msgId) {
+    TcpSocketClient *client = [self findClient:cId];
+    if (!client)
+        return;
+
+    [client sendFile:path
+              offset:(unsigned long long)offset
+              length:(unsigned long long)length
+               msgId:msgId];
+}
+
+RCT_EXPORT_METHOD(receiveHttpBodyToFile : (nonnull NSNumber *)
+                      cId path : (nonnull NSString *)path) {
+    TcpSocketClient *client = [self findClient:cId];
+    if (!client)
+        return;
+
+    [client receiveHttpBodyToFile:path];
 }
 
 RCT_EXPORT_METHOD(end : (nonnull NSNumber *)cId) { [self endClient:cId]; }
@@ -312,6 +340,28 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
                        body:@{
                            @"id" : clientID,
                            @"data" : base64String
+                       }];
+}
+
+- (void)onFileProgress:(NSNumber *)clientID
+                 bytes:(unsigned long long)bytes
+                 total:(long long)total {
+    [self sendEventWithName:@"fileProgress"
+                       body:@{
+                           @"id" : clientID,
+                           @"bytes" : @(bytes),
+                           @"total" : @(total)
+                       }];
+}
+
+- (void)onFileEnd:(NSNumber *)clientID
+            bytes:(unsigned long long)bytes
+            error:(NSString *)error {
+    [self sendEventWithName:@"fileEnd"
+                       body:@{
+                           @"id" : clientID,
+                           @"bytes" : @(bytes),
+                           @"error" : error ?: [NSNull null]
                        }];
 }
 

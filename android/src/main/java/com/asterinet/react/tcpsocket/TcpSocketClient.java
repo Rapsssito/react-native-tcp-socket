@@ -7,7 +7,9 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableArray;
 
 import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -20,12 +22,15 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 class TcpSocketClient extends TcpSocket {
+    private static final int DATA_BUFFER_BYTES = 16384;
+    private static final int FILE_BUFFER_BYTES = 65536;
     private final ExecutorService listenExecutor;
     private final ExecutorService writeExecutor;
     private final TcpEventListener receiverListener;
     private TcpReceiverTask receiverTask;
     private Socket socket;
     private boolean closed = true;
+    private volatile HttpBodyFileReceiver fileReceiver;
 
     TcpSocketClient(TcpEventListener receiverListener, Integer id, Socket socket) {
         super(id);
@@ -171,6 +176,57 @@ class TcpSocketClient extends TcpSocket {
         });
     }
 
+    /**
+     * Streams `length` bytes of the file at `path`, from `offset`, without passing them through JS.
+     * Runs on the write executor, so it stays ordered with `write` calls.
+     */
+    public void sendFile(final int msgId, final String rawPath, final long offset, final long length) {
+        writeExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                final Socket s = socket;
+                if (s == null) {
+                    receiverListener.onWritten(getId(), msgId, new IOException("Attempted to write to closed socket"));
+                    return;
+                }
+                final String path = rawPath.startsWith("file://") ? rawPath.substring("file://".length()) : rawPath;
+                try (FileInputStream in = new FileInputStream(path)) {
+                    in.getChannel().position(offset);
+                    OutputStream out = s.getOutputStream();
+                    byte[] buffer = new byte[FILE_BUFFER_BYTES];
+                    long sent = 0;
+                    long lastProgressAt = 0;
+                    while (sent < length) {
+                        int read = in.read(buffer, 0, (int) Math.min(buffer.length, length - sent));
+                        if (read < 0) throw new IOException("Unexpected end of file after " + sent + " bytes");
+                        out.write(buffer, 0, read);
+                        sent += read;
+                        long now = System.currentTimeMillis();
+                        if (now - lastProgressAt >= HttpBodyFileReceiver.PROGRESS_INTERVAL_MS) {
+                            lastProgressAt = now;
+                            receiverListener.onFileProgress(getId(), sent, length);
+                        }
+                    }
+                    out.flush();
+                    receiverListener.onFileProgress(getId(), sent, length);
+                    receiverListener.onWritten(getId(), msgId, null);
+                } catch (IOException e) {
+                    receiverListener.onWritten(getId(), msgId, e);
+                    receiverListener.onError(getId(), e);
+                }
+            }
+        });
+    }
+
+    /**
+     * From now on, incoming bytes are parsed as an HTTP response whose body is written to `path`
+     * (`fileProgress` / `fileEnd` events) instead of being emitted as `data` events.
+     * Call it before sending the request.
+     */
+    public void receiveHttpBodyToFile(final String path) {
+        fileReceiver = new HttpBodyFileReceiver(getId(), path, receiverListener);
+    }
+
     public ReadableMap getPeerCertificate() {
         return SSLCertificateHelper.getCertificateInfo(socket, true);
     }
@@ -259,20 +315,28 @@ class TcpSocketClient extends TcpSocket {
                 return;
             }
 
-            byte[] buffer = new byte[16384];
+            byte[] buffer = new byte[FILE_BUFFER_BYTES];
             try {
                 BufferedInputStream in = new BufferedInputStream(socket.getInputStream());
                 while (!socket.isClosed()) {
-                    int bufferCount = in.read(buffer);
+                    // `data` events keep their size, a file is read with larger chunks
+                    int maxCount = clientSocket.fileReceiver != null ? FILE_BUFFER_BYTES : DATA_BUFFER_BYTES;
+                    int bufferCount = in.read(buffer, 0, maxCount);
                     waitIfPaused();
-                    if (bufferCount > 0) {
+                    HttpBodyFileReceiver fileReceiver = clientSocket.fileReceiver;
+                    if (bufferCount > 0 && fileReceiver != null) {
+                        fileReceiver.onData(buffer, bufferCount);
+                    } else if (bufferCount > 0) {
                         receiverListener.onData(socketId, Arrays.copyOfRange(buffer, 0, bufferCount));
                     } else if (bufferCount == -1) {
+                        if (fileReceiver != null) fileReceiver.onEnd();
                         receiverListener.onEnd(socketId);
                         break;
                     }
                 }
             } catch (IOException | InterruptedException ioe) {
+                HttpBodyFileReceiver fileReceiver = clientSocket.fileReceiver;
+                if (fileReceiver != null) fileReceiver.onError(ioe.getMessage());
                 if (receiverListener != null && socket != null && !socket.isClosed() && !clientSocket.closed) {
                     receiverListener.onError(socketId, ioe);
                 }
