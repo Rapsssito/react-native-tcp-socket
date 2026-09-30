@@ -33,6 +33,8 @@
  * @property {(err: Error) => void} error
  * @property {() => void} timeout
  * @property {() => void} secureConnect
+ * @property {(bytes: number, total: number) => void} fileProgress
+ * @property {(bytes: number, error: string | null) => void} fileEnd
  *
  * @extends {EventEmitter<SocketEvents & ReadableEvents, any>}
  */
@@ -191,6 +193,36 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
      */
     write(buffer: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined, cb?: ((err?: Error | undefined) => void) | undefined): boolean;
     /**
+     * Sends `length` bytes of the file at `path`, starting at `offset`. The file is read and written
+     * to the socket natively: its bytes never go through JS.
+     *
+     * The data is sent after the pending `socket.write()` calls. Wait for the returned promise
+     * before writing to the socket or sending another file.
+     *
+     * `'fileProgress'` is emitted with `(bytes, total)` while the file is sent.
+     *
+     * @param {string} path Absolute path of the file, with or without the `file://` scheme
+     * @param {number} offset Position of the first byte to send
+     * @param {number} length Number of bytes to send
+     *
+     * @return {Promise<void>} Resolved once the bytes are written out
+     */
+    sendFile(path: string, offset: number, length: number): Promise<void>;
+    /**
+     * From now on, the incoming bytes are parsed natively as one HTTP response and its body is
+     * written to the file at `path`, instead of being emitted as `'data'` events. Call it before
+     * sending the request.
+     *
+     * A `200` response replaces the file. A `206` response is appended to it, to resume a download
+     * with a `Range` request. Any other status fails.
+     *
+     * `'fileProgress'` is emitted with `(bytes, total)` while the body is received, then `'fileEnd'`
+     * with `(bytes, error)`, `error` being `null` on success.
+     *
+     * @param {string} path Absolute path of the file, with or without the `file://` scheme
+     */
+    receiveHttpBodyToFile(path: string): Socket;
+    /**
      * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
      */
     pause(): Socket;
@@ -218,6 +250,8 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     _endListener: import("react-native").EmitterSubscription | undefined;
     _connectListener: import("react-native").EmitterSubscription | undefined;
     _writtenListener: import("react-native").EmitterSubscription | undefined;
+    _fileProgressListener: import("react-native").EmitterSubscription | undefined;
+    _fileEndListener: import("react-native").EmitterSubscription | undefined;
     /**
      * @package
      */
@@ -272,6 +306,8 @@ export type SocketEvents = {
     error: (err: Error) => void;
     timeout: () => void;
     secureConnect: () => void;
+    fileProgress: (bytes: number, total: number) => void;
+    fileEnd: (bytes: number, error: string | null) => void;
 };
 import EventEmitter from "eventemitter3";
 import { Buffer } from "buffer";

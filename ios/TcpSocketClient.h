@@ -44,6 +44,12 @@ typedef enum RCTTCPError RCTTCPError;
 - (void)onClose:(TcpSocketClient *)client withError:(NSError *)err;
 - (void)onError:(TcpSocketClient *)client withError:(NSError *)err;
 - (void)onWrittenData:(TcpSocketClient *)client msgId:(NSNumber *)msgId;
+- (void)onFileProgress:(NSNumber *)clientID
+                 bytes:(unsigned long long)bytes
+                 total:(long long)total;
+- (void)onFileEnd:(NSNumber *)clientID
+            bytes:(unsigned long long)bytes
+            error:(NSString *)error;
 - (NSNumber *)getNextId;
 
 @end
@@ -108,6 +114,21 @@ typedef enum RCTTCPError RCTTCPError;
  */
 - (void)writeData:(NSData *)data msgId:(NSNumber *)msgId;
 
+/**
+ * Streams `length` bytes of the file at `path`, from `offset`, without passing
+ * them through JS. Reports `written` for `msgId` once everything is queued out.
+ */
+- (void)sendFile:(NSString *)path
+          offset:(unsigned long long)offset
+          length:(unsigned long long)length
+           msgId:(NSNumber *)msgId;
+
+/**
+ * From now on, incoming bytes are parsed as an HTTP response whose body is
+ * written to `path` instead of being emitted as `data` events.
+ */
+- (void)receiveHttpBodyToFile:(NSString *)path;
+
 - (void)startTLS:(NSDictionary *)tlsOptions;
 
 /**
@@ -129,6 +150,12 @@ typedef enum RCTTCPError RCTTCPError;
 - (void)resume;
 
 + (BOOL)hasIdentity:(NSDictionary *)aliases;
+
+/**
+ * The serial queue shared by the socket delegate callbacks and the module
+ * methods
+ */
++ (dispatch_queue_t)sharedQueue;
 
 /**
  * Get peer certificate information

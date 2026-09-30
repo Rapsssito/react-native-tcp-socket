@@ -133,6 +133,24 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         socketClient.write(msgId, data);
     }
 
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void sendFile(final int cId, @NonNull final String path, final double offset, final double length, final int msgId) {
+        TcpSocketClient socketClient = findTcpClient(cId);
+        if (socketClient == null) {
+            tcpEvtListener.onWritten(cId, msgId, new IOException("Socket is closed"));
+            return;
+        }
+        socketClient.sendFile(msgId, path, (long) offset, (long) length);
+    }
+
+    @SuppressWarnings("unused")
+    @ReactMethod
+    public void receiveHttpBodyToFile(final int cId, @NonNull final String path) {
+        TcpSocketClient socketClient = findTcpClient(cId);
+        if (socketClient != null) socketClient.receiveHttpBodyToFile(path);
+    }
+
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
@@ -448,6 +466,12 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
             throw new IOException("Interface " + iface + " unreachable");
         } else if (ipAddress != null && !ipAddress.equals("0.0.0.0"))
             mNetworkMap.put(iface + ipAddress, currentNetwork.getNetwork());
+    }
+
+    @Nullable
+    private TcpSocketClient findTcpClient(final int id) {
+        final TcpSocket socket = socketMap.get(id);
+        return socket instanceof TcpSocketClient ? (TcpSocketClient) socket : null;
     }
 
     private TcpSocketClient getTcpClient(final int id) {
