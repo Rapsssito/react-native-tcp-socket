@@ -252,11 +252,20 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
 
 - (void)onListen:(TcpSocketClient *)server {
     GCDAsyncSocket *socket = [server getSocket];
+    NSString *localAddress = [socket localHost];
+    if (localAddress == nil) {
+        [self sendEventWithName:@"error"
+                           body:@{
+                               @"id" : server.id,
+                               @"error" : @"Server socket closed before listening could be reported"
+                           }];
+        return;
+    }
     [self sendEventWithName:@"listening"
                        body:@{
                            @"id" : server.id,
                            @"connection" : @{
-                               @"localAddress" : [socket localHost],
+                               @"localAddress" : localAddress,
                                @"localPort" :
                                    [NSNumber numberWithInt:[socket localPort]],
                                @"localFamily" : [socket isIPv4] ? @"IPv4"
@@ -286,6 +295,14 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
                   toClient:(NSNumber *)clientID
             connectionType:(NSString *)connectionType {
     GCDAsyncSocket *socket = [client getSocket];
+    NSString *localAddress = [socket localHost];
+    NSString *remoteAddress = [socket connectedHost];
+    if (localAddress == nil || remoteAddress == nil) {
+        RCTLogWarn(@"Dropping incoming connection %@: peer disconnected before it was accepted",
+                   client.id);
+        [self destroyClient:client.id];
+        return;
+    }
 
     [self sendEventWithName:connectionType
                        body:@{
@@ -293,10 +310,10 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
                            @"info" : @{
                                @"id" : client.id,
                                @"connection" : @{
-                                   @"localAddress" : [socket localHost],
+                                   @"localAddress" : localAddress,
                                    @"localPort" : [NSNumber
                                        numberWithInt:[socket localPort]],
-                                   @"remoteAddress" : [socket connectedHost],
+                                   @"remoteAddress" : remoteAddress,
                                    @"remotePort" : [NSNumber
                                        numberWithInt:[socket connectedPort]],
                                    @"remoteFamily" : [socket isIPv4] ? @"IPv4"
