@@ -12,16 +12,17 @@ import java.security.GeneralSecurityException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLServerSocketFactory;
 
 public final class TcpSocketServer extends TcpSocket {
+    private static final AtomicInteger clientSocketIds = new AtomicInteger();
     private final TcpEventListener mReceiverListener;
     private final ExecutorService listenExecutor;
     private final ConcurrentHashMap<Integer, TcpSocket> socketClients;
     private final boolean isTLS;
     private ServerSocket serverSocket;
-    private int clientSocketIds;
 
     public TcpSocketServer(final Context context, final ConcurrentHashMap<Integer, TcpSocket> socketClients, final TcpEventListener receiverListener, final Integer id,
                            final ReadableMap options) throws IOException, GeneralSecurityException {
@@ -31,7 +32,6 @@ public final class TcpSocketServer extends TcpSocket {
         int port = options.getInt("port");
         String address = options.getString("host");
         this.socketClients = socketClients;
-        clientSocketIds = (1 + getId()) * 1000;
         // Get the addresses
         InetAddress localInetAddress = InetAddress.getByName(address);
         // Create the socket
@@ -84,7 +84,7 @@ public final class TcpSocketServer extends TcpSocket {
      * @return The next ID for a client socket
      */
     private int getClientId() {
-        return clientSocketIds++;
+        return -clientSocketIds.incrementAndGet();
     }
 
     private void listen() {

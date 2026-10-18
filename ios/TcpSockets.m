@@ -8,9 +8,6 @@
 #import "TcpSockets.h"
 
 
-// offset native ids by 5000
-#define COUNTER_OFFSET 5000
-
 @implementation TcpSockets {
     NSMutableDictionary<NSNumber *, TcpSocketClient *> *_clients;
     NSMutableDictionary<NSNumber *, NSDictionary *> *_pendingTLS;
@@ -376,7 +373,7 @@ RCT_EXPORT_METHOD(getCertificate:(nonnull NSNumber *)cId
 }
 
 - (NSNumber *)getNextId {
-    return @(_counter++ + COUNTER_OFFSET);
+    return @(-(++_counter));
 }
 
 @end
