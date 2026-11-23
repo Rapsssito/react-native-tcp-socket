@@ -463,7 +463,7 @@ export default class Socket extends EventEmitter {
         this._errorListener = this._eventEmitter.addListener('error', (evt) => {
             if (evt.id !== this._id) return;
             this.destroy();
-            this.emit('error', evt.error);
+            this.emit('error', new Error(evt.error));
         });
         this._closeListener = this._eventEmitter.addListener('close', (evt) => {
             if (evt.id !== this._id) return;

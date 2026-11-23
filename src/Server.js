@@ -197,7 +197,7 @@ export default class Server extends EventEmitter {
         this._errorListener = this._eventEmitter.addListener('error', (evt) => {
             if (evt.id !== this._id) return;
             this.close();
-            this.emit('error', evt.error);
+            this.emit('error', new Error(evt.error));
         });
         this._connectionsListener = this._eventEmitter.addListener('connection', (evt) => {
             if (evt.id !== this._id) return;
